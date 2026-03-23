@@ -1,0 +1,30 @@
+[package]
+name = "jrsonnet-pkg"
+description = "jsonnet-bundler jsonnetfile parser and installer"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+# Source url parser
+peg.workspace = true
+
+# Gix for git repos, reqwest + zip for github
+gix.workspace = true
+reqwest.workspace = true
+zip.workspace = true
+url.workspace = true
+camino.workspace = true
+
+# Global cache dir
+directories.workspace = true
