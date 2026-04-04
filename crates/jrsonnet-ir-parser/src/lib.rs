@@ -416,10 +416,11 @@ fn params(p: &mut Parser<'_>) -> Result<ExprParams> {
 
 fn args(p: &mut Parser<'_>) -> Result<ArgsDesc> {
 	if p.at(T![')']) {
-		return Ok(ArgsDesc::new(Vec::new(), Vec::new()));
+		return Ok(ArgsDesc::new(Vec::new(), Vec::new(), Vec::new()));
 	}
 	let mut unnamed = Vec::new();
-	let mut named = Vec::new();
+	let mut names = Vec::new();
+	let mut values = Vec::new();
 	let mut named_started = false;
 	loop {
 		let is_named = p.at(SyntaxKind::IDENT) && {
@@ -430,7 +431,9 @@ fn args(p: &mut Parser<'_>) -> Result<ArgsDesc> {
 			let name: IStr = ident(p)?;
 			p.eat(T![=])?;
 			let value = Rc::new(expr(p)?);
-			named.push((name, value));
+
+			names.push(name);
+			values.push(value);
 			named_started = true;
 		} else {
 			if named_started {
@@ -445,7 +448,7 @@ fn args(p: &mut Parser<'_>) -> Result<ArgsDesc> {
 			break;
 		}
 	}
-	Ok(ArgsDesc::new(unnamed, named))
+	Ok(ArgsDesc::new(unnamed, names, values))
 }
 
 fn bind(p: &mut Parser<'_>) -> Result<BindSpec> {

@@ -3,12 +3,12 @@ use std::{fmt::Debug, rc::Rc};
 use educe::Educe;
 use jrsonnet_gcmodule::{Cc, Trace};
 use jrsonnet_interner::IStr;
-use jrsonnet_ir::{ArgsDesc, Destruct, Expr, ExprParams, Span};
+use jrsonnet_ir::{Destruct, Expr, ExprParams, Span};
 pub use jrsonnet_macros::builtin;
 
 use self::{
 	builtin::Builtin,
-	parse::{parse_builtin_call, parse_default_function_call, parse_function_call},
+	parse::parse_default_function_call,
 	prepared::{PreparedCall, parse_prepared_builtin_call, parse_prepared_function_call},
 };
 use crate::{
@@ -22,7 +22,7 @@ mod prepared;
 
 pub use jrsonnet_ir::function::*;
 pub use native::NativeFn;
-pub use prepared::PreparedFuncVal;
+pub(crate) use prepared::PreparedFuncVal;
 
 /// Function callsite location.
 /// Either from other jsonnet code, specified by expression location, or from native (without location).
@@ -77,16 +77,6 @@ impl FuncDesc {
 		parse_default_function_call(self.ctx.clone(), &self.params)
 	}
 
-	/// Create context, with which body code will run
-	pub(crate) fn call_body_context(
-		&self,
-		call_ctx: Context,
-		args: &ArgsDesc,
-		tailstrict: bool,
-	) -> Result<Context> {
-		parse_function_call(call_ctx, self.ctx.clone(), &self.params, args, tailstrict)
-	}
-
 	pub fn evaluate_trivial(&self) -> Option<Val> {
 		evaluate_trivial(&self.body)
 	}
@@ -137,27 +127,6 @@ impl FuncVal {
 		match self {
 			Self::Normal(normal) => normal.name.clone(),
 			Self::Builtin(builtin) => builtin.name().into(),
-		}
-	}
-	/// Call function using arguments evaluated in specified `call_ctx` [`Context`].
-	///
-	/// If `tailstrict` is specified - then arguments will be evaluated before being passed to function body.
-	pub fn evaluate(
-		&self,
-		call_ctx: Context,
-		loc: CallLocation<'_>,
-		args: &ArgsDesc,
-		tailstrict: bool,
-	) -> Result<Val> {
-		match self {
-			Self::Normal(func) => {
-				let body_ctx = func.call_body_context(call_ctx, args, tailstrict)?;
-				evaluate(body_ctx, &func.body)
-			}
-			Self::Builtin(b) => {
-				let args = parse_builtin_call(call_ctx, b.params(), args, tailstrict)?;
-				b.call(loc, &args)
-			}
 		}
 	}
 

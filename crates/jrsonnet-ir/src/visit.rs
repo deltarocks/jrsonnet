@@ -216,11 +216,15 @@ pub fn visit_expr<V: Visitor>(v: &mut V, e: &Expr) {
 		}
 		Expr::Apply(expr, spanned, _) => {
 			v.visit_expr(expr);
-			let ArgsDesc { unnamed, named } = &**spanned;
+			let ArgsDesc {
+				unnamed,
+				names: _,
+				values,
+			} = &**spanned;
 			for unnamed in unnamed {
 				v.visit_expr(unnamed);
 			}
-			for (_name, named) in named {
+			for named in values {
 				v.visit_expr(named);
 			}
 		}

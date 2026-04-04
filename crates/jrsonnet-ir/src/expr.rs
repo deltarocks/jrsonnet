@@ -195,11 +195,16 @@ impl ExprParams {
 #[derive(Debug, PartialEq, Acyclic)]
 pub struct ArgsDesc {
 	pub unnamed: Vec<Rc<Expr>>,
-	pub named: Vec<(IStr, Rc<Expr>)>,
+	pub names: Vec<IStr>,
+	pub values: Vec<Rc<Expr>>,
 }
 impl ArgsDesc {
-	pub fn new(unnamed: Vec<Rc<Expr>>, named: Vec<(IStr, Rc<Expr>)>) -> Self {
-		Self { unnamed, named }
+	pub fn new(unnamed: Vec<Rc<Expr>>, names: Vec<IStr>, values: Vec<Rc<Expr>>) -> Self {
+		Self {
+			unnamed,
+			names,
+			values,
+		}
 	}
 }
 

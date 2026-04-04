@@ -73,12 +73,14 @@ parser! {
 			= args:arg(s)**comma() comma()? {?
 				let unnamed_count = args.iter().take_while(|(n, _)| n.is_none()).count();
 				let mut unnamed = Vec::with_capacity(unnamed_count);
-				let mut named = Vec::with_capacity(args.len() - unnamed_count);
+				let mut names = Vec::with_capacity(args.len() - unnamed_count);
+				let mut values = Vec::with_capacity(args.len() - unnamed_count);
 				let mut named_started = false;
 				for (name, value) in args {
 					if let Some(name) = name {
 						named_started = true;
-						named.push((name, value));
+						names.push(name);
+						values.push(value);
 					} else {
 						if named_started {
 							return Err("<named argument>")
@@ -86,7 +88,7 @@ parser! {
 						unnamed.push(value);
 					}
 				}
-				Ok(ArgsDesc::new(unnamed, named))
+				Ok(ArgsDesc{unnamed, names, values})
 			}
 
 		pub rule destruct_rest() -> DestructRest

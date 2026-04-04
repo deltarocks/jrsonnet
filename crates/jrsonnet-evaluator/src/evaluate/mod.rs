@@ -19,7 +19,7 @@ use crate::{
 	destructure::evaluate_dest,
 	error::{ErrorKind::*, suggest_object_fields},
 	evaluate::operator::{evaluate_binary_op_special, evaluate_unary_op},
-	function::{CallLocation, FuncDesc, FuncVal},
+	function::{CallLocation, FuncDesc, FuncVal, PreparedFuncVal},
 	gc::WithCapacityExt as _,
 	in_frame,
 	typed::{FromUntyped, IntoUntyped as _, Typed},
@@ -430,11 +430,25 @@ pub fn evaluate_apply(
 	let value = evaluate(ctx.clone(), value)?;
 	Ok(match value {
 		Val::Func(f) => {
-			let body = || f.evaluate(ctx, loc, args, tailstrict);
+			let name = f.name();
+			let prepare = PreparedFuncVal::new(f, args.unnamed.len(), &args.names)?;
+			let unnamed = args
+				.unnamed
+				.iter()
+				.cloned()
+				.map(|un| evaluate_thunk(ctx.clone(), un, tailstrict))
+				.collect::<Result<Vec<_>>>()?;
+			let named = args
+				.values
+				.iter()
+				.cloned()
+				.map(|un| evaluate_thunk(ctx.clone(), un, tailstrict))
+				.collect::<Result<Vec<_>>>()?;
+			let body = || prepare.call(loc, &unnamed, &named);
 			if tailstrict {
 				body()?
 			} else {
-				in_frame(loc, || format!("function <{}> call", f.name()), body)?
+				in_frame(loc, || format!("function <{name}> call"), body)?
 			}
 		}
 		v => bail!(OnlyFunctionsCanBeCalledGot(v.value_type())),
@@ -479,6 +493,13 @@ pub fn evaluate_named(ctx: Context, expr: &Expr, name: IStr) -> Result<Val> {
 	})
 }
 
+pub fn evaluate_thunk(ctx: Context, expr: Rc<Expr>, tailstrict: bool) -> Result<Thunk<Val>> {
+	Ok(if tailstrict {
+		Thunk::evaluated(evaluate(ctx, &expr)?)
+	} else {
+		Thunk!(move || { evaluate(ctx, &expr) })
+	})
+}
 #[allow(clippy::too_many_lines)]
 pub fn evaluate(ctx: Context, expr: &Expr) -> Result<Val> {
 	use Expr::*;

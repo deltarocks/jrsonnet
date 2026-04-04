@@ -66,12 +66,12 @@ LocalExpr(
                     2.0,
                 ),
             ],
-            named: [
-                (
-                    "y",
-                    Num(
-                        3.0,
-                    ),
+            names: [
+                "y",
+            ],
+            values: [
+                Num(
+                    3.0,
                 ),
             ],
         } from virtual:<test>:26-34,
