@@ -259,6 +259,7 @@
                 cargo-watch
                 cargo-insta
                 cargo-hack
+                cargo-show-asm
                 lld
                 hyperfine
                 graphviz
@@ -266,6 +267,7 @@
               ++ optionals (!stdenv.isDarwin) [
                 valgrind
                 kdePackages.kcachegrind
+                samply
               ];
           };
         };
