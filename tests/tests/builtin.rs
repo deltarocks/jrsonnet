@@ -32,10 +32,7 @@ fn native_add(a: u32, b: u32) -> u32 {
 struct NativeAddContextInitializer;
 impl ContextInitializer for NativeAddContextInitializer {
 	fn populate(&self, _for_file: Source, builder: &mut ContextBuilder) {
-		builder.bind(
-			"nativeAdd",
-			Thunk::evaluated(Val::function(native_add::INST)),
-		);
+		builder.bind("nativeAdd", Thunk::evaluated(Val::function(native_add {})));
 	}
 
 	fn as_any(&self) -> &dyn std::any::Any {
@@ -80,7 +77,7 @@ fn curry_add(a: u32) -> FuncVal {
 struct CurryAddContextInitializer;
 impl ContextInitializer for CurryAddContextInitializer {
 	fn populate(&self, _for_file: Source, builder: &mut ContextBuilder) {
-		builder.bind("curryAdd", Thunk::evaluated(Val::function(curry_add::INST)));
+		builder.bind("curryAdd", Thunk::evaluated(Val::function(curry_add {})));
 	}
 
 	fn as_any(&self) -> &dyn std::any::Any {

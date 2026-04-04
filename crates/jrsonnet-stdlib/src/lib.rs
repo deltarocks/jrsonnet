@@ -12,15 +12,17 @@ pub use compat::*;
 pub use encoding::*;
 pub use hash::*;
 use jrsonnet_evaluator::{
-	ContextBuilder, IStr, ObjValue, ObjValueBuilder, Thunk, Val,
 	error::Result,
-	function::{CallLocation, FuncVal},
+	function::{builtin_id, CallLocation, FuncVal},
 	tla::TlaArg,
 	trace::PathResolver,
+	typed::SerializeTypedObj as _,
 	val::NumValue,
+	ContextBuilder, IStr, ObjValue, ObjValueBuilder, Thunk, Val,
 };
 use jrsonnet_gcmodule::{Acyclic, Cc, Trace};
 use jrsonnet_ir::Source;
+use jrsonnet_macros::{IntoUntyped, Typed};
 pub use manifest::*;
 pub use math::*;
 pub use misc::*;
@@ -53,196 +55,352 @@ mod sort;
 mod strings;
 mod types;
 
+#[derive(Typed, IntoUntyped, Default)]
+#[allow(non_snake_case)]
+struct Builtins {
+	#[typed(method)]
+	id: builtin_id,
+	// Types
+	#[typed(method, rename = "type")]
+	r#type: builtin_type,
+	#[typed(method)]
+	isString: builtin_is_string,
+	#[typed(method)]
+	isNumber: builtin_is_number,
+	#[typed(method)]
+	isBoolean: builtin_is_boolean,
+	#[typed(method)]
+	isObject: builtin_is_object,
+	#[typed(method)]
+	isArray: builtin_is_array,
+	#[typed(method)]
+	isFunction: builtin_is_function,
+	#[typed(method)]
+	isNull: builtin_is_null,
+	// Arrays
+	#[typed(method)]
+	makeArray: builtin_make_array,
+	#[typed(method)]
+	repeat: builtin_repeat,
+	#[typed(method)]
+	slice: builtin_slice,
+	#[typed(method)]
+	map: builtin_map,
+	#[typed(method)]
+	mapWithIndex: builtin_map_with_index,
+	#[typed(method)]
+	mapWithKey: builtin_map_with_key,
+	#[typed(method)]
+	flatMap: builtin_flatmap,
+	#[typed(method)]
+	filter: builtin_filter,
+	#[typed(method)]
+	foldl: builtin_foldl,
+	#[typed(method)]
+	foldr: builtin_foldr,
+	#[typed(method)]
+	range: builtin_range,
+	#[typed(method)]
+	join: builtin_join,
+	#[typed(method)]
+	lines: builtin_lines,
+	#[typed(method)]
+	resolvePath: builtin_resolve_path,
+	#[typed(method)]
+	deepJoin: builtin_deep_join,
+	#[typed(method)]
+	reverse: builtin_reverse,
+	#[typed(method)]
+	any: builtin_any,
+	#[typed(method)]
+	all: builtin_all,
+	#[typed(method)]
+	member: builtin_member,
+	#[typed(method)]
+	find: builtin_find,
+	#[typed(method)]
+	contains: builtin_contains,
+	#[typed(method)]
+	count: builtin_count,
+	#[typed(method)]
+	avg: builtin_avg,
+	#[typed(method)]
+	removeAt: builtin_remove_at,
+	#[typed(method)]
+	remove: builtin_remove,
+	#[typed(method)]
+	flattenArrays: builtin_flatten_arrays,
+	#[typed(method)]
+	flattenDeepArray: builtin_flatten_deep_array,
+	#[typed(method)]
+	prune: builtin_prune,
+	#[typed(method)]
+	filterMap: builtin_filter_map,
+	// Math
+	#[typed(method)]
+	abs: builtin_abs,
+	#[typed(method)]
+	sign: builtin_sign,
+	#[typed(method)]
+	max: builtin_max,
+	#[typed(method)]
+	min: builtin_min,
+	#[typed(method)]
+	clamp: builtin_clamp,
+	#[typed(method)]
+	sum: builtin_sum,
+	#[typed(method)]
+	modulo: builtin_modulo,
+	#[typed(method)]
+	floor: builtin_floor,
+	#[typed(method)]
+	ceil: builtin_ceil,
+	#[typed(method)]
+	log: builtin_log,
+	#[typed(method)]
+	log2: builtin_log2,
+	#[typed(method)]
+	log10: builtin_log10,
+	#[typed(method)]
+	pow: builtin_pow,
+	#[typed(method)]
+	sqrt: builtin_sqrt,
+	#[typed(method)]
+	sin: builtin_sin,
+	#[typed(method)]
+	cos: builtin_cos,
+	#[typed(method)]
+	tan: builtin_tan,
+	#[typed(method)]
+	asin: builtin_asin,
+	#[typed(method)]
+	acos: builtin_acos,
+	#[typed(method)]
+	atan: builtin_atan,
+	#[typed(method)]
+	atan2: builtin_atan2,
+	#[typed(method)]
+	exp: builtin_exp,
+	#[typed(method)]
+	mantissa: builtin_mantissa,
+	#[typed(method)]
+	exponent: builtin_exponent,
+	#[typed(method)]
+	round: builtin_round,
+	#[typed(method)]
+	isEven: builtin_is_even,
+	#[typed(method)]
+	isOdd: builtin_is_odd,
+	#[typed(method)]
+	isInteger: builtin_is_integer,
+	#[typed(method)]
+	isDecimal: builtin_is_decimal,
+	#[typed(method)]
+	deg2rad: builtin_deg2rad,
+	#[typed(method)]
+	rad2deg: builtin_rad2deg,
+	#[typed(method)]
+	hypot: builtin_hypot,
+	// Operator
+	#[typed(rename = "mod", method)]
+	r#mod: builtin_mod,
+	#[typed(method)]
+	primitiveEquals: builtin_primitive_equals,
+	#[typed(method)]
+	equals: builtin_equals,
+	#[typed(method)]
+	xor: builtin_xor,
+	#[typed(method)]
+	xnor: builtin_xnor,
+	#[typed(method)]
+	format: builtin_format,
+	// Sort
+	#[typed(method)]
+	sort: builtin_sort,
+	#[typed(method)]
+	uniq: builtin_uniq,
+	#[typed(method)]
+	set: builtin_set,
+	#[typed(method)]
+	minArray: builtin_min_array,
+	#[typed(method)]
+	maxArray: builtin_max_array,
+	// Hash
+	#[typed(method)]
+	md5: builtin_md5,
+	#[typed(method)]
+	sha1: builtin_sha1,
+	#[typed(method)]
+	sha256: builtin_sha256,
+	#[typed(method)]
+	sha512: builtin_sha512,
+	#[typed(method)]
+	sha3: builtin_sha3,
+	// Encoding
+	#[typed(method)]
+	encodeUTF8: builtin_encode_utf8,
+	#[typed(method)]
+	decodeUTF8: builtin_decode_utf8,
+	#[typed(method)]
+	base64: builtin_base64,
+	#[typed(method)]
+	base64Decode: builtin_base64_decode,
+	#[typed(method)]
+	base64DecodeBytes: builtin_base64_decode_bytes,
+	// Objects
+	#[typed(method)]
+	objectFieldsEx: builtin_object_fields_ex,
+	#[typed(method)]
+	objectFields: builtin_object_fields,
+	#[typed(method)]
+	objectFieldsAll: builtin_object_fields_all,
+	#[typed(method)]
+	objectValues: builtin_object_values,
+	#[typed(method)]
+	objectValuesAll: builtin_object_values_all,
+	#[typed(method)]
+	objectKeysValues: builtin_object_keys_values,
+	#[typed(method)]
+	objectKeysValuesAll: builtin_object_keys_values_all,
+	#[typed(method)]
+	objectHasEx: builtin_object_has_ex,
+	#[typed(method)]
+	objectHas: builtin_object_has,
+	#[typed(method)]
+	objectHasAll: builtin_object_has_all,
+	#[typed(method)]
+	objectRemoveKey: builtin_object_remove_key,
+	// Manifest
+	#[typed(method)]
+	escapeStringJson: builtin_escape_string_json,
+	#[typed(method)]
+	escapeStringPython: builtin_escape_string_python,
+	#[typed(method)]
+	escapeStringXML: builtin_escape_string_xml,
+	#[typed(method)]
+	manifestJsonEx: builtin_manifest_json_ex,
+	#[typed(method)]
+	manifestJson: builtin_manifest_json,
+	#[typed(method)]
+	manifestJsonMinified: builtin_manifest_json_minified,
+	#[typed(method)]
+	manifestYamlDoc: builtin_manifest_yaml_doc,
+	#[typed(method)]
+	manifestYamlStream: builtin_manifest_yaml_stream,
+	#[typed(method)]
+	manifestTomlEx: builtin_manifest_toml_ex,
+	#[typed(method)]
+	manifestToml: builtin_manifest_toml,
+	#[typed(method)]
+	toString: builtin_to_string,
+	#[typed(method)]
+	manifestPython: builtin_manifest_python,
+	#[typed(method)]
+	manifestPythonVars: builtin_manifest_python_vars,
+	#[typed(method)]
+	manifestXmlJsonml: builtin_manifest_xml_jsonml,
+	#[typed(method)]
+	manifestIni: builtin_manifest_ini,
+	// Parse
+	#[typed(method)]
+	parseJson: builtin_parse_json,
+	#[typed(method)]
+	parseYaml: builtin_parse_yaml,
+	// Strings
+	#[typed(method)]
+	codepoint: builtin_codepoint,
+	#[typed(method)]
+	substr: builtin_substr,
+	#[typed(method)]
+	char: builtin_char,
+	#[typed(method)]
+	strReplace: builtin_str_replace,
+	#[typed(method)]
+	escapeStringBash: builtin_escape_string_bash,
+	#[typed(method)]
+	escapeStringDollars: builtin_escape_string_dollars,
+	#[typed(method)]
+	isEmpty: builtin_is_empty,
+	#[typed(method)]
+	equalsIgnoreCase: builtin_equals_ignore_case,
+	#[typed(method)]
+	splitLimit: builtin_splitlimit,
+	#[typed(method)]
+	splitLimitR: builtin_splitlimitr,
+	#[typed(method)]
+	split: builtin_split,
+	#[typed(method)]
+	asciiUpper: builtin_ascii_upper,
+	#[typed(method)]
+	asciiLower: builtin_ascii_lower,
+	#[typed(method)]
+	findSubstr: builtin_find_substr,
+	#[typed(method)]
+	parseInt: builtin_parse_int,
+	#[cfg(feature = "exp-bigint")]
+	#[typed(method)]
+	bigint: builtin_bigint,
+	#[typed(method)]
+	parseOctal: builtin_parse_octal,
+	#[typed(method)]
+	parseHex: builtin_parse_hex,
+	#[typed(method)]
+	stringChars: builtin_string_chars,
+	#[typed(method)]
+	lstripChars: builtin_lstrip_chars,
+	#[typed(method)]
+	rstripChars: builtin_rstrip_chars,
+	#[typed(method)]
+	stripChars: builtin_strip_chars,
+	#[typed(method)]
+	trim: builtin_trim,
+	// Misc
+	#[typed(method)]
+	length: builtin_length,
+	#[typed(method)]
+	get: builtin_get,
+	#[typed(method)]
+	startsWith: builtin_starts_with,
+	#[typed(method)]
+	endsWith: builtin_ends_with,
+	#[typed(method)]
+	assertEqual: builtin_assert_equal,
+	#[typed(method)]
+	mergePatch: builtin_merge_patch,
+	// Sets
+	#[typed(method)]
+	setMember: builtin_set_member,
+	#[typed(method)]
+	setInter: builtin_set_inter,
+	#[typed(method)]
+	setDiff: builtin_set_diff,
+	#[typed(method)]
+	setUnion: builtin_set_union,
+	// Regex
+	#[cfg(feature = "exp-regex")]
+	#[typed(method)]
+	regexQuoteMeta: builtin_regex_quote_meta,
+	// Compat
+	#[typed(method)]
+	__compare: builtin___compare,
+	#[typed(method)]
+	__compare_array: builtin___compare_array,
+	#[typed(method)]
+	__array_less: builtin___array_less,
+	#[typed(method)]
+	__array_greater: builtin___array_greater,
+	#[typed(method)]
+	__array_less_or_equal: builtin___array_less_or_equal,
+	#[typed(method)]
+	__array_greater_or_equal: builtin___array_greater_or_equal,
+}
+
 #[allow(clippy::too_many_lines)]
 pub fn stdlib_uncached(settings: Cc<RefCell<Settings>>) -> ObjValue {
 	let mut builder = ObjValueBuilder::new();
 
-	// FIXME: Use PHF
-	for (name, builtin) in [
-		// Types
-		("type", builtin_type::INST),
-		("isString", builtin_is_string::INST),
-		("isNumber", builtin_is_number::INST),
-		("isBoolean", builtin_is_boolean::INST),
-		("isObject", builtin_is_object::INST),
-		("isArray", builtin_is_array::INST),
-		("isFunction", builtin_is_function::INST),
-		("isNull", builtin_is_null::INST),
-		// Arrays
-		("makeArray", builtin_make_array::INST),
-		("repeat", builtin_repeat::INST),
-		("slice", builtin_slice::INST),
-		("map", builtin_map::INST),
-		("mapWithIndex", builtin_map_with_index::INST),
-		("mapWithKey", builtin_map_with_key::INST),
-		("flatMap", builtin_flatmap::INST),
-		("filter", builtin_filter::INST),
-		("foldl", builtin_foldl::INST),
-		("foldr", builtin_foldr::INST),
-		("range", builtin_range::INST),
-		("join", builtin_join::INST),
-		("lines", builtin_lines::INST),
-		("resolvePath", builtin_resolve_path::INST),
-		("deepJoin", builtin_deep_join::INST),
-		("reverse", builtin_reverse::INST),
-		("any", builtin_any::INST),
-		("all", builtin_all::INST),
-		("member", builtin_member::INST),
-		("find", builtin_find::INST),
-		("contains", builtin_contains::INST),
-		("count", builtin_count::INST),
-		("avg", builtin_avg::INST),
-		("removeAt", builtin_remove_at::INST),
-		("remove", builtin_remove::INST),
-		("flattenArrays", builtin_flatten_arrays::INST),
-		("flattenDeepArray", builtin_flatten_deep_array::INST),
-		("prune", builtin_prune::INST),
-		("filterMap", builtin_filter_map::INST),
-		// Math
-		("abs", builtin_abs::INST),
-		("sign", builtin_sign::INST),
-		("max", builtin_max::INST),
-		("min", builtin_min::INST),
-		("clamp", builtin_clamp::INST),
-		("sum", builtin_sum::INST),
-		("modulo", builtin_modulo::INST),
-		("floor", builtin_floor::INST),
-		("ceil", builtin_ceil::INST),
-		("log", builtin_log::INST),
-		("log2", builtin_log2::INST),
-		("log10", builtin_log10::INST),
-		("pow", builtin_pow::INST),
-		("sqrt", builtin_sqrt::INST),
-		("sin", builtin_sin::INST),
-		("cos", builtin_cos::INST),
-		("tan", builtin_tan::INST),
-		("asin", builtin_asin::INST),
-		("acos", builtin_acos::INST),
-		("atan", builtin_atan::INST),
-		("atan2", builtin_atan2::INST),
-		("exp", builtin_exp::INST),
-		("mantissa", builtin_mantissa::INST),
-		("exponent", builtin_exponent::INST),
-		("round", builtin_round::INST),
-		("isEven", builtin_is_even::INST),
-		("isOdd", builtin_is_odd::INST),
-		("isInteger", builtin_is_integer::INST),
-		("isDecimal", builtin_is_decimal::INST),
-		("deg2rad", builtin_deg2rad::INST),
-		("rad2deg", builtin_rad2deg::INST),
-		("hypot", builtin_hypot::INST),
-		// Operator
-		("mod", builtin_mod::INST),
-		("primitiveEquals", builtin_primitive_equals::INST),
-		("equals", builtin_equals::INST),
-		("xor", builtin_xor::INST),
-		("xnor", builtin_xnor::INST),
-		("format", builtin_format::INST),
-		// Sort
-		("sort", builtin_sort::INST),
-		("uniq", builtin_uniq::INST),
-		("set", builtin_set::INST),
-		("minArray", builtin_min_array::INST),
-		("maxArray", builtin_max_array::INST),
-		// Hash
-		("md5", builtin_md5::INST),
-		("sha1", builtin_sha1::INST),
-		("sha256", builtin_sha256::INST),
-		("sha512", builtin_sha512::INST),
-		("sha3", builtin_sha3::INST),
-		// Encoding
-		("encodeUTF8", builtin_encode_utf8::INST),
-		("decodeUTF8", builtin_decode_utf8::INST),
-		("base64", builtin_base64::INST),
-		("base64Decode", builtin_base64_decode::INST),
-		("base64DecodeBytes", builtin_base64_decode_bytes::INST),
-		// Objects
-		("objectFieldsEx", builtin_object_fields_ex::INST),
-		("objectFields", builtin_object_fields::INST),
-		("objectFieldsAll", builtin_object_fields_all::INST),
-		("objectValues", builtin_object_values::INST),
-		("objectValuesAll", builtin_object_values_all::INST),
-		("objectKeysValues", builtin_object_keys_values::INST),
-		("objectKeysValuesAll", builtin_object_keys_values_all::INST),
-		("objectHasEx", builtin_object_has_ex::INST),
-		("objectHas", builtin_object_has::INST),
-		("objectHasAll", builtin_object_has_all::INST),
-		("objectRemoveKey", builtin_object_remove_key::INST),
-		// Manifest
-		("escapeStringJson", builtin_escape_string_json::INST),
-		("escapeStringPython", builtin_escape_string_python::INST),
-		("escapeStringXML", builtin_escape_string_xml::INST),
-		("manifestJsonEx", builtin_manifest_json_ex::INST),
-		("manifestJson", builtin_manifest_json::INST),
-		("manifestJsonMinified", builtin_manifest_json_minified::INST),
-		("manifestYamlDoc", builtin_manifest_yaml_doc::INST),
-		("manifestYamlStream", builtin_manifest_yaml_stream::INST),
-		("manifestTomlEx", builtin_manifest_toml_ex::INST),
-		("manifestToml", builtin_manifest_toml::INST),
-		("toString", builtin_to_string::INST),
-		("manifestPython", builtin_manifest_python::INST),
-		("manifestPythonVars", builtin_manifest_python_vars::INST),
-		("manifestXmlJsonml", builtin_manifest_xml_jsonml::INST),
-		("manifestIni", builtin_manifest_ini::INST),
-		// Parse
-		("parseJson", builtin_parse_json::INST),
-		("parseYaml", builtin_parse_yaml::INST),
-		// Strings
-		("codepoint", builtin_codepoint::INST),
-		("substr", builtin_substr::INST),
-		("char", builtin_char::INST),
-		("strReplace", builtin_str_replace::INST),
-		("escapeStringBash", builtin_escape_string_bash::INST),
-		("escapeStringDollars", builtin_escape_string_dollars::INST),
-		("isEmpty", builtin_is_empty::INST),
-		("equalsIgnoreCase", builtin_equals_ignore_case::INST),
-		("splitLimit", builtin_splitlimit::INST),
-		("splitLimitR", builtin_splitlimitr::INST),
-		("split", builtin_split::INST),
-		("asciiUpper", builtin_ascii_upper::INST),
-		("asciiLower", builtin_ascii_lower::INST),
-		("findSubstr", builtin_find_substr::INST),
-		("parseInt", builtin_parse_int::INST),
-		#[cfg(feature = "exp-bigint")]
-		("bigint", builtin_bigint::INST),
-		("parseOctal", builtin_parse_octal::INST),
-		("parseHex", builtin_parse_hex::INST),
-		("stringChars", builtin_string_chars::INST),
-		("lstripChars", builtin_lstrip_chars::INST),
-		("rstripChars", builtin_rstrip_chars::INST),
-		("stripChars", builtin_strip_chars::INST),
-		("trim", builtin_trim::INST),
-		// Misc
-		("length", builtin_length::INST),
-		("get", builtin_get::INST),
-		("startsWith", builtin_starts_with::INST),
-		("endsWith", builtin_ends_with::INST),
-		("assertEqual", builtin_assert_equal::INST),
-		("mergePatch", builtin_merge_patch::INST),
-		// Sets
-		("setMember", builtin_set_member::INST),
-		("setInter", builtin_set_inter::INST),
-		("setDiff", builtin_set_diff::INST),
-		("setUnion", builtin_set_union::INST),
-		// Regex
-		#[cfg(feature = "exp-regex")]
-		("regexQuoteMeta", builtin_regex_quote_meta::INST),
-		// Compat
-		("__compare", builtin___compare::INST),
-		("__compare_array", builtin___compare_array::INST),
-		("__array_less", builtin___array_less::INST),
-		("__array_greater", builtin___array_greater::INST),
-		("__array_less_or_equal", builtin___array_less_or_equal::INST),
-		(
-			"__array_greater_or_equal",
-			builtin___array_greater_or_equal::INST,
-		),
-	]
-	.iter()
-	.copied()
-	{
-		builder.method(name, builtin);
-	}
+	let builtins = Builtins::default();
+	builtins.serialize(&mut builder).expect("no conflicts");
 
 	builder.method(
 		"extVar",
@@ -257,7 +415,6 @@ pub fn stdlib_uncached(settings: Cc<RefCell<Settings>>) -> ObjValue {
 		},
 	);
 	builder.method("trace", builtin_trace { settings });
-	builder.method("id", FuncVal::Id);
 
 	builder.field("pi").hide().value(Val::Num(
 		NumValue::new(f64::consts::PI).expect("pi is finite"),

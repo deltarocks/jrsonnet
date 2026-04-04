@@ -70,8 +70,8 @@ pub struct ContextInitializer;
 impl ContextInitializerT for ContextInitializer {
 	fn populate(&self, _for_file: Source, builder: &mut ContextBuilder) {
 		let mut bobj = ObjValueBuilder::new();
-		bobj.method("assertThrow", assert_throw::INST);
-		bobj.method("paramNames", param_names::INST);
+		bobj.method("assertThrow", assert_throw {});
+		bobj.method("paramNames", param_names {});
 
 		builder.bind("test", Thunk::evaluated(Val::Obj(bobj.build())));
 	}
