@@ -134,6 +134,7 @@ where
 	const TYPE: &'static ComplexValType = &ComplexValType::Lazy(T::TYPE);
 }
 
+#[inline]
 fn try_cast_thunk_val<T: 'static>(typed: Thunk<T>) -> Result<Thunk<Val>, Thunk<T>> {
 	if TypeId::of::<T>() == TypeId::of::<Val>() {
 		// SAFETY: We know that it is exactly the same type, and we discard the original after that
@@ -148,6 +149,7 @@ impl<T> IntoUntyped for Thunk<T>
 where
 	T: IntoUntyped + Trace + Clone,
 {
+	#[inline]
 	fn into_untyped(typed: Self) -> Result<Val> {
 		T::into_untyped(typed.evaluate()?)
 	}
@@ -185,6 +187,7 @@ where
 	}
 }
 
+#[inline]
 fn try_cast_thunk_t<T: 'static>(typed: Thunk<Val>) -> Result<Thunk<T>, Thunk<Val>> {
 	if TypeId::of::<T>() == TypeId::of::<Val>() {
 		// SAFETY: We know that it is exactly the same type, and we discard the original after that
@@ -581,11 +584,13 @@ impl Typed for Val {
 	const TYPE: &'static ComplexValType = &ComplexValType::Any;
 }
 impl IntoUntyped for &Val {
+	#[inline]
 	fn into_untyped(typed: Self) -> Result<Val> {
 		Ok(typed.clone())
 	}
 }
 impl IntoUntyped for Val {
+	#[inline]
 	fn into_untyped(typed: Self) -> Result<Val> {
 		Ok(typed)
 	}
