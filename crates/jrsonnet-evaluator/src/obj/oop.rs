@@ -135,6 +135,9 @@ impl ObjValueBuilder {
 			next_field_index: FieldIndex::default(),
 		}
 	}
+	pub fn reserve_fields(&mut self, capacity: usize) {
+		self.new.this_entries.reserve(capacity);
+	}
 	pub fn reserve_cores(&mut self, capacity: usize) -> &mut Self {
 		self.sup.reserve_exact(capacity);
 		self

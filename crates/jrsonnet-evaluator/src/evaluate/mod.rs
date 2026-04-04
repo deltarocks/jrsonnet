@@ -111,13 +111,14 @@ pub fn evaluate_field_name(ctx: Context, field_name: &Spanned<FieldName>) -> Res
 pub fn evaluate_comp(
 	ctx: Context,
 	specs: &[CompSpec],
-	callback: &mut impl FnMut(Context) -> Result<()>,
+	mut guaranteed_reserve: usize,
+	callback: &mut impl FnMut(Context, usize) -> Result<()>,
 ) -> Result<()> {
 	match specs.first() {
-		None => callback(ctx)?,
+		None => callback(ctx, guaranteed_reserve)?,
 		Some(CompSpec::IfSpec(IfSpecData { cond, span: _ })) => {
 			if bool::from_untyped(evaluate(ctx.clone(), cond)?)? {
-				evaluate_comp(ctx, &specs[1..], callback)?;
+				evaluate_comp(ctx, &specs[1..], 0, callback)?;
 			}
 		}
 		Some(CompSpec::ForSpec(ForSpecData {
@@ -126,13 +127,24 @@ pub fn evaluate_comp(
 		})) => {
 			match evaluate(ctx.clone(), over)? {
 				Val::Arr(list) => {
-					for item in list.iter_lazy() {
+					guaranteed_reserve = guaranteed_reserve.max(1) * list.len();
+					for (i, item) in list.iter_lazy().enumerate() {
 						let fctx = Pending::new();
 						let mut new_bindings = FxHashMap::with_capacity(into.binds_len());
 						destruct(into, item, fctx.clone(), &mut new_bindings)?;
 						let ctx = ctx.clone().extend_bindings(new_bindings).into_future(fctx);
 
-						evaluate_comp(ctx, &specs[1..], callback)?;
+						let specs = &specs[1..];
+						evaluate_comp(
+							ctx,
+							specs,
+							if i == 0 || !specs.is_empty() {
+								guaranteed_reserve
+							} else {
+								0
+							},
+							callback,
+						)?;
 					}
 				}
 				#[cfg(feature = "exp-object-iteration")]
@@ -364,8 +376,9 @@ pub fn evaluate_object(
 				builder.with_super(super_obj);
 			}
 			let locals = obj.locals.clone();
-			evaluate_comp(ctx, &obj.compspecs, &mut |ctx| {
+			evaluate_comp(ctx, &obj.compspecs, 0, &mut |ctx, reserve| {
 				let uctx = evaluate_object_locals(ctx.clone(), locals.clone());
+				builder.reserve_cores(reserve);
 
 				evaluate_field_member(&mut builder, ctx, uctx, &obj.field)
 			})?;
@@ -635,7 +648,10 @@ pub fn evaluate(ctx: Context, expr: &Expr) -> Result<Val> {
 		}
 		ArrComp(expr, comp_specs) => {
 			let mut out = Vec::new();
-			evaluate_comp(ctx, comp_specs, &mut |ctx| {
+			evaluate_comp(ctx, comp_specs, 0, &mut |ctx, reserve| {
+				if reserve != 0 {
+					out.reserve(reserve);
+				}
 				let expr = expr.clone();
 				out.push(Thunk!(move || evaluate(ctx, &expr)));
 				Ok(())
