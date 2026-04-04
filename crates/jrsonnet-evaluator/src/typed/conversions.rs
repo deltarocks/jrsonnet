@@ -5,23 +5,23 @@ use jrsonnet_interner::{IBytes, IStr};
 use jrsonnet_types::{ComplexValType, ValType};
 
 use crate::{
+	ObjValue, ObjValueBuilder, Result, ResultExt, Thunk, Val,
 	arr::{ArrValue, BytesArray},
 	bail,
 	function::FuncVal,
 	typed::CheckType,
 	val::{IndexableVal, NumValue, StrValue, ThunkMapper},
-	ObjValue, ObjValueBuilder, Result, ResultExt, Thunk, Val,
 };
 
 #[doc(hidden)]
 pub mod __typed_macro_prelude {
 	pub use ::jrsonnet_evaluator::{
+		IStr, ObjValue, ObjValueBuilder, State, Val,
 		error::{ErrorKind, Result as JrResult},
 		typed::{
 			CheckType, ComplexValType, FromUntyped, IntoUntyped, ParseTypedObj, SerializeTypedObj,
 			Typed,
 		},
-		IStr, ObjValue, ObjValueBuilder, State, Val,
 	};
 }
 pub use jrsonnet_macros::{FromUntyped, IntoUntyped, Typed};

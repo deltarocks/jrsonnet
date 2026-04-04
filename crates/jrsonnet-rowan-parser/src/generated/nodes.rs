@@ -3,9 +3,9 @@
 
 #![allow(non_snake_case, clippy::match_like_matches_macro)]
 use crate::{
-	ast::{support, AstChildren, AstNode, AstToken},
 	SyntaxKind::{self, *},
 	SyntaxNode, SyntaxToken, T,
+	ast::{AstChildren, AstNode, AstToken, support},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
