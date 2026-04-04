@@ -266,7 +266,7 @@ impl IndexableVal {
 
 	pub fn to_array(self) -> ArrValue {
 		match self {
-			Self::Str(s) => ArrValue::chars(s.chars()),
+			Self::Str(s) => s.chars().collect(),
 			Self::Arr(arr) => arr,
 		}
 	}

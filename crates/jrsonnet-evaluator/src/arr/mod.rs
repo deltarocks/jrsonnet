@@ -45,10 +45,6 @@ impl ArrValue {
 		Some(Self::new(RepeatedArray::new(data, repeats)?))
 	}
 
-	pub fn chars(chars: impl Iterator<Item = char>) -> Self {
-		Self::new(CharArray(chars.collect()))
-	}
-
 	#[must_use]
 	pub fn map(self, mapper: NativeFn!((Val) -> Val)) -> Self {
 		Self::new(<MappedArray>::new(self, ArrayMapper::Plain(mapper)))

@@ -463,6 +463,11 @@ impl FromUntyped for StrValue {
 impl Typed for char {
 	const TYPE: &'static ComplexValType = &ComplexValType::Char;
 }
+impl IntoUntyped for &char {
+	fn into_untyped(value: Self) -> Result<Val> {
+		Ok(Val::string(*value))
+	}
+}
 impl IntoUntyped for char {
 	fn into_untyped(value: Self) -> Result<Val> {
 		Ok(Val::string(value))

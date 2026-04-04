@@ -97,17 +97,6 @@ impl ArrayLike for SliceArray {
 	}
 }
 
-#[derive(Trace, Debug)]
-pub struct CharArray(pub Vec<char>);
-impl ArrayCheap for CharArray {
-	fn len(&self) -> usize {
-		self.0.as_slice().len()
-	}
-	fn get(&self, index: usize) -> Option<Val> {
-		self.0.as_slice().get(index).map(|v| Val::string(*v))
-	}
-}
-
 impl ArrayCheap for IBytes {
 	fn len(&self) -> usize {
 		self.as_slice().len()

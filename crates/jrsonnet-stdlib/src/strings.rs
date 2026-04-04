@@ -223,7 +223,7 @@ pub fn builtin_bigint(v: Either![f64, IStr]) -> Result<Val> {
 
 #[builtin]
 pub fn builtin_string_chars(str: IStr) -> ArrValue {
-	ArrValue::chars(str.chars())
+	str.chars().collect()
 }
 
 #[builtin]
