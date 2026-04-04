@@ -149,11 +149,13 @@ pub fn evaluate_comp(
 				}
 				#[cfg(feature = "exp-object-iteration")]
 				Val::Obj(obj) => {
-					for field in obj.fields(
+					let fields = obj.fields(
 						// TODO: Should there be ability to preserve iteration order?
 						#[cfg(feature = "exp-preserve-order")]
 						false,
-					) {
+					);
+					guaranteed_reserve = guaranteed_reserve.max(1) * fields.len();
+					for field in fields {
 						let fctx = Pending::new();
 						let mut new_bindings = FxHashMap::with_capacity(into.binds_len());
 						let obj = obj.clone();
@@ -174,6 +176,36 @@ pub fn evaluate_comp(
 		}
 	}
 	Ok(())
+}
+
+fn evaluate_arr_comp(ctx: Context, expr: &Rc<Expr>, comp_specs: &[CompSpec]) -> Result<ArrValue> {
+	'eager: {
+		let mut out = Vec::new();
+
+		if evaluate_comp(ctx.clone(), comp_specs, 0, &mut |ctx, reserve| {
+			if reserve != 0 {
+				out.reserve(reserve);
+			}
+			out.push(evaluate(ctx, expr)?);
+			Ok(())
+		})
+		.is_err()
+		{
+			break 'eager;
+		}
+
+		return Ok(ArrValue::new(out));
+	};
+	let mut out = Vec::new();
+	evaluate_comp(ctx, comp_specs, 0, &mut |ctx, reserve| {
+		if reserve != 0 {
+			out.reserve(reserve);
+		}
+		let expr = expr.clone();
+		out.push(Thunk!(move || evaluate(ctx, &expr)));
+		Ok(())
+	})?;
+	Ok(ArrValue::new(out))
 }
 
 trait CloneableUnbound<T>: Unbound<Bound = T> + Clone {}
@@ -646,18 +678,7 @@ pub fn evaluate(ctx: Context, expr: &Expr) -> Result<Val> {
 				Val::Arr(ArrValue::expr(ctx, items.clone()))
 			}
 		}
-		ArrComp(expr, comp_specs) => {
-			let mut out = Vec::new();
-			evaluate_comp(ctx, comp_specs, 0, &mut |ctx, reserve| {
-				if reserve != 0 {
-					out.reserve(reserve);
-				}
-				let expr = expr.clone();
-				out.push(Thunk!(move || evaluate(ctx, &expr)));
-				Ok(())
-			})?;
-			Val::arr(out)
-		}
+		ArrComp(expr, comp_specs) => Val::Arr(evaluate_arr_comp(ctx, expr, comp_specs)?),
 		Obj(body) => Val::Obj(evaluate_object(None, ctx, body)?),
 		ObjExtend(a, b) => {
 			let base = evaluate(ctx.clone(), a)?;
