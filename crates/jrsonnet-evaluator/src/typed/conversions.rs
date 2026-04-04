@@ -1,27 +1,27 @@
-use std::{collections::BTreeMap, marker::PhantomData, ops::Deref};
+use std::{any::TypeId, collections::BTreeMap, marker::PhantomData, mem::transmute, ops::Deref};
 
 use jrsonnet_gcmodule::Trace;
 use jrsonnet_interner::{IBytes, IStr};
 use jrsonnet_types::{ComplexValType, ValType};
 
 use crate::{
-	ObjValue, ObjValueBuilder, Result, ResultExt, Thunk, Val,
 	arr::{ArrValue, BytesArray},
 	bail,
 	function::FuncVal,
 	typed::CheckType,
 	val::{IndexableVal, NumValue, StrValue, ThunkMapper},
+	ObjValue, ObjValueBuilder, Result, ResultExt, Thunk, Val,
 };
 
 #[doc(hidden)]
 pub mod __typed_macro_prelude {
 	pub use ::jrsonnet_evaluator::{
-		IStr, ObjValue, ObjValueBuilder, State, Val,
 		error::{ErrorKind, Result as JrResult},
 		typed::{
 			CheckType, ComplexValType, FromUntyped, IntoUntyped, ParseTypedObj, SerializeTypedObj,
 			Typed,
 		},
+		IStr, ObjValue, ObjValueBuilder, State, Val,
 	};
 }
 pub use jrsonnet_macros::{FromUntyped, IntoUntyped, Typed};
@@ -127,19 +127,47 @@ where
 	const TYPE: &'static ComplexValType = &ComplexValType::Lazy(T::TYPE);
 }
 
-impl IntoUntyped for Thunk<Val> {
+fn try_cast_thunk_val<T: 'static>(typed: Thunk<T>) -> Result<Thunk<Val>, Thunk<T>> {
+	if TypeId::of::<T>() == TypeId::of::<Val>() {
+		// SAFETY: We know that it is exactly the same type, and we discard the original after that
+		// to avoid double-free.
+		let transmuted = unsafe { transmute::<Thunk<T>, Thunk<Val>>(typed) };
+		Ok(transmuted)
+	} else {
+		Err(typed)
+	}
+}
+impl<T> IntoUntyped for Thunk<T>
+where
+	T: IntoUntyped + Trace + Clone,
+{
 	fn into_untyped(typed: Self) -> Result<Val> {
-		typed.evaluate()
+		T::into_untyped(typed.evaluate()?)
 	}
 	fn provides_lazy() -> bool {
 		true
 	}
 
 	fn into_lazy_untyped(inner: Self) -> Thunk<Val> {
-		inner
+		// Avoid lazy mapping
+		let inner = match try_cast_thunk_val(inner) {
+			Ok(v) => return v,
+			Err(e) => e,
+		};
+		inner.map(<ThunkIntoUntyped<T>>::default())
 	}
 }
 
+fn try_cast_thunk_t<T: 'static>(typed: Thunk<Val>) -> Result<Thunk<T>, Thunk<Val>> {
+	if TypeId::of::<T>() == TypeId::of::<Val>() {
+		// SAFETY: We know that it is exactly the same type, and we discard the original after that
+		// to avoid double-free.
+		let transmuted = unsafe { transmute::<Thunk<Val>, Thunk<T>>(typed) };
+		Ok(transmuted)
+	} else {
+		Err(typed)
+	}
+}
 impl<T> FromUntyped for Thunk<T>
 where
 	T: Typed + FromUntyped + Trace + Clone,
@@ -153,6 +181,11 @@ where
 	}
 
 	fn from_lazy_untyped(inner: Thunk<Val>) -> Result<Self> {
+		// Avoid lazy mapping
+		let inner = match try_cast_thunk_t(inner) {
+			Ok(v) => return Ok(v),
+			Err(e) => e,
+		};
 		Ok(inner.map(<ThunkFromUntyped<T>>::default()))
 	}
 }
