@@ -138,7 +138,7 @@ parser! {
 			/ name:id() _ "(" _ params:params(s) _ ")" _ "=" _ value:expr(s) {BindSpec::Function{name, params, value: Rc::new(value)}}
 
 		pub rule assertion(s: &ParserSettings) -> AssertStmt
-			= keyword("assert") _ cond:spanned(<expr(s)>, s) msg:(_ ":" _ e:spanned(<expr(s)>, s) {e})? { AssertStmt(cond, msg) }
+			= keyword("assert") _ assertion:spanned(<expr(s)>, s) message:(_ ":" _ e:expr(s) {e})? { AssertStmt{assertion, message} }
 
 		pub rule whole_line() -> &'input str
 			= str:$((!['\n'][_])* "\n") {str}

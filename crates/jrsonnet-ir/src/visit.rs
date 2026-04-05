@@ -157,10 +157,10 @@ pub fn visit_obj_body<V: Visitor>(v: &mut V, obj_body: &ObjBody) {
 }
 
 pub fn visit_assert_stmt<V: Visitor>(v: &mut V, ass: &AssertStmt) {
-	let AssertStmt(cond, msg) = ass;
-	v.visit_expr(cond);
-	if let Some(msg) = msg {
-		v.visit_expr(msg);
+	let AssertStmt { assertion, message } = ass;
+	v.visit_expr(assertion);
+	if let Some(message) = message {
+		v.visit_expr(message);
 	}
 }
 pub fn visit_expr<V: Visitor>(v: &mut V, e: &Expr) {

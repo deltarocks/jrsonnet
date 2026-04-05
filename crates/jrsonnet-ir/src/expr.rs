@@ -38,7 +38,10 @@ impl Visibility {
 }
 
 #[derive(Debug, PartialEq, Acyclic)]
-pub struct AssertStmt(pub Spanned<Expr>, pub Option<Spanned<Expr>>);
+pub struct AssertStmt {
+	pub assertion: Spanned<Expr>,
+	pub message: Option<Expr>,
+}
 
 #[derive(Debug, PartialEq, Acyclic)]
 pub struct FieldMember {

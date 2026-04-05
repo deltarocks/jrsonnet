@@ -237,13 +237,13 @@ fn literal(p: &mut Parser<'_>) -> Option<LiteralType> {
 
 fn assert_stmt(p: &mut Parser<'_>) -> Result<AssertStmt> {
 	p.eat(T![assert])?;
-	let cond = spanned(p, expr)?;
-	let msg = if p.try_eat(T![:]) {
-		Some(spanned(p, expr)?)
+	let assertion = spanned(p, expr)?;
+	let message = if p.try_eat(T![:]) {
+		Some(expr(p)?)
 	} else {
 		None
 	};
-	Ok(AssertStmt(cond, msg))
+	Ok(AssertStmt { assertion, message })
 }
 
 fn if_spec_data(p: &mut Parser<'_>) -> Result<IfSpecData> {

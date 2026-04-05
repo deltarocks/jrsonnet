@@ -4,8 +4,8 @@ expression: "format!(\"{v:#?}\")"
 ---
 AssertExpr(
     AssertExpr {
-        assert: AssertStmt(
-            Index {
+        assert: AssertStmt {
+            assertion: Index {
                 indexable: Literal(
                     True,
                 ),
@@ -18,12 +18,12 @@ AssertExpr(
                     },
                 ],
             } from virtual:<test>:7-18,
-            Some(
+            message: Some(
                 Literal(
                     False,
-                ) from virtual:<test>:21-26,
+                ),
             ),
-        ),
+        },
         rest: Literal(
             True,
         ),

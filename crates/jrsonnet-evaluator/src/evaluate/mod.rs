@@ -454,19 +454,18 @@ pub fn evaluate_apply(
 }
 
 pub fn evaluate_assert(ctx: Context, assertion: &AssertStmt) -> Result<()> {
-	let value = &assertion.0;
-	let msg = &assertion.1;
+	let AssertStmt { assertion, message } = assertion;
 	let assertion_result = in_frame(
-		CallLocation::new(&value.span),
+		CallLocation::new(&assertion.span),
 		|| "assertion condition".to_owned(),
-		|| bool::from_untyped(evaluate(ctx.clone(), value)?),
+		|| bool::from_untyped(evaluate(ctx.clone(), assertion)?),
 	)?;
 	if !assertion_result {
 		in_frame(
-			CallLocation::new(&value.span),
+			CallLocation::new(&assertion.span),
 			|| "assertion failure".to_owned(),
 			|| {
-				if let Some(msg) = msg {
+				if let Some(msg) = message {
 					bail!(AssertionFailed(evaluate(ctx, msg)?.to_string()?));
 				}
 				bail!(AssertionFailed(Val::Null.to_string()?));
