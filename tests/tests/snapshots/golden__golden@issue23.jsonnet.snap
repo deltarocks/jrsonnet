@@ -4,4 +4,4 @@ expression: result
 input_file: tests/golden/issue23.jsonnet
 ---
 infinite recursion detected
-    issue23.jsonnet:1:1-8: import "issue23.jsonnet"
+    issue23.jsonnet:1:1-8: import

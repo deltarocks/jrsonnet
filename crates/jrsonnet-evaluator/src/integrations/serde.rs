@@ -3,16 +3,16 @@ use std::borrow::Cow;
 use jrsonnet_interner::{IBytes, IStr};
 use jrsonnet_ir::NumValue;
 use serde::{
-	Deserialize, Serialize, Serializer,
 	de::{self, Visitor},
 	ser::{
 		Error, SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
 		SerializeTupleStruct, SerializeTupleVariant,
 	},
+	Deserialize, Serialize, Serializer,
 };
 
 use crate::{
-	Error as JrError, ObjValue, ObjValueBuilder, Result, Val, in_description_frame, runtime_error,
+	in_description_frame, runtime_error, Error as JrError, ObjValue, ObjValueBuilder, Result, Val,
 };
 
 impl<'de> Deserialize<'de> for Val {
@@ -182,7 +182,7 @@ impl Serialize for Val {
 			#[cfg(feature = "exp-bigint")]
 			Self::BigInt(b) => b.serialize(serializer),
 			Self::Arr(arr) => {
-				let mut seq = serializer.serialize_seq(Some(arr.len()))?;
+				let mut seq = serializer.serialize_seq(Some(arr.len() as usize))?;
 				for (i, element) in arr.iter().enumerate() {
 					let mut serde_error = None;
 					in_description_frame(
@@ -203,7 +203,7 @@ impl Serialize for Val {
 				seq.end()
 			}
 			Self::Obj(obj) => {
-				let mut map = serializer.serialize_map(Some(obj.len()))?;
+				let mut map = serializer.serialize_map(Some(obj.len() as usize))?;
 				for (field, value) in obj.iter(
 					#[cfg(feature = "exp-preserve-order")]
 					true,

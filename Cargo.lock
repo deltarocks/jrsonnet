@@ -815,9 +815,11 @@ version = "0.5.0-pre98"
 dependencies = [
  "annotate-snippets",
  "anyhow",
+ "drop_bomb",
  "educe",
  "hi-doc",
  "im-rc",
+ "insta",
  "jrsonnet-gcmodule",
  "jrsonnet-interner",
  "jrsonnet-ir",
@@ -830,8 +832,10 @@ dependencies = [
  "rustc-hash 2.1.2",
  "rustversion",
  "serde",
+ "smallvec 1.15.1",
  "stacker",
  "static_assertions",
+ "strip-ansi-escapes",
  "strsim",
  "thiserror",
 ]
@@ -899,6 +903,7 @@ dependencies = [
  "jrsonnet-interner",
  "peg",
  "static_assertions",
+ "thiserror",
 ]
 
 [[package]]
@@ -960,7 +965,6 @@ dependencies = [
  "base64",
  "jrsonnet-evaluator",
  "jrsonnet-gcmodule",
- "jrsonnet-ir",
  "jrsonnet-macros",
  "lru",
  "md5",

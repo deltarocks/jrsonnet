@@ -3,6 +3,5 @@ source: tests/tests/golden.rs
 expression: result
 input_file: tests/golden/missing_binding.jsonnet
 ---
-local is not defined: sta
+static analysis errors: undefined local: sta
 There is a local with similar name present: std
-    missing_binding.jsonnet:1:1-5: local <sta> access

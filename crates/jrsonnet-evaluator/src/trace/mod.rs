@@ -10,7 +10,7 @@ use jrsonnet_ir::CodeLocation;
 #[cfg(feature = "explaining-traces")]
 use jrsonnet_ir::Span;
 
-use crate::{Error, error::ErrorKind};
+use crate::{error::ErrorKind, Error};
 
 /// The way paths should be displayed
 #[derive(Clone, Trace)]
@@ -122,7 +122,7 @@ impl TraceFormat for CompactFormat {
 				|| path.source_path().to_string(),
 				|r| self.resolver.resolve(r),
 			);
-			let mut offset = error.location.0 as usize;
+			let mut offset = error.location.1 as usize;
 			let is_eof = if offset >= path.code().len() {
 				offset = path.code().len().saturating_sub(1);
 				true
@@ -259,24 +259,63 @@ impl TraceFormat for HiDocFormat {
 		struct ResetData {
 			loc: Span,
 		}
-		use hi_doc::{Formatting, SnippetBuilder, Text, source_to_ansi};
+		use hi_doc::{source_to_ansi, Formatting, SnippetBuilder, Text};
 
 		write!(out, "{}", error.error())?;
 		if let ErrorKind::ImportSyntaxError { path, error } = error.error() {
 			writeln!(out)?;
-			let mut offset = error.location;
-			// To inclusive range
-			if offset.1 > offset.0 {
-				offset.1 -= 1;
-			}
 			let mut builder = SnippetBuilder::new(path.code());
 			builder
 				.error(Text::fragment("syntax error", Formatting::default()))
-				.range(offset.0 as usize..=offset.1 as usize)
+				.range(error.location.range())
 				.build();
 			let source = builder.build();
 			let ansi = source_to_ansi(&source);
 			write!(out, "{ansi}")?;
+		}
+		if let ErrorKind::StaticAnalysisError(diagnostics) = error.error() {
+			use crate::analyze::DiagLevel;
+			let mut builder: Option<SnippetBuilder> = None;
+			let mut current_src: Option<&str> = None;
+			let flush =
+				|builder: Option<SnippetBuilder>, out: &mut dyn std::fmt::Write| -> Result<(), std::fmt::Error> {
+					if let Some(b) = builder {
+						let ansi = source_to_ansi(&b.build());
+						write!(out, "\n{}", ansi.trim_end())?;
+					}
+					Ok(())
+				};
+			for diag in diagnostics {
+				if let Some(span) = &diag.span {
+					let src = span.0.code();
+					if current_src != Some(src) {
+						flush(builder.take(), out)?;
+						builder = Some(SnippetBuilder::new(src));
+						current_src = Some(src);
+					}
+					let b = builder.as_mut().unwrap();
+					let ab = match diag.level {
+						DiagLevel::Error => b.error(Text::fragment(
+							diag.message.clone(),
+							Formatting::default(),
+						)),
+						DiagLevel::Warning => b.warning(Text::fragment(
+							diag.message.clone(),
+							Formatting::default(),
+						)),
+					};
+					ab.range(span.range()).build();
+				} else {
+					flush(builder.take(), out)?;
+					current_src = None;
+					let prefix = match diag.level {
+						DiagLevel::Error => "error",
+						DiagLevel::Warning => "warning",
+					};
+					write!(out, "\n{prefix}: {}", diag.message)?;
+				}
+			}
+			flush(builder, out)?;
 		}
 		let trace = &error.trace();
 		let snippet_builder: RefCell<Option<SnippetBuilder>> = RefCell::new(None);

@@ -3,22 +3,24 @@ use std::{fmt::Debug, rc::Rc};
 use educe::Educe;
 use jrsonnet_gcmodule::{Cc, Trace};
 use jrsonnet_interner::IStr;
-use jrsonnet_ir::{Destruct, Expr, ExprParams, Span};
+use jrsonnet_ir::Span;
 pub use jrsonnet_macros::builtin;
 
 use self::{
 	builtin::Builtin,
-	parse::parse_default_function_call,
-	prepared::{PreparedCall, parse_prepared_builtin_call, parse_prepared_function_call},
+	prepared::{parse_prepared_builtin_call, PreparedCall},
 };
 use crate::{
-	Context, Result, Thunk, Val, evaluate, evaluate_trivial, function::builtin::BuiltinFunc,
+	analyze::{LDestruct, LExpr, LFunction},
+	evaluate::{destructure::destruct, ensure_sufficient_stack, evaluate, evaluate_trivial},
+	function::builtin::BuiltinFunc,
+	Context, ContextBuilder, Result, Thunk, Val,
 };
 
 pub mod builtin;
 mod native;
 mod parse;
-mod prepared;
+pub(crate) mod prepared;
 
 pub use jrsonnet_ir::function::*;
 pub use native::NativeFn;
@@ -66,19 +68,63 @@ pub struct FuncDesc {
 	/// context will contain `a`.
 	pub ctx: Context,
 
-	/// Function parameter definition
-	pub params: ExprParams,
-	/// Function body
-	pub body: Rc<Expr>,
+	#[educe(PartialEq(method = Rc::ptr_eq))]
+	pub func: Rc<LFunction>,
 }
+
 impl FuncDesc {
-	/// Create body context, but fill arguments without defaults with lazy error
-	pub fn default_body_context(&self) -> Result<Context> {
-		parse_default_function_call(self.ctx.clone(), &self.params)
+	pub fn signature(&self) -> FunctionSignature {
+		self.func.signature.clone()
+	}
+
+	pub fn call(
+		&self,
+		unnamed: &[Thunk<Val>],
+		named: &[Thunk<Val>],
+		prepared: &PreparedCall,
+	) -> Result<Val> {
+		let has_defaults = !prepared.defaults().is_empty();
+		let mut builder = ContextBuilder::extend(self.ctx.clone(), self.func.params.len());
+
+		let fctx = Context::new_future();
+		for (param_idx, thunk) in unnamed.iter().enumerate() {
+			destruct(
+				&self.func.params[param_idx].destruct,
+				thunk.clone(),
+				fctx.clone(),
+				&mut builder,
+			);
+		}
+
+		for &(param_idx, arg_idx) in prepared.named() {
+			destruct(
+				&self.func.params[param_idx].destruct,
+				named[arg_idx].clone(),
+				fctx.clone(),
+				&mut builder,
+			);
+		}
+
+		if has_defaults {
+			for &param_idx in prepared.defaults() {
+				let param = &self.func.params[param_idx];
+				if let Some(default_expr) = &param.default {
+					let default_expr = default_expr.clone();
+					let fctxc = fctx.clone();
+					let thunk = Thunk!(move || {
+						let ctx = fctxc.unwrap();
+						evaluate(ctx, &default_expr)
+					});
+					destruct(&param.destruct, thunk, fctx.clone(), &mut builder);
+				}
+			}
+		};
+		let ctx = builder.build().into_future(fctx);
+		ensure_sufficient_stack(|| evaluate(ctx, &self.func.body))
 	}
 
 	pub fn evaluate_trivial(&self) -> Option<Val> {
-		evaluate_trivial(&self.body)
+		evaluate_trivial(&self.func.body)
 	}
 }
 
@@ -115,12 +161,12 @@ impl FuncVal {
 	pub fn params(&self) -> FunctionSignature {
 		match self {
 			Self::Builtin(i) => i.params(),
-			Self::Normal(p) => p.params.signature.clone(),
+			Self::Normal(p) => p.signature(),
 		}
 	}
 	/// Amount of non-default required arguments
-	pub fn params_len(&self) -> usize {
-		self.params().iter().filter(|p| !p.has_default()).count()
+	pub fn params_len(&self) -> u32 {
+		self.params().iter().filter(|p| !p.has_default()).count() as u32
 	}
 	/// Function name, as defined in code.
 	pub fn name(&self) -> IStr {
@@ -139,16 +185,7 @@ impl FuncVal {
 		_tailstrict: bool,
 	) -> Result<Val> {
 		match self {
-			FuncVal::Normal(func) => {
-				let body_ctx = parse_prepared_function_call(
-					func.ctx.clone(),
-					prepared,
-					&func.params,
-					unnamed,
-					named,
-				)?;
-				evaluate(body_ctx, &func.body)
-			}
+			FuncVal::Normal(func) => func.call(unnamed, named, prepared),
 			FuncVal::Builtin(b) => {
 				let args = parse_prepared_builtin_call(prepared, b.params(), unnamed, named);
 				b.call(loc, &args)
@@ -156,7 +193,7 @@ impl FuncVal {
 		}
 	}
 
-	/// Is this function an indentity function.
+	/// Is this function an identity function.
 	///
 	/// Currently only works for builtin `std.id`, aka `Self::Id` value, and `function(x) x`.
 	///
@@ -165,21 +202,19 @@ impl FuncVal {
 		match self {
 			Self::Builtin(b) => b.as_any().downcast_ref::<builtin_id>().is_some(),
 			Self::Normal(desc) => {
-				if desc.params.len() != 1 {
+				if desc.func.params.len() != 1 {
 					return false;
 				}
-				let param = &desc.params.exprs[0];
+				let param = &desc.func.params[0];
 				if param.default.is_some() {
 					return false;
 				}
-
-				#[allow(clippy::infallible_destructuring_match)]
-				let id = match &param.destruct {
-					Destruct::Full(id) => id,
-					#[cfg(feature = "exp-destruct")]
-					_ => return false,
+				#[allow(irrefutable_let_patterns, reason = "refutable with exp-destruct")]
+				let LDestruct::Full(id) = &param.destruct
+				else {
+					return false;
 				};
-				matches!(&*desc.body, Expr::Var(v) if &**v == id)
+				matches!(&*desc.func.body, LExpr::Local(v) if v == id)
 			}
 		}
 	}

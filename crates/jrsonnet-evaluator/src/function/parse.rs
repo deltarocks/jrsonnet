@@ -1,49 +1,39 @@
-use jrsonnet_ir::ExprParams;
+use std::rc::Rc;
 
 use crate::{
-	Context, ContextBuilder, Thunk,
-	destructure::destruct,
-	error::{ErrorKind::*, Result},
-	evaluate_named_param,
+	analyze::LFunction,
+	evaluate::{destructure::destruct, evaluate},
+	Context, ContextBuilder, Result, Thunk,
 };
 
-/// Creates Context, which has all argument default values applied
-/// and with unbound values causing error to be returned
-pub fn parse_default_function_call(body_ctx: Context, params: &ExprParams) -> Result<Context> {
+/// Creates Context with all argument default values applied
+/// and with unbound values causing error to be returned.
+pub fn parse_default_function_call(body_ctx: Context, func: &Rc<LFunction>) -> Result<Context> {
 	let fctx = Context::new_future();
+	let mut builder = ContextBuilder::extend(body_ctx, func.params.len());
 
-	let mut ctx = ContextBuilder::extend(body_ctx);
-
-	for param in params.exprs.iter() {
-		if let Some(v) = &param.default {
-			destruct(
-				&param.destruct.clone(),
-				{
-					let ctx = fctx.clone();
-					let name = param.destruct.name();
-					let value = v.clone();
-					Thunk!(move || evaluate_named_param(ctx.unwrap(), &value, name))
-				},
-				fctx.clone(),
-				&mut ctx,
-			)?;
+	for param in &func.params {
+		if let Some(default_expr) = &param.default {
+			let default_expr = default_expr.clone();
+			let fctxc = fctx.clone();
+			let thunk = Thunk!(move || {
+				let ctx = fctxc.unwrap();
+				evaluate(ctx, &default_expr)
+			});
+			destruct(&param.destruct, thunk, fctx.clone(), &mut builder);
 		} else {
-			destruct(
-				&param.destruct,
-				{
-					let param_name = param.destruct.name();
-					let params = params.clone();
-					Thunk!(move || Err(FunctionParameterNotBoundInCall(
-						param_name,
-						params.signature
-					)
-					.into()))
-				},
-				fctx.clone(),
-				&mut ctx,
-			)?;
+			let name = param.name.clone().unwrap_or_else(|| "<param>".into());
+			let thunk = Thunk::errored(
+				crate::error::ErrorKind::FunctionParameterNotBoundInCall(
+					jrsonnet_ir::function::ParamName::Named(name),
+					jrsonnet_ir::function::FunctionSignature::empty(),
+				)
+				.into(),
+			);
+			destruct(&param.destruct, thunk, fctx.clone(), &mut builder);
 		}
 	}
 
-	Ok(ctx.build().into_future(fctx))
+	let ctx = builder.build().into_future(fctx);
+	Ok(ctx)
 }

@@ -1,16 +1,17 @@
 use std::cmp::Ordering;
 
-use jrsonnet_ir::{BinaryOpType, Expr, UnaryOpType};
+use jrsonnet_ir::{BinaryOpType, UnaryOpType};
 
 use crate::{
-	Context, Result, Val,
+	analyze::LExpr,
 	arr::ArrValue,
-	bail,
+	bail, error,
 	error::ErrorKind::*,
-	evaluate,
+	evaluate::evaluate,
 	stdlib::std_format,
 	typed::IntoUntyped as _,
-	val::{StrValue, equals},
+	val::{equals, StrValue},
+	Context, Result, Val,
 };
 
 pub fn evaluate_unary_op(op: UnaryOpType, b: &Val) -> Result<Val> {
@@ -39,7 +40,9 @@ pub fn evaluate_add_op(a: &Val, b: &Val) -> Result<Val> {
 		(o, Str(a)) => Val::string(format!("{}{a}", o.clone().to_string()?)),
 
 		(Obj(v1), Obj(v2)) => Obj(v2.extend_from(v1.clone())),
-		(Arr(a), Arr(b)) => Val::Arr(ArrValue::extended(a.clone(), b.clone())),
+		(Arr(a), Arr(b)) => Val::Arr(
+			ArrValue::extended(a.clone(), b.clone()).ok_or_else(|| error!("array is too large"))?,
+		),
 
 		(Num(v1), Num(v2)) => Val::try_num(v1.get() + v2.get())?,
 
@@ -158,19 +161,27 @@ pub fn evaluate_mod_op(a: &Val, b: &Val) -> Result<Val> {
 
 pub fn evaluate_binary_op_special(
 	ctx: Context,
-	a: &Expr,
+	a: &LExpr,
 	op: BinaryOpType,
-	b: &Expr,
+	b: &LExpr,
 ) -> Result<Val> {
 	use BinaryOpType::*;
 	use Val::*;
+
 	Ok(match (evaluate(ctx.clone(), a)?, op, b) {
-		(Bool(true), Or, _o) => Val::Bool(true),
-		(Bool(false), And, _o) => Val::Bool(false),
+		(Bool(true), Or, _) => Val::Bool(true),
+		(Bool(false), And, _) => Val::Bool(false),
 		#[cfg(feature = "exp-null-coaelse")]
 		(Null, NullCoaelse, eb) => evaluate(ctx, eb)?,
 		#[cfg(feature = "exp-null-coaelse")]
-		(a, NullCoaelse, _o) => a,
+		(a, NullCoaelse, _) => a,
+		(a, In, LExpr::Super) => {
+			let sup_this = ctx.try_sup_this()?;
+			if !sup_this.has_super() {
+				return Ok(Val::Bool(false));
+			}
+			return Ok(Val::Bool(sup_this.field_in_super(a.to_string()?)));
+		}
 		(a, op, eb) => evaluate_binary_op_normal(&a, op, &evaluate(ctx, eb)?)?,
 	})
 }

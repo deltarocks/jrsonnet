@@ -1,11 +1,7 @@
 mod common;
 
 use jrsonnet_evaluator::{
-	ContextBuilder, ContextInitializer, FileImportResolver, Result, State, Thunk, Val,
-	function::{CallLocation, FuncVal, builtin, builtin::Builtin},
-	parser::Source,
-	trace::PathResolver,
-	typed::FromUntyped,
+	ContextInitializer, FileImportResolver, InitialContextBuilder, Result, Source, State, Thunk, Val, function::{CallLocation, FuncVal, builtin, builtin::{Builtin}}, trace::PathResolver, typed::FromUntyped
 };
 use jrsonnet_gcmodule::Trace;
 use jrsonnet_stdlib::ContextInitializer as StdContextInitializer;
@@ -31,7 +27,7 @@ fn native_add(a: u32, b: u32) -> u32 {
 #[derive(Trace)]
 struct NativeAddContextInitializer;
 impl ContextInitializer for NativeAddContextInitializer {
-	fn populate(&self, _for_file: Source, builder: &mut ContextBuilder) {
+	fn populate(&self, _for_file: Source, builder: &mut InitialContextBuilder) {
 		builder.bind("nativeAdd", Thunk::evaluated(Val::function(native_add {})));
 	}
 
@@ -76,7 +72,7 @@ fn curry_add(a: u32) -> FuncVal {
 #[derive(Trace)]
 struct CurryAddContextInitializer;
 impl ContextInitializer for CurryAddContextInitializer {
-	fn populate(&self, _for_file: Source, builder: &mut ContextBuilder) {
+	fn populate(&self, _for_file: Source, builder: &mut InitialContextBuilder) {
 		builder.bind("curryAdd", Thunk::evaluated(Val::function(curry_add {})));
 	}
 

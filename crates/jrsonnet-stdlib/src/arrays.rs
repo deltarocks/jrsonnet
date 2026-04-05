@@ -1,11 +1,12 @@
 #![allow(non_snake_case)]
 
 use jrsonnet_evaluator::{
-	Either, IStr, ObjValue, ObjValueBuilder, Result, ResultExt, Thunk, Val, bail,
-	function::{FuncVal, NativeFn, builtin},
+	bail, error,
+	function::{builtin, NativeFn},
 	runtime_error,
-	typed::{BoundedI32, BoundedUsize, Either2, FromUntyped},
-	val::{ArrValue, IndexableVal, equals},
+	typed::{BoundedUsize, Either2, FromUntyped},
+	val::{equals, ArrValue, IndexableVal},
+	Either, IStr, ObjValue, ObjValueBuilder, Result, ResultExt, Thunk, Val,
 };
 
 pub fn eval_on_empty(on_empty: Option<Thunk<Val>>) -> Result<Val> {
@@ -17,32 +18,28 @@ pub fn eval_on_empty(on_empty: Option<Thunk<Val>>) -> Result<Val> {
 }
 
 #[builtin]
-pub fn builtin_make_array(
-	// Can't use usize because range_exclusive is over i32
-	sz: BoundedI32<0, { i32::MAX }>,
-	func: FuncVal,
-) -> Result<ArrValue> {
-	if *sz == 0 {
+pub fn builtin_make_array(sz: u32, func: NativeFn!((u32,) -> Val)) -> Result<ArrValue> {
+	if sz == 0 {
 		return Ok(ArrValue::empty());
 	}
-	func.evaluate_trivial().map_or_else(
-		// TODO: Different mapped array impl avoiding allocating unnecessary vals
-		|| Ok(ArrValue::range_exclusive(0, *sz).map(FromUntyped::from_untyped(Val::Func(func))?)),
-		|trivial| {
-			#[expect(clippy::cast_sign_loss, reason = "sz is bounded to be larger than 0")]
-			let mut out = Vec::with_capacity(*sz as usize);
-			for _ in 0..*sz {
-				out.push(trivial.clone());
+	// Try eager evaluation: call func(i) immediately for each element.
+	'eager: {
+		let mut out = Vec::with_capacity(sz as usize);
+		for i in 0..sz {
+			match func.call(i) {
+				Ok(v) => out.push(v),
+				Err(_) => break 'eager,
 			}
-			Ok(ArrValue::new(out))
-		},
-	)
+		}
+		return Ok(ArrValue::new(out));
+	}
+	Ok(ArrValue::make(sz, func))
 }
 
 #[builtin]
-pub fn builtin_repeat(what: Either![IStr, ArrValue], count: usize) -> Result<Val> {
+pub fn builtin_repeat(what: Either![IStr, ArrValue], count: u32) -> Result<Val> {
 	Ok(match what {
-		Either2::A(s) => Val::string(s.repeat(count)),
+		Either2::A(s) => Val::string(s.repeat(count as usize)),
 		Either2::B(arr) => Val::Arr(
 			ArrValue::repeated(arr, count)
 				.ok_or_else(|| runtime_error!("repeated length overflow"))?,
@@ -210,14 +207,14 @@ pub fn builtin_join(sep: IndexableVal, arr: ArrValue) -> Result<IndexableVal> {
 				let item = item?.clone();
 				if let Val::Arr(items) = item {
 					if !first {
-						out.reserve(joiner_items.len());
+						out.reserve(joiner_items.len() as usize);
 						// TODO: extend
 						for item in joiner_items.iter() {
 							out.push(item?);
 						}
 					}
 					first = false;
-					out.reserve(items.len());
+					out.reserve(items.len() as usize);
 					for item in items.iter() {
 						out.push(item?);
 					}
@@ -256,7 +253,8 @@ pub fn builtin_join(sep: IndexableVal, arr: ArrValue) -> Result<IndexableVal> {
 pub fn builtin_lines(arr: ArrValue) -> Result<IndexableVal> {
 	builtin_join(
 		IndexableVal::Str("\n".into()),
-		ArrValue::extended(arr, ArrValue::new(vec![Val::string("")])),
+		ArrValue::extended(arr, ArrValue::new(vec![Val::string("")]))
+			.ok_or_else(|| error!("array is too large"))?,
 	)
 }
 
@@ -380,7 +378,7 @@ pub fn builtin_remove_at(arr: ArrValue, at: i32) -> Result<ArrValue> {
 	let newArrLeft = arr.clone().slice(None, Some(at), None);
 	let newArrRight = arr.slice(Some(at + 1), None, None);
 
-	Ok(ArrValue::extended(newArrLeft, newArrRight))
+	Ok(ArrValue::extended(newArrLeft, newArrRight).ok_or_else(|| error!("array is too large"))?)
 }
 
 #[builtin]
@@ -399,20 +397,22 @@ pub fn builtin_remove(arr: ArrValue, elem: Val) -> Result<ArrValue> {
 }
 
 #[builtin]
-pub fn builtin_flatten_arrays(arrs: Vec<ArrValue>) -> ArrValue {
-	pub fn flatten_inner(values: &[ArrValue]) -> ArrValue {
+pub fn builtin_flatten_arrays(arrs: Vec<ArrValue>) -> Result<ArrValue> {
+	pub fn flatten_inner(values: &[ArrValue]) -> Result<ArrValue> {
 		if values.len() == 1 {
-			return values[0].clone();
+			return Ok(values[0].clone());
 		} else if values.len() == 2 {
-			return ArrValue::extended(values[0].clone(), values[1].clone());
+			return ArrValue::extended(values[0].clone(), values[1].clone())
+				.ok_or_else(|| error!("array is too large"));
 		}
 		let (a, b) = values.split_at(values.len() / 2);
-		ArrValue::extended(flatten_inner(a), flatten_inner(b))
+		ArrValue::extended(flatten_inner(a)?, flatten_inner(b)?)
+			.ok_or_else(|| error!("array is too large"))
 	}
 	if arrs.is_empty() {
-		return ArrValue::empty();
+		return Ok(ArrValue::empty());
 	} else if arrs.len() == 1 {
-		return arrs.into_iter().next().expect("single");
+		return Ok(arrs.into_iter().next().expect("single"));
 	}
 	flatten_inner(&arrs)
 }

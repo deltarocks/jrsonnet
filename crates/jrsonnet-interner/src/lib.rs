@@ -171,6 +171,7 @@ fn maybe_unpool(inner: &Inner) {
 			let mut pool = pool.borrow_mut();
 
 			if pool.remove(inner).is_none() {
+				// DOC(string-pooling)
 				// On some platforms (i.e i686-windows), try_with will not fail after TLS
 				// destructor is called, but instead re-initialize the TLS with the empty pool.
 				// Allow non-pooled Drop in this case.

@@ -77,6 +77,12 @@ educe = { version = "0.6.0", default-features = false, features = [
   "PartialEq",
 ] }
 im-rc = { version = "15.1.0", features = ["pool"] }
+smallvec = "1.15.1"
+drop_bomb.workspace = true
 
 [build-dependencies]
 rustversion = "1.0.22"
+
+[dev-dependencies]
+insta.workspace = true
+strip-ansi-escapes = "0.2.1"

@@ -11,8 +11,8 @@ use std::{
 };
 
 use educe::Educe;
-use im_rc::{Vector, vector};
-use jrsonnet_gcmodule::{Acyclic, Cc, Trace, Weak, cc_dyn};
+use im_rc::{vector, Vector};
+use jrsonnet_gcmodule::{cc_dyn, Acyclic, Cc, Trace, Weak};
 use jrsonnet_interner::IStr;
 use jrsonnet_ir::Span;
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -23,13 +23,13 @@ pub use jrsonnet_ir::Visibility;
 pub use oop::ObjValueBuilder;
 
 use crate::{
-	CcUnbound, MaybeUnbound, Result, Thunk, Unbound, Val,
 	arr::{PickObjectKeyValues, PickObjectValues},
 	bail,
-	error::{ErrorKind::*, suggest_object_fields},
+	error::{suggest_object_fields, ErrorKind::*},
+	evaluate::operator::evaluate_add_op,
 	identity_hash,
-	operator::evaluate_add_op,
 	val::{ArrValue, ThunkValue},
+	CcUnbound, MaybeUnbound, Result, Thunk, Unbound, Val,
 };
 
 #[cfg(not(feature = "exp-preserve-order"))]
@@ -400,6 +400,15 @@ pub struct SupThis {
 	this: ObjValue,
 }
 impl SupThis {
+	/// Create a `SupThis` for a freshly constructed object (no super).
+	pub fn new(this: ObjValue) -> Self {
+		Self {
+			sup: CoreIdx {
+				idx: this.0.cores.len(),
+			},
+			this,
+		}
+	}
 	pub fn has_super(&self) -> bool {
 		self.sup.super_exists()
 	}
@@ -501,11 +510,11 @@ impl ObjValue {
 	// }
 	/// Returns amount of visible object fields
 	/// If object only contains hidden fields - may return zero.
-	pub fn len(&self) -> usize {
+	pub fn len(&self) -> u32 {
 		self.fields_visibility()
 			.values()
 			.filter(|d| d.visible())
-			.count()
+			.count() as u32
 	}
 	/// For each field, calls callback.
 	/// If callback returns false - ends iteration prematurely.

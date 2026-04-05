@@ -12,15 +12,9 @@ pub use compat::*;
 pub use encoding::*;
 pub use hash::*;
 use jrsonnet_evaluator::{
-	ContextBuilder, IStr, NumValue, ObjValue, ObjValueBuilder, Thunk, Val,
-	error::Result,
-	function::{CallLocation, FuncVal, builtin_id},
-	tla::TlaArg,
-	trace::PathResolver,
-	typed::SerializeTypedObj as _,
+	IStr, InitialContextBuilder, NumValue, ObjValue, ObjValueBuilder, Source, Thunk, Val, error::Result, function::{CallLocation, FuncVal, builtin_id}, tla::TlaArg, trace::PathResolver, typed::SerializeTypedObj as _
 };
 use jrsonnet_gcmodule::{Acyclic, Cc, Trace};
-use jrsonnet_ir::Source;
 use jrsonnet_macros::{IntoUntyped, Typed};
 pub use manifest::*;
 pub use math::*;
@@ -544,7 +538,7 @@ impl ContextInitializer {
 	}
 }
 impl jrsonnet_evaluator::ContextInitializer for ContextInitializer {
-	fn populate(&self, source: Source, builder: &mut ContextBuilder) {
+	fn populate(&self, source: Source, builder: &mut InitialContextBuilder) {
 		let mut std = ObjValueBuilder::new();
 		std.with_super(self.stdlib_obj.clone());
 		std.field("thisFile").hide().value({

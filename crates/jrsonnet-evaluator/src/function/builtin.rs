@@ -19,6 +19,23 @@ macro_rules! params {
 	};
 }
 
+#[macro_export]
+macro_rules! names {
+	($($name:ident: $val:literal),* $(,)?) => {
+		struct Names {
+			$($name: $crate::IStr,)*
+		}
+		thread_local! {
+			static NAMES: Names = Names {
+				$($name: $crate::IStr::from($val)),*
+			};
+		}
+		$(pub fn $name() -> $crate::IStr {
+			NAMES.with(|n| n.$name.clone())
+		})*
+	}
+}
+
 cc_dyn!(
 	#[derive(Clone)]
 	BuiltinFunc,

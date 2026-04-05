@@ -3,7 +3,4 @@ source: tests/tests/golden.rs
 expression: result
 input_file: tests/golden/issue172.jsonnet
 ---
-local is not defined: b
-    issue172.jsonnet:1:45-47: local <b> access
-    issue172.jsonnet:1:4-10:  field <value> access
-    elem <0> evaluation
+static analysis errors: undefined local: b

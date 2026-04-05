@@ -1,22 +1,23 @@
 use std::{cell::RefCell, collections::BTreeSet};
 
 use jrsonnet_evaluator::{
-	Either, IStr, ObjValue, ObjValueBuilder, ResultExt, Thunk, Val, bail,
+	bail,
 	error::{ErrorKind::*, Result},
-	function::{CallLocation, FuncVal, builtin},
+	function::{builtin, CallLocation, FuncVal},
 	manifest::JsonFormat,
 	typed::{Either2, Either4},
-	val::{ArrValue, equals},
+	val::{equals, ArrValue},
+	Either, IStr, ObjValue, ObjValueBuilder, ResultExt, Thunk, Val,
 };
 use jrsonnet_gcmodule::Cc;
 
 use crate::Settings;
 
 #[builtin]
-pub fn builtin_length(x: Either![IStr, ArrValue, ObjValue, FuncVal]) -> usize {
+pub fn builtin_length(x: Either![IStr, ArrValue, ObjValue, FuncVal]) -> u32 {
 	use Either4::*;
 	match x {
-		A(x) => x.chars().count(),
+		A(x) => x.chars().count() as u32,
 		B(x) => x.len(),
 		C(x) => x.len(),
 		D(f) => f.params_len(),
@@ -102,7 +103,7 @@ pub fn builtin_starts_with(a: Either![IStr, ArrValue], b: Either![IStr, ArrValue
 			} else if b.len() == a.len() {
 				return equals(&Val::Arr(a), &Val::Arr(b));
 			}
-			for (a, b) in a.iter().take(b.len()).zip(b.iter()) {
+			for (a, b) in a.iter().take(b.len() as usize).zip(b.iter()) {
 				let a = a?;
 				let b = b?;
 				if !equals(&a, &b)? {
@@ -127,7 +128,7 @@ pub fn builtin_ends_with(a: Either![IStr, ArrValue], b: Either![IStr, ArrValue])
 				return equals(&Val::Arr(a), &Val::Arr(b));
 			}
 			let a_len = a.len();
-			for (a, b) in a.iter().skip(a_len - b.len()).zip(b.iter()) {
+			for (a, b) in a.iter().skip((a_len - b.len()) as usize).zip(b.iter()) {
 				let a = a?;
 				let b = b?;
 				if !equals(&a, &b)? {

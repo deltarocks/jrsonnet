@@ -9,9 +9,11 @@ use jrsonnet_evaluator::{
 	gc::WithCapacityExt as _,
 	manifest::JsonFormat,
 	rustc_hash::FxHashMap,
+	stack::limit_stack_depth,
 	tla::TlaArg,
 	trace::{CompactFormat, PathResolver, TraceFormat},
 };
+use jrsonnet_gcmodule::ObjectSpace;
 use jrsonnet_stdlib::ContextInitializer;
 mod common;
 use common::ContextInitializer as TestContextInitializer;
@@ -179,6 +181,12 @@ fn cpp_test_suite() -> io::Result<()> {
 			continue;
 		}
 
+		let _stack = if entry.path().file_stem().is_some_and(|e| e == "recursive_function" || e == "tailstrict"|| e == "tailstrict5") {
+			Some(limit_stack_depth(100_000))
+		} else {
+			None
+		};
+
 		if entry
 			.path()
 			.file_name()
@@ -188,7 +196,7 @@ fn cpp_test_suite() -> io::Result<()> {
 			continue;
 		}
 
-		println!("test: {}", entry.path().display());
+		eprintln!("test: {}", entry.path().display());
 
 		let result = run(&entry.path(), &root);
 
@@ -213,24 +221,9 @@ fn cpp_test_suite() -> io::Result<()> {
 			golden = Some(golden_path);
 		}
 
-		// ir-parser has its own override layer
-		#[cfg(feature = "ir-parser")]
-		let ir_parser_override_path = {
-			let p = root_tests
-				.join(format!("{root_dir}_golden_override_ir_parser"))
-				.join(golden_path.file_name().expect("file has basename"));
-			if let Some(golden_path) = read_file(&p)? {
-				golden = Some(golden_path);
-			}
-			p
-		};
-
 		// Otherwise assume test should just not fail and return true.
 		let golden = golden.unwrap_or_else(|| "true".to_owned());
 
-		#[cfg(feature = "ir-parser")]
-		let update_golden_path = &ir_parser_override_path;
-		#[cfg(not(feature = "ir-parser"))]
 		let update_golden_path = &golden_override;
 
 		match (serde_json::from_str::<serde_json::Value>(&result), serde_json::from_str::<serde_json::Value>(&golden)) {
@@ -270,8 +263,11 @@ fn cpp_test_suite() -> io::Result<()> {
 				}
 			}
 		}
+		println!("done!");
 	}
 	}
+
+	jrsonnet_gcmodule::with_thread_object_space(ObjectSpace::leak);
 
 	Ok(())
 }

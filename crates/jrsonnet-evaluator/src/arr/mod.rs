@@ -5,10 +5,9 @@ use std::{
 	rc::Rc,
 };
 
-use jrsonnet_gcmodule::{Cc, cc_dyn};
-use jrsonnet_ir::Expr;
+use jrsonnet_gcmodule::{cc_dyn, Cc};
 
-use crate::{Context, Result, Thunk, Val, function::NativeFn, typed::IntoUntyped};
+use crate::{analyze::LExpr, function::NativeFn, typed::IntoUntyped, Context, Result, Thunk, Val};
 
 mod spec;
 pub use spec::{ArrayLike, *};
@@ -37,12 +36,16 @@ impl ArrValue {
 		Self::new(())
 	}
 
-	pub fn expr(ctx: Context, exprs: Rc<Vec<Expr>>) -> Self {
+	pub fn expr(ctx: Context, exprs: Rc<Vec<LExpr>>) -> Self {
 		Self::new(ExprArray::new(ctx, exprs))
 	}
 
-	pub fn repeated(data: Self, repeats: usize) -> Option<Self> {
+	pub fn repeated(data: Self, repeats: u32) -> Option<Self> {
 		Some(Self::new(RepeatedArray::new(data, repeats)?))
+	}
+
+	pub fn make(len: u32, cb: NativeFn!((u32,)->Val)) -> Self {
+		Self::new(MakeArray::new(len, cb))
 	}
 
 	#[must_use]
@@ -79,14 +82,14 @@ impl ArrValue {
 		Ok(Self::new(out))
 	}
 
-	pub fn extended(a: Self, b: Self) -> Self {
-		if a.is_empty() {
+	pub fn extended(a: Self, b: Self) -> Option<Self> {
+		Some(if a.is_empty() {
 			b
 		} else if b.is_empty() {
 			a
 		} else {
-			Self::new(ExtendedArray::new(a, b))
-		}
+			Self::new(ExtendedArray::new(a, b)?)
+		})
 	}
 
 	pub fn range_exclusive(a: i32, b: i32) -> Self {
@@ -98,14 +101,14 @@ impl ArrValue {
 
 	#[must_use]
 	pub fn slice(self, index: Option<i32>, end: Option<i32>, step: Option<NonZeroU32>) -> Self {
-		let get_idx = |pos: Option<i32>, len: usize, default| match pos {
+		let get_idx = |pos: Option<i32>, len: u32, default| match pos {
 			#[expect(
 				clippy::cast_sign_loss,
 				reason = "abs value is used, len is limited to u31"
 			)]
-			Some(v) if v < 0 => len.saturating_sub((-v) as usize),
+			Some(v) if v < 0 => len.saturating_add_signed(v),
 			#[expect(clippy::cast_sign_loss, reason = "abs value is used")]
-			Some(v) => (v as usize).min(len),
+			Some(v) => (v as u32).min(len),
 			None => default,
 		};
 		let index = get_idx(index, self.len(), 0);
@@ -127,7 +130,7 @@ impl ArrValue {
 	}
 
 	/// Array length.
-	pub fn len(&self) -> usize {
+	pub fn len(&self) -> u32 {
 		self.0.len()
 	}
 
@@ -143,14 +146,14 @@ impl ArrValue {
 	/// Get array element by index, evaluating it, if it is lazy.
 	///
 	/// Returns `None` on out-of-bounds condition.
-	pub fn get(&self, index: usize) -> Result<Option<Val>> {
+	pub fn get(&self, index: u32) -> Result<Option<Val>> {
 		self.0.get(index)
 	}
 
 	/// Get array element by index, without evaluation.
 	///
 	/// Returns `None` on out-of-bounds condition.
-	pub fn get_lazy(&self, index: usize) -> Option<Thunk<Val>> {
+	pub fn get_lazy(&self, index: u32) -> Option<Thunk<Val>> {
 		self.0.get_lazy(index)
 	}
 

@@ -3,13 +3,14 @@ use std::string::String;
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
 use syn::{
-	Attribute, DeriveInput, Error, Expr, ExprClosure, FnArg, GenericArgument, Ident, ItemFn,
-	LitStr, Meta, Pat, Path, PathArguments, Result, ReturnType, Token, Type, parenthesized,
+	parenthesized,
 	parse::{Parse, ParseStream},
 	parse_macro_input,
 	punctuated::Punctuated,
 	spanned::Spanned,
 	token::Comma,
+	Attribute, DeriveInput, Error, Expr, ExprClosure, FnArg, GenericArgument, Ident, ItemFn,
+	LitStr, Meta, Pat, Path, PathArguments, Result, ReturnType, Token, Type,
 };
 
 use self::typed::{derive_from_untyped_inner, derive_into_untyped_inner, derive_typed_inner};
@@ -402,7 +403,7 @@ fn builtin_inner(attr: BuiltinAttrs, mut fun: ItemFn) -> syn::Result<TokenStream
 				State, Val,
 				function::{builtin::Builtin, FunctionSignature, ParamParse, ParamName, ParamDefault, CallLocation},
 				Result, Context, typed::{Typed, FromUntyped, IntoUntypedResult},
-				parser::Span, params, Thunk,
+				Span, params, Thunk,
 			};
 			params!(
 				#(#params_desc)*

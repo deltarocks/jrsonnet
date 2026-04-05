@@ -9,16 +9,16 @@ use jrsonnet_types::ValType;
 use thiserror::Error;
 
 use crate::{
-	ObjValue, ResolvePathOwned,
 	function::{CallLocation, FunctionSignature, ParamName},
 	stdlib::format::FormatError,
 	typed::TypeLocError,
+	ObjValue, ResolvePathOwned,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Acyclic)]
 pub struct SyntaxError {
 	pub message: String,
-	pub location: (u32, u32),
+	pub location: Span,
 }
 impl fmt::Display for SyntaxError {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -63,26 +63,36 @@ const fn format_empty_str(str: &str) -> &str {
 	}
 }
 
+pub(crate) fn suggest_names<'a, 'b>(
+	name: &'a IStr,
+	names: impl IntoIterator<Item = &'b IStr>,
+) -> Vec<IStr> {
+	let mut heap: Vec<(f64, IStr)> = names
+		.into_iter()
+		.filter_map(|def| {
+			let conf = strsim::jaro_winkler(def.as_str(), name.as_str());
+			if conf < 0.8 {
+				return None;
+			}
+			debug_assert!(
+				def.as_str() != name.as_str(),
+				"string pooling failure: look for DOC(string-pooling) comment in jrsonnet-interner"
+			);
+
+			Some((conf, def.clone()))
+		})
+		.collect();
+	heap.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(Ordering::Equal));
+	heap.into_iter().map(|v| v.1).collect()
+}
+
 pub(crate) fn suggest_object_fields(v: &ObjValue, key: IStr) -> Vec<IStr> {
-	let mut heap = Vec::new();
-	for field in v.fields_ex(
+	let fields = v.fields_ex(
 		true,
 		#[cfg(feature = "exp-preserve-order")]
 		false,
-	) {
-		let conf = strsim::jaro_winkler(field.as_str(), key.as_str());
-		if conf < 0.8 {
-			continue;
-		}
-		assert!(
-			field.as_str() != key.as_str(),
-			"looks like string pooling failure, please write any info regarding this crash to https://github.com/CertainLach/jrsonnet/issues/113, thanks!"
-		);
-
-		heap.push((conf, field));
-	}
-	heap.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(Ordering::Equal));
-	heap.into_iter().map(|v| v.1).collect()
+	);
+	suggest_names(&key, &fields)
 }
 
 /// Possible errors
@@ -100,6 +110,9 @@ pub enum ErrorKind {
 
 	#[error("self/super/$ are only usable inside objects")]
 	CantUseSelfSupOutsideOfObject,
+
+	#[error("static analysis errors: {}", .0.iter().map(|d| d.message.as_str()).collect::<Vec<_>>().join("; "))]
+	StaticAnalysisError(Vec<crate::analyze::Diagnostic>),
 	#[error("no super found")]
 	NoSuperFound,
 
@@ -107,17 +120,12 @@ pub enum ErrorKind {
 	InComprehensionCanOnlyIterateOverArray,
 
 	#[error("array out of bounds: {0} is not within [0,{1})")]
-	ArrayBoundsError(isize, usize),
+	ArrayBoundsError(isize, u32),
 	#[error("string out of bounds: {0} is not within [0,{1})")]
 	StringBoundsError(usize, usize),
 
 	#[error("assert failed: {}", format_empty_str(.0))]
 	AssertionFailed(IStr),
-
-	#[error("local is not defined: {0}{found}", found = format_found(.1, "local"))]
-	VariableIsNotDefined(IStr, Vec<IStr>),
-	#[error("duplicate local var: {0}")]
-	DuplicateLocalVar(IStr),
 
 	#[error("type mismatch: expected {expected}, got {2} {0}", expected = .1.iter().map(|e| format!("{e}")).collect::<Vec<_>>().join(", "))]
 	TypeMismatch(&'static str, Vec<ValType>, ValType),
@@ -172,7 +180,6 @@ pub enum ErrorKind {
 	#[error("syntax error: {error}")]
 	ImportSyntaxError {
 		path: Source,
-		#[trace(skip)]
 		error: Box<SyntaxError>,
 	},
 
@@ -279,11 +286,11 @@ impl Error {
 }
 impl fmt::Display for Error {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		writeln!(f, "{}", self.0.0)?;
-		for el in &self.0.1.0 {
+		writeln!(f, "{}", self.0 .0)?;
+		for el in &self.0 .1 .0 {
 			write!(f, "\t{}", el.desc)?;
 			if let Some(loc) = &el.location {
-				write!(f, "at {}", loc.0.0.0)?;
+				write!(f, "at {}", loc.0 .0 .0)?;
 				loc.0.map_source_locations(&[loc.1, loc.2]);
 			}
 			writeln!(f)?;
@@ -375,6 +382,18 @@ macro_rules! bail {
 	};
 	($l:literal$(, $($tt:tt)*)?) => {
 		return Err($crate::error::ErrorKind::RuntimeError($crate::jrsonnet_macros::format_istr!($l$(, $($tt)*)?)).into())
+	};
+}
+#[macro_export]
+macro_rules! error {
+	($w:ident$(::$i:ident)*$(($($tt:tt)*))?) => {
+		$crate::error::Error::from($w$(::$i)*$(($($tt)*))?)
+	};
+	($w:ident$(::$i:ident)*$({$($tt:tt)*})?) => {
+		$crate::error::Error::from($w$(::$i)*$({$($tt)*})?)
+	};
+	($l:literal$(, $($tt:tt)*)?) => {
+		<$crate::error::Error as From<$crate::error::ErrorKind>>::from($crate::error::ErrorKind::RuntimeError($crate::jrsonnet_macros::format_istr!($l$(, $($tt)*)?)).into())
 	};
 }
 
