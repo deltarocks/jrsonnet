@@ -206,7 +206,10 @@ fn manifest_table_internal(
 			buf.push_str(cur_padding);
 			escape_key_toml_buf(&key, buf);
 			buf.push_str(" = ");
-			manifest_value(&value, false, buf, cur_padding, options)?;
+			in_description_frame(
+				|| format!("table <{key}> manifestification"),
+				|| manifest_value(&value, false, buf, cur_padding, options),
+			)?;
 		}
 	}
 	for (k, v) in sections {
@@ -214,12 +217,15 @@ fn manifest_table_internal(
 			buf.push_str("\n\n");
 		}
 		first = false;
-		path.push(k);
-		match v {
-			Val::Obj(obj) => manifest_table(&obj, path, buf, cur_padding, options)?,
-			Val::Arr(arr) => manifest_table_array(&arr, path, buf, cur_padding, options)?,
-			_ => unreachable!("iterating over sections"),
-		}
+		path.push(k.clone());
+		in_description_frame(
+			|| format!("section <{k}> manifestification"),
+			|| match v {
+				Val::Obj(obj) => manifest_table(&obj, path, buf, cur_padding, options),
+				Val::Arr(arr) => manifest_table_array(&arr, path, buf, cur_padding, options),
+				_ => unreachable!("iterating over sections"),
+			},
+		)?;
 		path.pop();
 	}
 	Ok(())
