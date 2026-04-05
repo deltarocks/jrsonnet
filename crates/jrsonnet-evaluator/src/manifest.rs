@@ -510,7 +510,9 @@ static ESCAPE: [u8; 256] = [
 
 pub fn escape_string_json_buf(value: &str, buf: &mut String) {
 	buf.reserve_exact(value.len() + 2);
+	buf.push('"');
 	escape_string_json_buf_raw(value, buf);
+	buf.push('"');
 }
 
 fn escape_string_json_buf_raw(value: &str, buf: &mut String) {
