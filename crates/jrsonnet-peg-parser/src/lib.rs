@@ -61,13 +61,13 @@ parser! {
 		rule keyword(id: &'static str) -> ()
 			= #{|input, pos| input.parse_string_literal(pos, id)} end_of_ident()
 
-		pub rule param(s: &ParserSettings) -> ExprParam = destruct:destruct(s) expr:(_ "=" _ expr:expr(s){expr})? { ExprParam { destruct, default: expr.map(Rc::new) } }
+		pub rule param(s: &ParserSettings) -> ExprParam = destruct:destruct(s) default:(_ "=" _ default:expr(s){default})? { ExprParam { destruct, default } }
 		pub rule params(s: &ParserSettings) -> ExprParams
 			= params:param(s) ** comma() comma()? { ExprParams::new(params) }
 			/ { ExprParams::new(Vec::new()) }
 
-		pub rule arg(s: &ParserSettings) -> (Option<IStr>, Rc<Expr>)
-			= name:(quiet! { (s:id() _ "=" !['='] _ {s})? } / expected!("<argument name>")) expr:expr(s) {(name, Rc::new(expr))}
+		pub rule arg(s: &ParserSettings) -> (Option<IStr>, Expr)
+			= name:(quiet! { (s:id() _ "=" !['='] _ {s})? } / expected!("<argument name>")) expr:expr(s) {(name, expr)}
 
 		pub rule args(s: &ParserSettings) -> ArgsDesc
 			= args:arg(s)**comma() comma()? {?
@@ -123,7 +123,7 @@ parser! {
 				#[cfg(not(feature = "exp-destruct"))] Err("!!!experimental destructuring was not enabled")
 			}
 		pub rule destruct(s: &ParserSettings) -> Destruct
-			= v:id() {Destruct::Full(v)}
+			= v:spanned(<id()>, s) {Destruct::Full(v)}
 			/ "?" {?
 				#[cfg(feature = "exp-destruct")] return Ok(Destruct::Skip);
 				#[cfg(not(feature = "exp-destruct"))] Err("!!!experimental destructuring was not enabled")
@@ -132,8 +132,8 @@ parser! {
 			/ obj:destruct_object(s) {obj}
 
 		pub rule bind(s: &ParserSettings) -> BindSpec
-			= into:destruct(s) _ "=" _ value:expr(s) {BindSpec::Field{into, value: Rc::new(value)}}
-			/ name:id() _ "(" _ params:params(s) _ ")" _ "=" _ value:expr(s) {BindSpec::Function{name, params, value: Rc::new(value)}}
+			= into:destruct(s) _ "=" _ value:expr(s) {BindSpec::Field{into, value}}
+			/ name:id() _ "(" _ params:params(s) _ ")" _ "=" _ value:expr(s) {BindSpec::Function{name, params, value}}
 
 		pub rule assertion(s: &ParserSettings) -> AssertStmt
 			= keyword("assert") _ assertion:spanned(<expr(s)>, s) message:(_ ":" _ e:expr(s) {e})? { AssertStmt{assertion, message} }
@@ -187,14 +187,14 @@ parser! {
 				plus: plus.is_some(),
 				params: None,
 				visibility,
-				value: Rc::new(value),
+				value,
 			}}
 			/ name:spanned(<field_name(s)>, s) _ "(" _ params:params(s) _ ")" _ visibility:visibility() _ value:expr(s) {FieldMember{
 				name,
 				plus: false,
 				params: Some(params),
 				visibility,
-				value: Rc::new(value),
+				value,
 			}}
 		pub rule obj_local(s: &ParserSettings) -> BindSpec
 			= keyword("local") _ bind:bind(s) {bind}
@@ -217,8 +217,8 @@ parser! {
 						}
 					}
 					ObjBody::ObjComp(ObjComp {
-						locals: Rc::new(locals),
-						field: field.map(Rc::new).ok_or("<missing object comprehension field>")?,
+						locals,
+						field: Box::new(field.ok_or("<missing object comprehension field>")?),
 						compspecs
 					})
 				} else {
@@ -233,8 +233,8 @@ parser! {
 						}
 					}
 					ObjBody::MemberList(ObjMembers {
-						locals: Rc::new(locals),
-						asserts: Rc::new(asserts),
+						locals,
+						asserts,
 						fields
 					})
 				})
@@ -259,10 +259,10 @@ parser! {
 		pub rule obj_expr(s: &ParserSettings) -> Expr
 			= "{" _ body:objinside(s) _ "}" {Expr::Obj(body)}
 		pub rule array_expr(s: &ParserSettings) -> Expr
-			= "[" _ elems:(expr(s) ** comma()) _ comma()? "]" {Expr::Arr(Rc::new(elems))}
+			= "[" _ elems:(expr(s) ** comma()) _ comma()? "]" {Expr::Arr(elems)}
 		pub rule array_comp_expr(s: &ParserSettings) -> Expr
 			= "[" _ expr:expr(s) _ comma()? _ specs:(r: compspecs(s) _ {r}) "]" {
-				Expr::ArrComp(Rc::new(expr), specs)
+				Expr::ArrComp(Box::new(expr), specs)
 			}
 		pub rule number_expr(s: &ParserSettings) -> Expr
 			= n:number() {? if let Some(n) = NumValue::new(n) {
@@ -315,8 +315,8 @@ parser! {
 			/ local_expr(s)
 			/ if_then_else_expr(s)
 
-			/ keyword("function") _ "(" _ params:params(s) _ ")" _ expr:expr(s) {Expr::Function(params, Rc::new(expr))}
-			/ assert:assertion(s) _ ";" _ rest:expr(s) { Expr::AssertExpr(Rc::new(AssertExpr{
+			/ keyword("function") _ "(" _ params:params(s) _ ")" _ expr:expr(s) {Expr::Function(params, Box::new(expr))}
+			/ assert:assertion(s) _ ";" _ rest:expr(s) { Expr::AssertExpr(Box::new(AssertExpr{
 				assert, rest
 			})) }
 
@@ -390,7 +390,7 @@ parser! {
 				value:(@) _ "[" _ slice:slice_desc(s) _ "]" {Expr::Slice(Box::new(Slice{value, slice}))}
 				indexable:(@) _ parts:index_part(s)+ {Expr::Index{indexable: Box::new(indexable), parts}}
 				a:(@) _ args:spanned(<"(" _ a:args(s) _ ")" {a}>, s) ts:(_ keyword("tailstrict"))? {Expr::Apply(Box::new(a), args, ts.is_some())}
-				a:(@) _ "{" _ body:objinside(s) _ "}" {Expr::ObjExtend(Rc::new(a), body)}
+				a:(@) _ "{" _ body:objinside(s) _ "}" {Expr::ObjExtend(Box::new(a), body)}
 				--
 				e:expr_basic(s) {e}
 				"(" _ e:expr(s) _ ")" {e}

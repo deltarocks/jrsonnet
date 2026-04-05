@@ -35,7 +35,7 @@ Arr(
                 ForSpec(
                     ForSpecData {
                         destruct: Full(
-                            "x",
+                            "x" from virtual:<test>:23-24,
                         ),
                         over: Var(
                             "arr" from virtual:<test>:28-31,
@@ -52,7 +52,7 @@ Arr(
                 ForSpec(
                     ForSpecData {
                         destruct: Full(
-                            "a",
+                            "a" from virtual:<test>:41-42,
                         ),
                         over: Var(
                             "b" from virtual:<test>:46-47,
@@ -70,7 +70,7 @@ Arr(
                 ForSpec(
                     ForSpecData {
                         destruct: Full(
-                            "e",
+                            "e" from virtual:<test>:57-58,
                         ),
                         over: Var(
                             "f" from virtual:<test>:62-63,

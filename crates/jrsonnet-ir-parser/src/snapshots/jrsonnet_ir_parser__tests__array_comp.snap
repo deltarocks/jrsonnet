@@ -10,7 +10,7 @@ ArrComp(
         ForSpec(
             ForSpecData {
                 destruct: Full(
-                    "x",
+                    "x" from virtual:<test>:7-8,
                 ),
                 over: Var(
                     "arr" from virtual:<test>:12-15,

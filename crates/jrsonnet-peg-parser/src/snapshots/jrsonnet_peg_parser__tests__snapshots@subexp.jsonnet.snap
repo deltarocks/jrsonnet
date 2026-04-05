@@ -20,7 +20,7 @@ BinaryOp(
                     locals: [
                         Field {
                             into: Full(
-                                "x",
+                                "x" from virtual:<test>:11-12,
                             ),
                             value: Num(
                                 1.0,

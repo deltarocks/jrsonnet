@@ -11,7 +11,7 @@ LocalExpr(
                 exprs: [
                     ExprParam {
                         destruct: Full(
-                            "foo",
+                            "foo" from virtual:<test>:8-11,
                         ),
                         default: Some(
                             Str(
@@ -21,7 +21,7 @@ LocalExpr(
                     },
                     ExprParam {
                         destruct: Full(
-                            "bar",
+                            "bar" from virtual:<test>:21-24,
                         ),
                         default: None,
                     },
