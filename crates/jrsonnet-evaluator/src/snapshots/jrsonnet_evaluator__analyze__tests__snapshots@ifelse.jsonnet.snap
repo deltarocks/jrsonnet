@@ -1,0 +1,26 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analyze_tests/ifelse.jsonnet
+---
+--- source ---
+if true then 1 else 2
+--- root analysis ---
+object_dependent_depth: none
+local_dependent_depth: none
+errored: false
+--- diagnostics ---
+--- lir ---
+IfElse {
+    cond: Bool(
+        true,
+    ),
+    cond_then: Num(
+        1.0,
+    ),
+    cond_else: Some(
+        Num(
+            2.0,
+        ),
+    ),
+}

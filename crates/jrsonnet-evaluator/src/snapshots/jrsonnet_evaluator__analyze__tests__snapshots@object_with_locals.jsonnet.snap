@@ -1,0 +1,71 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analyze_tests/object_with_locals.jsonnet
+---
+--- source ---
+{
+  local helper = 10,
+  a: helper,
+  b: helper * 2,
+}
+--- root analysis ---
+object_dependent_depth: none
+local_dependent_depth: 0
+errored: false
+--- diagnostics ---
+--- lir ---
+Obj(
+    MemberList(
+        LObjMembers {
+            this: None,
+            set_dollar: false,
+            uses_super: false,
+            locals: [
+                LBind {
+                    destruct: Full(
+                        LocalId(
+                            1,
+                        ),
+                    ),
+                    value: Num(
+                        10.0,
+                    ),
+                },
+            ],
+            asserts: [],
+            fields: [
+                LFieldMember {
+                    name: Fixed(
+                        "a",
+                    ),
+                    plus: false,
+                    visibility: Normal,
+                    value: Local(
+                        LocalId(
+                            1,
+                        ),
+                    ),
+                },
+                LFieldMember {
+                    name: Fixed(
+                        "b",
+                    ),
+                    plus: false,
+                    visibility: Normal,
+                    value: BinaryOp {
+                        lhs: Local(
+                            LocalId(
+                                1,
+                            ),
+                        ),
+                        op: Mul,
+                        rhs: Num(
+                            2.0,
+                        ),
+                    },
+                },
+            ],
+        },
+    ),
+)

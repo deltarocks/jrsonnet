@@ -1,0 +1,50 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analyze_tests/shadowing.jsonnet
+---
+--- source ---
+local x = 1; local x = 2; x
+--- root analysis ---
+object_dependent_depth: none
+local_dependent_depth: 1
+errored: false
+--- diagnostics ---
+   ·                    ╭── local could be hoisted to an outer scope: x
+1  │ local x = 1; local x = 2; x 
+   ·       ╰── unused local: x
+2  │  
+--- lir ---
+LocalExpr {
+    binds: [
+        LBind {
+            destruct: Full(
+                LocalId(
+                    0,
+                ),
+            ),
+            value: Num(
+                1.0,
+            ),
+        },
+    ],
+    body: LocalExpr {
+        binds: [
+            LBind {
+                destruct: Full(
+                    LocalId(
+                        1,
+                    ),
+                ),
+                value: Num(
+                    2.0,
+                ),
+            },
+        ],
+        body: Local(
+            LocalId(
+                1,
+            ),
+        ),
+    },
+}

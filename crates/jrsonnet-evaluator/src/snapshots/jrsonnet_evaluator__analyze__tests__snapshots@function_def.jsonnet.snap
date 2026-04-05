@@ -1,0 +1,104 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analysis_tests/function_def.jsonnet
+---
+--- source ---
+local f(x, y) = x + y; f(1, 2)
+--- root analysis ---
+object_dependent_depth: none
+local_dependent_depth: 0
+errored: false
+--- diagnostics ---
+--- lir ---
+LocalExpr {
+    binds: [
+        LBind {
+            destruct: Full(
+                LocalId(
+                    0,
+                ),
+            ),
+            value: Function(
+                LFunction {
+                    name: Some(
+                        "f",
+                    ),
+                    params: [
+                        LParam {
+                            name: Some(
+                                "x",
+                            ),
+                            destruct: Full(
+                                LocalId(
+                                    1,
+                                ),
+                            ),
+                            default: None,
+                        },
+                        LParam {
+                            name: Some(
+                                "y",
+                            ),
+                            destruct: Full(
+                                LocalId(
+                                    2,
+                                ),
+                            ),
+                            default: None,
+                        },
+                    ],
+                    signature: FunctionSignature(
+                        [
+                            ParamParse {
+                                name: Named(
+                                    "x",
+                                ),
+                                default: None,
+                            },
+                            ParamParse {
+                                name: Named(
+                                    "y",
+                                ),
+                                default: None,
+                            },
+                        ],
+                    ),
+                    body: BinaryOp {
+                        lhs: Local(
+                            LocalId(
+                                1,
+                            ),
+                        ),
+                        op: Add,
+                        rhs: Local(
+                            LocalId(
+                                2,
+                            ),
+                        ),
+                    },
+                },
+            ),
+        },
+    ],
+    body: Apply {
+        applicable: Local(
+            LocalId(
+                0,
+            ),
+        ),
+        args: LArgsDesc {
+            unnamed: [
+                Num(
+                    1.0,
+                ),
+                Num(
+                    2.0,
+                ),
+            ],
+            names: [],
+            values: [],
+        } from virtual:<test>:24-30,
+        tailstrict: false,
+    },
+}

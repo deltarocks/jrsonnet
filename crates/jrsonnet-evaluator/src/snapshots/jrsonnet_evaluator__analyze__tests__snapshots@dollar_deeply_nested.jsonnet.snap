@@ -1,0 +1,126 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analyze_tests/dollar_deeply_nested.jsonnet
+---
+--- source ---
+{
+  top: 'outer',
+  a: {
+    b: {
+      c: $.top,
+      d: self,
+    },
+  },
+}
+--- root analysis ---
+object_dependent_depth: 0
+local_dependent_depth: 0
+errored: false
+--- diagnostics ---
+--- lir ---
+Obj(
+    MemberList(
+        LObjMembers {
+            this: Some(
+                LocalId(
+                    0,
+                ),
+            ),
+            set_dollar: true,
+            uses_super: false,
+            locals: [],
+            asserts: [],
+            fields: [
+                LFieldMember {
+                    name: Fixed(
+                        "top",
+                    ),
+                    plus: false,
+                    visibility: Normal,
+                    value: Str(
+                        "outer",
+                    ),
+                },
+                LFieldMember {
+                    name: Fixed(
+                        "a",
+                    ),
+                    plus: false,
+                    visibility: Normal,
+                    value: Obj(
+                        MemberList(
+                            LObjMembers {
+                                this: None,
+                                set_dollar: false,
+                                uses_super: false,
+                                locals: [],
+                                asserts: [],
+                                fields: [
+                                    LFieldMember {
+                                        name: Fixed(
+                                            "b",
+                                        ),
+                                        plus: false,
+                                        visibility: Normal,
+                                        value: Obj(
+                                            MemberList(
+                                                LObjMembers {
+                                                    this: Some(
+                                                        LocalId(
+                                                            2,
+                                                        ),
+                                                    ),
+                                                    set_dollar: false,
+                                                    uses_super: false,
+                                                    locals: [],
+                                                    asserts: [],
+                                                    fields: [
+                                                        LFieldMember {
+                                                            name: Fixed(
+                                                                "c",
+                                                            ),
+                                                            plus: false,
+                                                            visibility: Normal,
+                                                            value: Index {
+                                                                indexable: Local(
+                                                                    LocalId(
+                                                                        0,
+                                                                    ),
+                                                                ),
+                                                                parts: [
+                                                                    LIndexPart {
+                                                                        span: virtual:<test>:45-48,
+                                                                        value: Str(
+                                                                            "top",
+                                                                        ),
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        LFieldMember {
+                                                            name: Fixed(
+                                                                "d",
+                                                            ),
+                                                            plus: false,
+                                                            visibility: Normal,
+                                                            value: Local(
+                                                                LocalId(
+                                                                    2,
+                                                                ),
+                                                            ),
+                                                        },
+                                                    ],
+                                                },
+                                            ),
+                                        ),
+                                    },
+                                ],
+                            },
+                        ),
+                    ),
+                },
+            ],
+        },
+    ),
+)

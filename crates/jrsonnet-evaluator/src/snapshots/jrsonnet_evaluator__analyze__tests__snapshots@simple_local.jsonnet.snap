@@ -1,0 +1,38 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analyze_tests/simple_local.jsonnet
+---
+--- source ---
+local x = 1; x + 2
+--- root analysis ---
+object_dependent_depth: none
+local_dependent_depth: 0
+errored: false
+--- diagnostics ---
+--- lir ---
+LocalExpr {
+    binds: [
+        LBind {
+            destruct: Full(
+                LocalId(
+                    0,
+                ),
+            ),
+            value: Num(
+                1.0,
+            ),
+        },
+    ],
+    body: BinaryOp {
+        lhs: Local(
+            LocalId(
+                0,
+            ),
+        ),
+        op: Add,
+        rhs: Num(
+            2.0,
+        ),
+    },
+}

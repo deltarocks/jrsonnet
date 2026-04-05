@@ -1,0 +1,50 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analyze_tests/mutual_recursion.jsonnet
+---
+--- source ---
+local a = b, b = 1; a + 2
+--- root analysis ---
+object_dependent_depth: none
+local_dependent_depth: 0
+errored: false
+--- diagnostics ---
+--- lir ---
+LocalExpr {
+    binds: [
+        LBind {
+            destruct: Full(
+                LocalId(
+                    0,
+                ),
+            ),
+            value: Local(
+                LocalId(
+                    1,
+                ),
+            ),
+        },
+        LBind {
+            destruct: Full(
+                LocalId(
+                    1,
+                ),
+            ),
+            value: Num(
+                1.0,
+            ),
+        },
+    ],
+    body: BinaryOp {
+        lhs: Local(
+            LocalId(
+                0,
+            ),
+        ),
+        op: Add,
+        rhs: Num(
+            2.0,
+        ),
+    },
+}

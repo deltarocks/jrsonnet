@@ -1,0 +1,82 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analyze_tests/object_dollar.jsonnet
+---
+--- source ---
+{ a: 1, b: { c: $.a } }
+--- root analysis ---
+object_dependent_depth: 0
+local_dependent_depth: 0
+errored: false
+--- diagnostics ---
+--- lir ---
+Obj(
+    MemberList(
+        LObjMembers {
+            this: Some(
+                LocalId(
+                    0,
+                ),
+            ),
+            set_dollar: true,
+            uses_super: false,
+            locals: [],
+            asserts: [],
+            fields: [
+                LFieldMember {
+                    name: Fixed(
+                        "a",
+                    ),
+                    plus: false,
+                    visibility: Normal,
+                    value: Num(
+                        1.0,
+                    ),
+                },
+                LFieldMember {
+                    name: Fixed(
+                        "b",
+                    ),
+                    plus: false,
+                    visibility: Normal,
+                    value: Obj(
+                        MemberList(
+                            LObjMembers {
+                                this: None,
+                                set_dollar: false,
+                                uses_super: false,
+                                locals: [],
+                                asserts: [],
+                                fields: [
+                                    LFieldMember {
+                                        name: Fixed(
+                                            "c",
+                                        ),
+                                        plus: false,
+                                        visibility: Normal,
+                                        value: Index {
+                                            indexable: Local(
+                                                LocalId(
+                                                    0,
+                                                ),
+                                            ),
+                                            parts: [
+                                                LIndexPart {
+                                                    span: virtual:<test>:18-19,
+                                                    value: Str(
+                                                        "a",
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                            },
+                        ),
+                    ),
+                },
+            ],
+        },
+    ),
+)

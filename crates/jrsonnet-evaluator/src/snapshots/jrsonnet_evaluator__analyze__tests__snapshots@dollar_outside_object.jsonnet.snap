@@ -1,0 +1,27 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analyze_tests/dollar_outside_object.jsonnet
+---
+--- source ---
+$.a
+--- root analysis ---
+object_dependent_depth: none
+local_dependent_depth: none
+errored: true
+--- diagnostics ---
+error: `$` used outside of object
+--- lir ---
+Index {
+    indexable: BadLocal(
+        "$",
+    ),
+    parts: [
+        LIndexPart {
+            span: virtual:<test>:2-3,
+            value: Str(
+                "a",
+            ),
+        },
+    ],
+}

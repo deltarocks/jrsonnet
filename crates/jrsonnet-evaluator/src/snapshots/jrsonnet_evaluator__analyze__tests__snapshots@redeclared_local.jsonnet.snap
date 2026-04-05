@@ -1,0 +1,35 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analyze_tests/redeclared_local.jsonnet
+---
+--- source ---
+local x = 1, x = 2; x
+--- root analysis ---
+object_dependent_depth: none
+local_dependent_depth: 0
+errored: true
+--- diagnostics ---
+   ·              ╭── variable redeclared: x
+1  │ local x = 1, x = 2; x 
+2  │  
+--- lir ---
+LocalExpr {
+    binds: [
+        LBind {
+            destruct: Full(
+                LocalId(
+                    0,
+                ),
+            ),
+            value: Num(
+                1.0,
+            ),
+        },
+    ],
+    body: Local(
+        LocalId(
+            0,
+        ),
+    ),
+}

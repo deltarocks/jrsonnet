@@ -1,0 +1,109 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analysis_tests/loop_invariant.jsonnet
+---
+--- source ---
+[ i < j for i in std.range(1, 1000) for j in std.range(1, 1000)]
+--- root analysis ---
+object_dependent_depth: none
+local_dependent_depth: 0
+errored: true
+--- diagnostics ---
+   ·                  ╭──────────────────────────────── undefined local: std
+   ·                  │                           ╭──── undefined local: std
+1  │ [ i < j for i in std.range(1, 1000) for j in std.range(1, 1000)] 
+   ·                                         ╰── local could be hoisted to an outer scope: j
+2  │  
+--- lir ---
+ArrComp(
+    LArrComp {
+        value: BinaryOp {
+            lhs: Local(
+                LocalId(
+                    0,
+                ),
+            ),
+            op: Lt,
+            rhs: Local(
+                LocalId(
+                    1,
+                ),
+            ),
+        },
+        compspecs: [
+            For {
+                destruct: Full(
+                    LocalId(
+                        0,
+                    ),
+                ),
+                over: Apply {
+                    applicable: Index {
+                        indexable: BadLocal(
+                            "ref",
+                        ),
+                        parts: [
+                            LIndexPart {
+                                span: virtual:<test>:21-26,
+                                value: Str(
+                                    "range",
+                                ),
+                            },
+                        ],
+                    },
+                    args: LArgsDesc {
+                        unnamed: [
+                            Num(
+                                1.0,
+                            ),
+                            Num(
+                                1000.0,
+                            ),
+                        ],
+                        names: [],
+                        values: [],
+                    } from virtual:<test>:26-35,
+                    tailstrict: false,
+                },
+                loop_invariant: true,
+            },
+            For {
+                destruct: Full(
+                    LocalId(
+                        1,
+                    ),
+                ),
+                over: Apply {
+                    applicable: Index {
+                        indexable: BadLocal(
+                            "ref",
+                        ),
+                        parts: [
+                            LIndexPart {
+                                span: virtual:<test>:49-54,
+                                value: Str(
+                                    "range",
+                                ),
+                            },
+                        ],
+                    },
+                    args: LArgsDesc {
+                        unnamed: [
+                            Num(
+                                1.0,
+                            ),
+                            Num(
+                                1000.0,
+                            ),
+                        ],
+                        names: [],
+                        values: [],
+                    } from virtual:<test>:54-63,
+                    tailstrict: false,
+                },
+                loop_invariant: true,
+            },
+        ],
+    },
+)

@@ -1,0 +1,47 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analyze_tests/slice.jsonnet
+---
+--- source ---
+[1, 2, 3, 4, 5][1:3]
+--- root analysis ---
+object_dependent_depth: none
+local_dependent_depth: none
+errored: false
+--- diagnostics ---
+--- lir ---
+Slice(
+    LSliceExpr {
+        value: Arr(
+            [
+                Num(
+                    1.0,
+                ),
+                Num(
+                    2.0,
+                ),
+                Num(
+                    3.0,
+                ),
+                Num(
+                    4.0,
+                ),
+                Num(
+                    5.0,
+                ),
+            ],
+        ),
+        start: Some(
+            Num(
+                1.0,
+            ),
+        ),
+        end: Some(
+            Num(
+                3.0,
+            ),
+        ),
+        step: None,
+    },
+)
