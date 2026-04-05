@@ -1,0 +1,9 @@
+---
+source: tests/tests/golden.rs
+expression: result
+input_file: tests/golden_destruct/omit.jsonnet
+---
+{
+    "c": 1,
+    "d": 2
+}

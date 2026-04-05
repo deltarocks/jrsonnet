@@ -55,3 +55,13 @@ fn golden_null_coalesce() {
 		assert_snapshot!(result);
 	});
 }
+
+#[test]
+#[cfg(feature = "exp-destruct")]
+fn golden_destruct() {
+	glob!("../", "golden_destruct/*.jsonnet", |path| {
+		let result = run(path);
+
+		assert_snapshot!(result);
+	});
+}

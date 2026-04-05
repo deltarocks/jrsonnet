@@ -1,0 +1,6 @@
+---
+source: tests/tests/golden.rs
+expression: result
+input_file: tests/golden_destruct/params.jsonnet
+---
+6
