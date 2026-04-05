@@ -1,9 +1,6 @@
 use std::cmp::Ordering;
 
-use jrsonnet_evaluator::{
-	Result, Thunk, Val, function::builtin, operator::evaluate_compare_op, val::ArrValue,
-};
-use jrsonnet_ir::BinaryOpType;
+use jrsonnet_evaluator::{function::builtin, val::ArrValue, Result, Thunk, Val};
 
 use crate::keyf::KeyF;
 
@@ -16,9 +13,9 @@ pub fn builtin_set_member(x: Thunk<Val>, arr: ArrValue, #[default] keyF: KeyF) -
 	let x = keyF.eval(x)?;
 
 	while low < high {
-		let middle = usize::midpoint(high, low);
+		let middle = u32::midpoint(high, low);
 		let comp = keyF.eval(arr.get_lazy(middle).expect("in bounds"))?;
-		match evaluate_compare_op(&comp, &x, BinaryOpType::Lt)? {
+		match Val::try_cmp(&comp, &x)? {
 			Ordering::Less => low = middle + 1,
 			Ordering::Equal => return Ok(true),
 			Ordering::Greater => high = middle,
@@ -46,7 +43,7 @@ pub fn builtin_set_inter(
 
 	let mut out = Vec::new();
 	while let (Some(ac), Some(bc)) = (&ak, &bk) {
-		match evaluate_compare_op(ac, bc, BinaryOpType::Lt)? {
+		match Val::try_cmp(ac, bc)? {
 			Ordering::Less => {
 				av = a.next();
 				ak = av.clone().map(keyF).transpose()?;
@@ -86,7 +83,7 @@ pub fn builtin_set_diff(
 
 	let mut out = Vec::new();
 	while let (Some(ac), Some(bc)) = (&ak, &bk) {
-		match evaluate_compare_op(ac, bc, BinaryOpType::Lt)? {
+		match Val::try_cmp(ac, bc)? {
 			Ordering::Less => {
 				// In a, but not in b
 				out.push(av.clone().expect("ak != None"));
@@ -133,7 +130,7 @@ pub fn builtin_set_union(
 
 	let mut out = Vec::new();
 	while let (Some(ac), Some(bc)) = (&ak, &bk) {
-		match evaluate_compare_op(ac, bc, BinaryOpType::Lt)? {
+		match Val::try_cmp(ac, bc)? {
 			Ordering::Less => {
 				out.push(av.clone().expect("ak != None"));
 				av = a.next();

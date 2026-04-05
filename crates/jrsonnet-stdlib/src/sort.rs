@@ -3,12 +3,11 @@
 use std::cmp::Ordering;
 
 use jrsonnet_evaluator::{
-	Result, Thunk, Val, bail,
+	bail,
 	function::builtin,
-	operator::evaluate_compare_op,
-	val::{ArrValue, equals},
+	val::{equals, ArrValue},
+	Result, Thunk, Val,
 };
-use jrsonnet_ir::BinaryOpType;
 
 use crate::{eval_on_empty, keyf::KeyF};
 
@@ -53,7 +52,7 @@ fn sort_identity(mut values: Vec<Val>) -> Result<Vec<Val>> {
 			let mut err = None;
 			// evaluate_compare_op will never return equal on types, which are different from
 			// jsonnet perspective
-			values.sort_unstable_by(|a, b| match evaluate_compare_op(a, b, BinaryOpType::Lt) {
+			values.sort_unstable_by(|a, b| match Val::try_cmp(a, b) {
 				Ok(ord) => ord,
 				Err(e) if err.is_none() => {
 					let _ = err.insert(e);
@@ -71,7 +70,7 @@ fn sort_identity(mut values: Vec<Val>) -> Result<Vec<Val>> {
 
 fn sort_keyf(values: ArrValue, keyf: KeyF) -> Result<Vec<Thunk<Val>>> {
 	// Slow path, user provided key getter
-	let mut vk = Vec::with_capacity(values.len());
+	let mut vk = Vec::with_capacity(values.len() as usize);
 	for value in values.iter_lazy() {
 		vk.push((value.clone(), keyf.eval(value)?));
 	}
@@ -89,16 +88,14 @@ fn sort_keyf(values: ArrValue, keyf: KeyF) -> Result<Vec<Thunk<Val>>> {
 			let mut err = None;
 			// evaluate_compare_op will never return equal on types, which are different from
 			// jsonnet perspective
-			vk.sort_by(
-				|(_a, ak), (_b, bk)| match evaluate_compare_op(ak, bk, BinaryOpType::Lt) {
-					Ok(ord) => ord,
-					Err(e) if err.is_none() => {
-						let _ = err.insert(e);
-						Ordering::Equal
-					}
-					Err(_) => Ordering::Equal,
-				},
-			);
+			vk.sort_by(|(_a, ak), (_b, bk)| match Val::try_cmp(ak, bk) {
+				Ok(ord) => ord,
+				Err(e) if err.is_none() => {
+					let _ = err.insert(e);
+					Ordering::Equal
+				}
+				Err(_) => Ordering::Equal,
+			});
 			if let Some(err) = err {
 				return Err(err);
 			}
@@ -195,7 +192,7 @@ fn array_top1(arr: ArrValue, keyf: KeyF, ordering: Ordering) -> Result<Val> {
 	for item in iter {
 		let cur = item?;
 		let cur_key = keyf.eval(Thunk::evaluated(cur.clone()))?;
-		if evaluate_compare_op(&cur_key, &min_key, BinaryOpType::Lt)? == ordering {
+		if Val::try_cmp(&cur_key, &min_key)? == ordering {
 			min = cur;
 			min_key = cur_key;
 		}

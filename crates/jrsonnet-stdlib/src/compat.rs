@@ -1,19 +1,15 @@
 use std::cmp::Ordering;
 
-use jrsonnet_evaluator::{
-	Result, Val, function::builtin, operator::evaluate_compare_op, val::ArrValue,
-};
+use jrsonnet_evaluator::{function::builtin, val::ArrValue, Result, Val};
 
 #[builtin]
 #[allow(non_snake_case)]
 pub fn builtin___compare(v1: Val, v2: Val) -> Result<i32> {
-	Ok(
-		match evaluate_compare_op(&v1, &v2, jrsonnet_ir::BinaryOpType::Lt)? {
-			Ordering::Less => -1,
-			Ordering::Equal => 0,
-			Ordering::Greater => 1,
-		},
-	)
+	Ok(match Val::try_cmp(&v1, &v2)? {
+		Ordering::Less => -1,
+		Ordering::Equal => 0,
+		Ordering::Greater => 1,
+	})
 }
 
 #[builtin]
@@ -27,11 +23,7 @@ macro_rules! arr_comp {
 		#[builtin]
 		#[allow(non_snake_case)]
 		pub fn $name(arr1: ArrValue, arr2: ArrValue) -> Result<bool> {
-			let ordering = evaluate_compare_op(
-				&Val::Arr(arr1),
-				&Val::Arr(arr2),
-				jrsonnet_ir::BinaryOpType::Lt,
-			)?;
+			let ordering = Val::try_cmp(&Val::Arr(arr1), &Val::Arr(arr2))?;
 			Ok($operator.contains(&ordering))
 		}
 	};

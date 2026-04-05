@@ -10,18 +10,14 @@ use std::{
 
 use jrsonnet_gcmodule::{Acyclic, Cc, Trace, cc_dyn};
 use jrsonnet_interner::IStr;
+use jrsonnet_ir::BinaryOpType;
 pub use jrsonnet_macros::Thunk;
 use jrsonnet_types::ValType;
 use rustc_hash::FxHashMap;
 
 pub use crate::arr::{ArrValue, ArrayLike};
 use crate::{
-	NumValue, ObjValue, Result, SupThis, Unbound, WeakSupThis, bail,
-	error::{Error, ErrorKind::*},
-	function::FuncVal,
-	gc::WithCapacityExt as _,
-	manifest::{ManifestFormat, ToStringFormat},
-	typed::BoundedUsize,
+	NumValue, ObjValue, Result, SupThis, Unbound, WeakSupThis, bail, error::{Error, ErrorKind::*}, evaluate::operator::{evaluate_compare_op, evaluate_mod_op}, function::FuncVal, gc::WithCapacityExt as _, manifest::{ManifestFormat, ToStringFormat}, typed::BoundedUsize
 };
 
 pub trait ThunkValue: Trace {
@@ -584,6 +580,13 @@ impl Val {
 	}
 	pub fn arr(a: impl ArrayLike) -> Self {
 		Self::Arr(ArrValue::new(a))
+	}
+
+	pub fn try_cmp(a: &Val, b: &Val) -> Result<Ordering> {
+		evaluate_compare_op(a, b, BinaryOpType::Lt)
+	}
+	pub fn try_mod(a: &Val, b: &Val) -> Result<Val> {
+		evaluate_mod_op(a, b)
 	}
 }
 

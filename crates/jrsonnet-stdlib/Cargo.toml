@@ -16,17 +16,13 @@ exp-preserve-order = ["jrsonnet-evaluator/exp-preserve-order"]
 # Bigint type
 exp-bigint = ["dep:num-bigint", "jrsonnet-evaluator/exp-bigint"]
 
-exp-null-coaelse = [
-  "jrsonnet-ir/exp-null-coaelse",
-  "jrsonnet-evaluator/exp-null-coaelse",
-]
+exp-null-coaelse = ["jrsonnet-evaluator/exp-null-coaelse"]
 # std.regexMatch and other helpers
 exp-regex = ["dep:regex", "dep:lru", "dep:rustc-hash"]
 
 [dependencies]
 jrsonnet-evaluator.workspace = true
 jrsonnet-macros.workspace = true
-jrsonnet-ir.workspace = true
 jrsonnet-gcmodule.workspace = true
 
 # Used for std.parseJson/std.parseYaml
