@@ -11,6 +11,7 @@ use std::{
 };
 
 use educe::Educe;
+use im_rc::{Vector, vector};
 use jrsonnet_gcmodule::{Acyclic, Cc, Trace, Weak, cc_dyn};
 use jrsonnet_interner::IStr;
 use jrsonnet_ir::Span;
@@ -235,10 +236,11 @@ cc_dyn!(
 	CcObjectCore, ObjectCore,
 	pub fn new() {...}
 );
+
 #[derive(Trace, Educe)]
 #[educe(Debug)]
 struct ObjValueInner {
-	cores: Vec<CcObjectCore>,
+	cores: Vector<CcObjectCore>,
 	assertions_ran: Cell<bool>,
 	has_assertions: bool,
 	value_cache: RefCell<FxHashMap<(IStr, CoreIdx), CacheValue>>,
@@ -266,7 +268,7 @@ fn finish_asserting(obj: &ObjValue) {
 
 thread_local! {
 	static EMPTY_OBJ: ObjValue = ObjValue(Cc::new(ObjValueInner {
-		cores: vec![],
+		cores: vector![],
 		assertions_ran: Cell::new(true),
 		has_assertions: false,
 		value_cache: RefCell::default(),
@@ -428,7 +430,7 @@ impl SupThis {
 			bail!(NoSuperFound)
 		}
 		let mut out = ObjValue::builder();
-		out.reserve_cores(1).extend_with_core(StandaloneSuperCore {
+		out.extend_with_core(StandaloneSuperCore {
 			sup: self.sup,
 			this: self.this.clone(),
 		});
@@ -484,9 +486,7 @@ impl ObjValue {
 
 	#[must_use]
 	pub fn extend_from(&self, sup: Self) -> Self {
-		let mut cores = Vec::with_capacity(sup.0.cores.len() + self.0.cores.len());
-		cores.extend(sup.0.cores.iter().cloned());
-		cores.extend(self.0.cores.iter().cloned());
+		let cores = sup.0.cores.clone() + self.0.cores.clone();
 		let has_assertions = sup.0.has_assertions || self.0.has_assertions;
 		ObjValue(Cc::new(ObjValueInner {
 			cores,
@@ -521,13 +521,27 @@ impl ObjValue {
 			},
 		)
 	}
+
+	fn iter_cores(&self, idx: CoreIdx) -> impl Iterator<Item = &CcObjectCore> {
+		self.0.cores.iter().take(idx.idx).rev()
+	}
+	fn iter_cores_enumerate(&self, idx: CoreIdx) -> impl Iterator<Item = (CoreIdx, &CcObjectCore)> {
+		self.0
+			.cores
+			.iter()
+			.take(idx.idx)
+			.enumerate()
+			.rev()
+			.map(|(idx, o)| (CoreIdx { idx }, o))
+	}
+
 	fn enum_fields_idx(
 		&self,
 		super_depth: &mut SuperDepth,
 		handler: &mut EnumFieldsHandler<'_>,
 		idx: CoreIdx,
 	) -> bool {
-		for core in self.0.cores[..idx.idx].iter().rev() {
+		for core in self.iter_cores(idx) {
 			if !core.0.enum_fields_core(super_depth, handler) {
 				return false;
 			}
@@ -546,7 +560,7 @@ impl ObjValue {
 	}
 	fn has_field_include_hidden_idx(&self, name: IStr, core: CoreIdx) -> bool {
 		let mut skip = Saturating(0usize);
-		for ele in self.0.cores[..core.idx].iter().rev() {
+		for ele in self.iter_cores(core) {
 			match ele.0.has_field_include_hidden_core(name.clone()) {
 				HasFieldIncludeHidden::Exists => {
 					if skip.0 == 0 {
@@ -616,9 +630,9 @@ impl ObjValue {
 		let mut first_add = None;
 		let mut add_stack: Vec<Val> = Vec::new();
 		let mut skip = Saturating(0);
-		for (sup, core) in self.0.cores[..core.idx].iter().enumerate().rev() {
+		for (sup, core) in self.iter_cores_enumerate(core) {
 			let sup_this = SupThis {
-				sup: CoreIdx { idx: sup },
+				sup,
 				this: self.clone(),
 			};
 			match core.0.get_for_core(key.clone(), sup_this, skip.0 != 0)? {
@@ -686,7 +700,7 @@ impl ObjValue {
 	fn field_visibility_idx(&self, field: IStr, core: CoreIdx) -> Option<Visibility> {
 		let mut exists = false;
 		let mut skip = Saturating(0usize);
-		for ele in self.0.cores[..core.idx].iter().rev() {
+		for ele in self.iter_cores(core) {
 			let vis = ele.0.field_visibility_core(field.clone());
 			match vis {
 				FieldVisibility::Found(vis @ (Visibility::Unhide | Visibility::Hidden)) => {

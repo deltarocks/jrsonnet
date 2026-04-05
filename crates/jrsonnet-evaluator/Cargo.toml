@@ -76,6 +76,7 @@ educe = { version = "0.6.0", default-features = false, features = [
   "Hash",
   "PartialEq",
 ] }
+im-rc = "15.1.0"
 
 [build-dependencies]
 rustversion = "1.0.22"

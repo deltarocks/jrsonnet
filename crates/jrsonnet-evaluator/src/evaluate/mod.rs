@@ -410,7 +410,7 @@ pub fn evaluate_object(
 			let locals = obj.locals.clone();
 			evaluate_comp(ctx, &obj.compspecs, 0, &mut |ctx, reserve| {
 				let uctx = evaluate_object_locals(ctx.clone(), locals.clone());
-				builder.reserve_cores(reserve);
+				builder.reserve_fields(reserve);
 
 				evaluate_field_member(&mut builder, ctx, uctx, &obj.field)
 			})?;

@@ -144,9 +144,7 @@ pub fn destruct<H: BuildHasher>(
 						Thunk!(move || {
 							let full = full.evaluate()?;
 							let mut builder = ObjValueBuilder::new();
-							builder
-								.reserve_cores(1)
-								.extend_with_core(full.as_standalone());
+							builder.extend_with_core(full.as_standalone());
 							builder.with_fields_omitted(captured_fields);
 							Ok(Val::Obj(builder.build()))
 						}),
