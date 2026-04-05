@@ -156,14 +156,14 @@ const SKIPPED: &[&str] = &[
 	"native6.jsonnet",
 	// Since when parser should throw an error for that?..
 	"number_leading_zero.jsonnet",
-	// Jrsonnet has this overload
-	"number_times_string.jsonnet",
 	// Golang fails with max stack frames exceeded error
 	"std.makeArray_recursive_evalutation_order_matters.jsonnet",
-	// Jrsonnet has this overload
-	"string_times_number.jsonnet",
 	// Tailstrict semantics is partially unspecified
 	"tailstrict3.jsonnet",
+	// Jrsonnet has this overload
+	"number_times_string.jsonnet",
+	// Jrsonnet has this overload
+	"string_times_number.jsonnet",
 ];
 
 #[test]
@@ -188,6 +188,8 @@ fn cpp_test_suite() -> io::Result<()> {
 			continue;
 		}
 
+		println!("test: {}", entry.path().display());
+
 		let result = run(&entry.path(), &root);
 
 		let mut golden_path = entry.path();
@@ -202,7 +204,7 @@ fn cpp_test_suite() -> io::Result<()> {
 		// .jsonnet.golden for C++ tests
 		let mut golden = read_file(&golden_path)?;
 		// .golden for Go tests
-		if golden.is_none() && let Some(golden_path) = read_file(&dbg!(golden_path2))? {
+		if golden.is_none() && let Some(golden_path) = read_file(&golden_path2)? {
 			golden = Some(golden_path);
 		}
 
