@@ -29,7 +29,7 @@ macro_rules! expr_un {
 }
 
 parser! {
-	grammar jsonnet_parser() for str {
+	pub grammar jsonnet_parser() for str {
 		use peg::ParseLiteral;
 
 		rule eof() = quiet!{![_]} / expected!("<eof>")
@@ -59,7 +59,7 @@ parser! {
 		rule id() -> IStr = v:$(quiet!{ !reserved() alpha() (alpha() / digit())*} / expected!("<identifier>")) { v.into() }
 
 		rule keyword(id: &'static str) -> ()
-			= #parse_string_literal(id) end_of_ident()
+			= #{|input, pos| input.parse_string_literal(pos, id)} end_of_ident()
 
 		pub rule param(s: &ParserSettings) -> ExprParam = destruct:destruct(s) expr:(_ "=" _ expr:expr(s){expr})? { ExprParam { destruct, default: expr.map(Rc::new) } }
 		pub rule params(s: &ParserSettings) -> ExprParams
@@ -92,9 +92,7 @@ parser! {
 			}
 
 		pub rule destruct_rest() -> DestructRest
-			= "..." into:(_ into:id() {into})? {if let Some(into) = into {
-				DestructRest::Keep(into)
-			} else {DestructRest::Drop}}
+			= "..." into:(_ into:id() {into})? {into.map_or_else(|| DestructRest::Drop, DestructRest::Keep)}
 		pub rule destruct_array(s: &ParserSettings) -> Destruct
 			= "[" _ start:destruct(s)**comma() rest:(
 				comma() _ rest:destruct_rest()? end:(
