@@ -8,19 +8,17 @@ use jrsonnet_ir::{
 	function::ParamName,
 };
 use jrsonnet_types::ValType;
-use rustc_hash::FxHashMap;
 
 use self::destructure::destruct;
 use crate::{
-	Context, Error, ObjValue, ObjValueBuilder, ObjectAssertion, Pending, Result, ResultExt,
-	SupThis, Unbound, Val,
+	Context, ContextBuilder, Error, ObjValue, ObjValueBuilder, ObjectAssertion, Pending, Result,
+	ResultExt, SupThis, Unbound, Val,
 	arr::ArrValue,
 	bail,
 	destructure::evaluate_dest,
 	error::{ErrorKind::*, suggest_object_fields},
 	evaluate::operator::{evaluate_binary_op_special, evaluate_unary_op},
 	function::{CallLocation, FuncDesc, FuncVal, PreparedFuncVal},
-	gc::WithCapacityExt as _,
 	in_frame,
 	typed::{FromUntyped, IntoUntyped as _, Typed},
 	val::{CachedUnbound, IndexableVal, NumValue, StrValue, Thunk},
@@ -130,9 +128,9 @@ pub fn evaluate_comp(
 					guaranteed_reserve = guaranteed_reserve.max(1) * list.len();
 					for (i, item) in list.iter_lazy().enumerate() {
 						let fctx = Pending::new();
-						let mut new_bindings = FxHashMap::with_capacity(into.binds_len());
-						destruct(into, item, fctx.clone(), &mut new_bindings)?;
-						let ctx = ctx.clone().extend_bindings(new_bindings).into_future(fctx);
+						let mut ctx = ContextBuilder::extend_fast(ctx.clone());
+						destruct(into, item, fctx.clone(), &mut ctx)?;
+						let ctx = ctx.build().into_future(fctx);
 
 						let specs = &specs[1..];
 						evaluate_comp(
@@ -179,6 +177,7 @@ pub fn evaluate_comp(
 }
 
 fn evaluate_arr_comp(ctx: Context, expr: &Rc<Expr>, comp_specs: &[CompSpec]) -> Result<ArrValue> {
+	let ctx = ctx.branch_point();
 	'eager: {
 		let mut out = Vec::new();
 
@@ -225,17 +224,13 @@ fn evaluate_object_locals(
 
 		fn bind(&self, sup_this: SupThis) -> Result<Context> {
 			let fctx = Context::new_future();
-			let mut new_bindings =
-				FxHashMap::with_capacity(self.locals.iter().map(BindSpec::binds_len).sum());
+			let ctx = self.fctx.clone();
+			let mut ctx = ContextBuilder::extend(ctx);
 			for b in self.locals.iter() {
-				evaluate_dest(b, fctx.clone(), &mut new_bindings)?;
+				evaluate_dest(b, fctx.clone(), &mut ctx)?;
 			}
 
-			let ctx = self.fctx.clone();
-
-			let ctx = ctx
-				.extend_bindings_sup_this(new_bindings, sup_this)
-				.into_future(fctx);
+			let ctx = ctx.build_sup_this(sup_this).into_future(fctx);
 
 			Ok(ctx)
 		}
@@ -332,10 +327,7 @@ struct DirectUnbound(Context);
 impl Unbound for DirectUnbound {
 	type Bound = Context;
 	fn bind(&self, sup_this: SupThis) -> Result<Context> {
-		Ok(self
-			.0
-			.clone()
-			.extend_bindings_sup_this(FxHashMap::new(), sup_this))
+		Ok(ContextBuilder::extend(self.0.clone()).build_sup_this(sup_this))
 	}
 }
 
@@ -408,12 +400,17 @@ pub fn evaluate_object(
 				builder.with_super(super_obj);
 			}
 			let locals = obj.locals.clone();
-			evaluate_comp(ctx, &obj.compspecs, 0, &mut |ctx, reserve| {
-				let uctx = evaluate_object_locals(ctx.clone(), locals.clone());
-				builder.reserve_fields(reserve);
+			evaluate_comp(
+				ctx.branch_point(),
+				&obj.compspecs,
+				0,
+				&mut |ctx, reserve| {
+					let uctx = evaluate_object_locals(ctx.clone(), locals.clone());
+					builder.reserve_fields(reserve);
 
-				evaluate_field_member(&mut builder, ctx, uctx, &obj.field)
-			})?;
+					evaluate_field_member(&mut builder, ctx, uctx, &obj.field)
+				},
+			)?;
 
 			builder.build()
 		}
@@ -684,13 +681,12 @@ pub fn evaluate(ctx: Context, expr: &Expr) -> Result<Val> {
 			Ok(indexable)
 		})?,
 		LocalExpr(bindings, returned) => {
-			let mut new_bindings: FxHashMap<IStr, Thunk<Val>> =
-				FxHashMap::with_capacity(bindings.iter().map(BindSpec::binds_len).sum());
 			let fctx = Context::new_future();
+			let mut ctx = ContextBuilder::extend(ctx);
 			for b in bindings {
-				evaluate_dest(b, fctx.clone(), &mut new_bindings)?;
+				evaluate_dest(b, fctx.clone(), &mut ctx)?;
 			}
-			let ctx = ctx.extend_bindings(new_bindings).into_future(fctx);
+			let ctx = ctx.build().into_future(fctx);
 			evaluate(ctx, returned)?
 		}
 		Arr(items) => {

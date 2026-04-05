@@ -545,9 +545,6 @@ impl ContextInitializer {
 	}
 }
 impl jrsonnet_evaluator::ContextInitializer for ContextInitializer {
-	fn reserve_vars(&self) -> usize {
-		1
-	}
 	fn populate(&self, source: Source, builder: &mut ContextBuilder) {
 		let mut std = ObjValueBuilder::new();
 		std.with_super(self.stdlib_obj.clone());

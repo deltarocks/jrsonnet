@@ -249,6 +249,10 @@ pub struct StackTrace(pub Vec<StackTraceElement>);
 
 #[derive(Clone, Trace)]
 pub struct Error(Box<(ErrorKind, StackTrace)>);
+
+#[cfg(target_pointer_width = "64")]
+static_assertions::assert_eq_size!(Error, usize);
+
 impl Error {
 	pub fn new(e: ErrorKind) -> Self {
 		Self(Box::new((e, StackTrace(vec![]))))

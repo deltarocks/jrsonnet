@@ -1,12 +1,10 @@
 use jrsonnet_ir::ExprParams;
-use rustc_hash::FxHashMap;
 
 use crate::{
-	Context, Thunk,
+	Context, ContextBuilder, Thunk,
 	destructure::destruct,
 	error::{ErrorKind::*, Result},
 	evaluate_named_param,
-	gc::WithCapacityExt as _,
 };
 
 /// Creates Context, which has all argument default values applied
@@ -14,7 +12,7 @@ use crate::{
 pub fn parse_default_function_call(body_ctx: Context, params: &ExprParams) -> Result<Context> {
 	let fctx = Context::new_future();
 
-	let mut bindings = FxHashMap::with_capacity(params.binds_len());
+	let mut ctx = ContextBuilder::extend(body_ctx);
 
 	for param in params.exprs.iter() {
 		if let Some(v) = &param.default {
@@ -27,7 +25,7 @@ pub fn parse_default_function_call(body_ctx: Context, params: &ExprParams) -> Re
 					Thunk!(move || evaluate_named_param(ctx.unwrap(), &value, name))
 				},
 				fctx.clone(),
-				&mut bindings,
+				&mut ctx,
 			)?;
 		} else {
 			destruct(
@@ -42,10 +40,10 @@ pub fn parse_default_function_call(body_ctx: Context, params: &ExprParams) -> Re
 					.into()))
 				},
 				fctx.clone(),
-				&mut bindings,
+				&mut ctx,
 			)?;
 		}
 	}
 
-	Ok(body_ctx.extend_bindings(bindings).into_future(fctx))
+	Ok(ctx.build().into_future(fctx))
 }

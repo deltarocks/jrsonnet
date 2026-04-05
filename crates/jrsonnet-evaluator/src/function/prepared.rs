@@ -2,12 +2,12 @@ use std::rc::Rc;
 
 use jrsonnet_gcmodule::{Acyclic, Trace};
 use jrsonnet_ir::{ExprParams, IStr, function::FunctionSignature};
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashSet;
 
 use super::{CallLocation, FuncVal};
 use crate::{
 	Context, ContextBuilder, Pending, Result, Thunk, Val, bail, destructure::destruct,
-	error::ErrorKind::*, evaluate_named_param, gc::WithCapacityExt,
+	error::ErrorKind::*, evaluate_named_param,
 };
 
 #[derive(Debug, Trace, Clone)]
@@ -118,7 +118,7 @@ pub fn parse_prepared_function_call(
 	unnamed: &[Thunk<Val>],
 	named: &[Thunk<Val>],
 ) -> Result<Context> {
-	let mut passed_args = FxHashMap::with_capacity(params.binds_len());
+	let mut ctx = ContextBuilder::extend(body_ctx);
 
 	let destruct_ctx = Pending::new();
 
@@ -127,7 +127,7 @@ pub fn parse_prepared_function_call(
 			&params.exprs[param_idx].destruct,
 			unnamed.clone(),
 			destruct_ctx.clone(),
-			&mut passed_args,
+			&mut ctx,
 		)?;
 	}
 
@@ -136,18 +136,16 @@ pub fn parse_prepared_function_call(
 			&params.exprs[param_idx].destruct,
 			named[arg_idx].clone(),
 			destruct_ctx.clone(),
-			&mut passed_args,
+			&mut ctx,
 		)?;
 	}
 
 	if prepared.defaults.is_empty() {
-		let body_ctx = body_ctx
-			.extend_bindings(passed_args)
-			.into_future(destruct_ctx);
+		let body_ctx = ctx.build().into_future(destruct_ctx);
 		Ok(body_ctx)
 	} else {
 		let fctx = Context::new_future();
-		let mut defaults = FxHashMap::with_capacity(params.binds_len() - passed_args.len());
+		let mut ctx = ctx.commit();
 		for param_idx in prepared.defaults.iter().copied() {
 			// let param = params.0.rc_idx(param_idx);
 			destruct(
@@ -163,13 +161,10 @@ pub fn parse_prepared_function_call(
 					})
 				},
 				fctx.clone(),
-				&mut defaults,
+				&mut ctx,
 			)?;
 		}
 
-		let mut ctx = ContextBuilder::extend(body_ctx);
-		ctx.binds(passed_args);
-		ctx.binds(defaults);
 		Ok(ctx.build().into_future(fctx).into_future(destruct_ctx))
 	}
 }

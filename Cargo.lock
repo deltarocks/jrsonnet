@@ -699,6 +699,7 @@ dependencies = [
  "bitmaps",
  "rand_core 0.6.4",
  "rand_xoshiro",
+ "refpool",
  "sized-chunks",
  "typenum",
  "version_check",
@@ -861,9 +862,9 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-gcmodule"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a6a63a6e55ba82764e483d7f8a181f25db95a8f25da8ae6520e95a5fe39c6a6"
+checksum = "21dd97b40cbfb2043094219f95d96519858ba1aee4e8260eb048a1774832a517"
 dependencies = [
  "im-rc",
  "jrsonnet-gcmodule-derive",
@@ -871,9 +872,9 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-gcmodule-derive"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "095fe3c4c0acf32de80205a8a479ef63c216b9efb0024dec9eb7fe1c5ef1f1a1"
+checksum = "ede3d0445c2a7d7adab0a3cc33bdb33df78ffebebc21a2848c221526cb1795d4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1420,6 +1421,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "refpool"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "369e86b80fa7dc8c561dd9613a5bf25c59d2d3073cd66c47fd9e39802f0ecb58"
+
+[[package]]
 name = "regex"
 version = "1.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1633,6 +1640,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16d69225bde7a69b235da73377861095455d298f2b970996eec25ddbb42b3d1e"
 dependencies = [
  "bitmaps",
+ "refpool",
  "typenum",
 ]
 
@@ -1738,6 +1746,7 @@ dependencies = [
  "jrsonnet-evaluator",
  "jrsonnet-gcmodule",
  "jrsonnet-stdlib",
+ "mimallocator",
  "serde",
  "serde_json",
 ]

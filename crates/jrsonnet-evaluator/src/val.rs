@@ -355,8 +355,19 @@ impl StrValue {
 			Self::Tree(Rc::new((a, b, len)))
 		}
 	}
+	pub fn chunks(&self, c: &mut impl FnMut(&IStr)) {
+		fn write_buf(s: &StrValue, c: &mut impl FnMut(&IStr)) {
+			match s {
+				StrValue::Flat(f) => c(f),
+				StrValue::Tree(t) => {
+					write_buf(&t.0, c);
+					write_buf(&t.1, c);
+				}
+			}
+		}
+		write_buf(self, c);
+	}
 	pub fn into_flat(&self) -> IStr {
-		#[cold]
 		fn write_buf(s: &StrValue, out: &mut String) {
 			match s {
 				StrValue::Flat(f) => out.push_str(f),

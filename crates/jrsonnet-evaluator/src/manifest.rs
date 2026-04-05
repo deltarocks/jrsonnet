@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt::Write, ptr};
+use std::{borrow::Cow, fmt::Write, hint::black_box, ptr};
 
 use crate::{Result, ResultExt, Val, bail, in_description_frame};
 
@@ -44,6 +44,45 @@ where
 	}
 }
 
+pub struct BlackBoxFormat;
+impl ManifestFormat for BlackBoxFormat {
+	#[allow(clippy::only_used_in_recursion)]
+	fn manifest_buf(&self, val: Val, buf: &mut String) -> Result<()> {
+		match val {
+			Val::Bool(v) => {
+				black_box(v);
+			}
+			val @ Val::Null => {
+				black_box(val);
+			}
+			Val::Str(str_value) => {
+				black_box(format!("{str_value}"));
+			}
+			Val::Num(num_value) => {
+				black_box(num_value);
+			}
+			Val::Arr(arr_value) => {
+				for ele in arr_value.iter() {
+					let ele = ele?;
+					self.manifest_buf(ele, buf)?;
+				}
+			}
+			Val::Obj(obj_value) => {
+				for (name, value) in obj_value.iter() {
+					black_box(name);
+					let value = value?;
+					self.manifest_buf(value, buf)?;
+				}
+			}
+			Val::Func(func_val) => {
+				black_box(func_val);
+				bail!("tried to manifest function")
+			}
+		}
+		Ok(())
+	}
+}
+
 #[derive(PartialEq, Eq, Clone, Copy)]
 enum JsonFormatting {
 	// Applied in manifestification
@@ -66,7 +105,6 @@ pub struct JsonFormat<'s> {
 	preserve_order: bool,
 	#[cfg(feature = "exp-bigint")]
 	preserve_bigints: bool,
-	debug_truncate_strings: Option<usize>,
 }
 
 impl<'s> JsonFormat<'s> {
@@ -81,7 +119,6 @@ impl<'s> JsonFormat<'s> {
 			preserve_order,
 			#[cfg(feature = "exp-bigint")]
 			preserve_bigints: false,
-			debug_truncate_strings: None,
 		}
 	}
 	/// Same format as std.toString, except does not keeps top-level string as-is
@@ -96,7 +133,6 @@ impl<'s> JsonFormat<'s> {
 			preserve_order: false,
 			#[cfg(feature = "exp-bigint")]
 			preserve_bigints: false,
-			debug_truncate_strings: None,
 		}
 	}
 	pub fn std_to_json(
@@ -114,7 +150,6 @@ impl<'s> JsonFormat<'s> {
 			preserve_order,
 			#[cfg(feature = "exp-bigint")]
 			preserve_bigints: false,
-			debug_truncate_strings: None,
 		}
 	}
 	// Same format as CLI manifestification
@@ -137,7 +172,6 @@ impl<'s> JsonFormat<'s> {
 			preserve_order,
 			#[cfg(feature = "exp-bigint")]
 			preserve_bigints: false,
-			debug_truncate_strings: None,
 		}
 	}
 	// Same format as CLI manifestification
@@ -151,7 +185,6 @@ impl<'s> JsonFormat<'s> {
 			preserve_order: true,
 			#[cfg(feature = "exp-bigint")]
 			preserve_bigints: true,
-			debug_truncate_strings: Some(256),
 		}
 	}
 }
@@ -166,7 +199,6 @@ impl Default for JsonFormat<'static> {
 			preserve_order: false,
 			#[cfg(feature = "exp-bigint")]
 			preserve_bigints: false,
-			debug_truncate_strings: None,
 		}
 	}
 }
@@ -197,18 +229,12 @@ fn manifest_json_ex_buf(
 		}
 		Val::Null => buf.push_str("null"),
 		Val::Str(s) => {
-			let flat = s.clone().into_flat();
-			if let Some(truncate) = options.debug_truncate_strings {
-				if flat.len() > truncate {
-					let (start, end) = flat.split_at(truncate / 2);
-					let (_, end) = end.split_at(end.len() - truncate / 2);
-					escape_string_json_buf(&format!("{start}..{end}"), buf);
-				} else {
-					escape_string_json_buf(&flat, buf);
-				}
-			} else {
-				escape_string_json_buf(&flat, buf);
-			}
+			buf.reserve(2 + s.len());
+			buf.push('"');
+			s.chunks(&mut |c| {
+				escape_string_json_buf_raw(c, buf);
+			});
+			buf.push('"');
 		}
 		Val::Num(n) => write!(buf, "{n}").unwrap(),
 		#[cfg(feature = "exp-bigint")]
@@ -476,14 +502,14 @@ static ESCAPE: [u8; 256] = [
 ];
 
 pub fn escape_string_json_buf(value: &str, buf: &mut String) {
+	buf.reserve_exact(value.len() + 2);
+	escape_string_json_buf_raw(value, buf);
+}
+
+fn escape_string_json_buf_raw(value: &str, buf: &mut String) {
 	// Safety: we only write correct utf-8 in this function
 	let buf: &mut Vec<u8> = unsafe { &mut *ptr::from_mut(buf).cast::<Vec<u8>>() };
 	let bytes = value.as_bytes();
-
-	// Perfect for ascii strings, removes any reallocations
-	buf.reserve(value.len() + 2);
-
-	buf.push(b'"');
 
 	let mut start = 0;
 
@@ -519,10 +545,8 @@ pub fn escape_string_json_buf(value: &str, buf: &mut String) {
 	}
 
 	if start == bytes.len() {
-		buf.push(b'"');
 		return;
 	}
 
 	buf.extend_from_slice(&bytes[start..]);
-	buf.push(b'"');
 }

@@ -15,7 +15,6 @@ pub mod gc;
 mod import;
 mod integrations;
 pub mod manifest;
-mod map;
 mod obj;
 pub mod stack;
 pub mod stdlib;
@@ -162,25 +161,25 @@ cc_dyn!(CcContextInitializer, ContextInitializer);
 
 /// During import, this trait will be called to create initial context for file.
 /// It may initialize global variables, stdlib for example.
-pub trait ContextInitializer: Trace {
-	/// For which size the builder should be preallocated
-	fn reserve_vars(&self) -> usize {
-		0
-	}
-	/// Initialize default file context.
-	/// Has default implementation, which calls `populate`.
-	/// Prefer to always implement `populate` instead.
-	fn initialize(&self, for_file: Source) -> Context {
-		let mut builder = ContextBuilder::with_capacity(self.reserve_vars());
-		self.populate(for_file, &mut builder);
-		builder.build()
-	}
+pub trait ContextInitializer {
 	/// For composability: extend builder. May panic if this initialization is not supported,
 	/// and the context may only be created via `initialize`.
 	fn populate(&self, for_file: Source, builder: &mut ContextBuilder);
 	/// Allows upcasting from abstract to concrete context initializer.
 	/// jrsonnet by itself doesn't use this method, it is allowed for it to panic.
 	fn as_any(&self) -> &dyn Any;
+}
+impl<T> ContextInitializer for &T
+where
+	T: ContextInitializer,
+{
+	fn populate(&self, for_file: Source, builder: &mut ContextBuilder) {
+		(*self).populate(for_file, builder);
+	}
+
+	fn as_any(&self) -> &dyn Any {
+		(*self).as_any()
+	}
 }
 
 /// Context initializer which adds nothing.
@@ -193,16 +192,8 @@ impl ContextInitializer for () {
 
 impl<T> ContextInitializer for Option<T>
 where
-	T: ContextInitializer,
+	T: ContextInitializer + 'static,
 {
-	fn initialize(&self, for_file: Source) -> Context {
-		if let Some(ctx) = self {
-			ctx.initialize(for_file)
-		} else {
-			().initialize(for_file)
-		}
-	}
-
 	fn populate(&self, for_file: Source, builder: &mut ContextBuilder) {
 		if let Some(ctx) = self {
 			ctx.populate(for_file, builder);
@@ -218,12 +209,6 @@ macro_rules! impl_context_initializer {
 	($($gen:ident)*) => {
 		#[allow(non_snake_case)]
 		impl<$($gen: ContextInitializer + Trace,)*> ContextInitializer for ($($gen,)*) {
-			fn reserve_vars(&self) -> usize {
-				let mut out = 0;
-				let ($($gen,)*) = self;
-				$(out += $gen.reserve_vars();)*
-				out
-			}
 			fn populate(&self, for_file: Source, builder: &mut ContextBuilder) {
 				let ($($gen,)*) = self;
 				$($gen.populate(for_file.clone(), builder);)*
@@ -453,19 +438,17 @@ impl State {
 
 	/// Creates context with all passed global variables
 	pub fn create_default_context(&self, source: Source) -> Context {
-		self.context_initializer().initialize(source)
+		self.create_default_context_with(source, &())
 	}
 
 	/// Creates context with all passed global variables, calling custom modifier
 	pub fn create_default_context_with(
 		&self,
 		source: Source,
-		context_initializer: impl ContextInitializer,
+		context_initializer: &dyn ContextInitializer,
 	) -> Context {
 		let default_initializer = self.context_initializer();
-		let mut builder = ContextBuilder::with_capacity(
-			default_initializer.reserve_vars() + context_initializer.reserve_vars(),
-		);
+		let mut builder = ContextBuilder::new();
 		default_initializer.populate(source.clone(), &mut builder);
 		context_initializer.populate(source, &mut builder);
 
@@ -516,20 +499,14 @@ impl ContextInitializer for InitialUnderscore {
 impl State {
 	/// Parses and evaluates the given snippet
 	pub fn evaluate_snippet(&self, name: impl Into<IStr>, code: impl Into<IStr>) -> Result<Val> {
-		let code = code.into();
-		let source = Source::new_virtual(name.into(), code.clone());
-		let parsed = parse_jsonnet(&code, source.clone()).map_err(|e| ImportSyntaxError {
-			path: source.clone(),
-			error: Box::new(e),
-		})?;
-		evaluate(self.create_default_context(source), &parsed)
+		self.evaluate_snippet_with(name, code, &())
 	}
 	/// Parses and evaluates the given snippet with custom context modifier
 	pub fn evaluate_snippet_with(
 		&self,
 		name: impl Into<IStr>,
 		code: impl Into<IStr>,
-		context_initializer: impl ContextInitializer,
+		context_initializer: &dyn ContextInitializer,
 	) -> Result<Val> {
 		let code = code.into();
 		let source = Source::new_virtual(name.into(), code.clone());
@@ -587,7 +564,7 @@ impl StateBuilder {
 	}
 	pub fn context_initializer(
 		&mut self,
-		context_initializer: impl ContextInitializer,
+		context_initializer: impl ContextInitializer + Trace,
 	) -> &mut Self {
 		let _ = self
 			.context_initializer

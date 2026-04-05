@@ -200,7 +200,7 @@ fn main_real(opts: Opts) -> Result<(), Error> {
 		val = s.evaluate_snippet_with(
 			"<exp_apply>".to_owned(),
 			&apply,
-			InitialUnderscore(Thunk::evaluated(val)),
+			&InitialUnderscore(Thunk::evaluated(val)),
 		)?;
 	}
 

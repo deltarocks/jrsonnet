@@ -1,30 +1,23 @@
-use std::{collections::HashMap, hash::BuildHasher};
-
-use jrsonnet_interner::IStr;
 use jrsonnet_ir::{BindSpec, Destruct};
 
 #[cfg(feature = "exp-preserve-order")]
 use crate::evaluate;
 use crate::{
-	Context, Pending, Thunk, Val, bail,
-	error::{ErrorKind::*, Result},
-	evaluate_method, evaluate_named_param,
+	Context, ContextBuilder, Pending, Thunk, Val, error::Result, evaluate_method,
+	evaluate_named_param,
 };
 
 #[allow(clippy::too_many_lines)]
 #[allow(unused_variables)]
-pub fn destruct<H: BuildHasher>(
+pub fn destruct(
 	d: &Destruct,
 	parent: Thunk<Val>,
 	fctx: Pending<Context>,
-	new_bindings: &mut HashMap<IStr, Thunk<Val>, H>,
+	new_bindings: &mut ContextBuilder,
 ) -> Result<()> {
 	match d {
 		Destruct::Full(v) => {
-			let old = new_bindings.insert(v.clone(), parent);
-			if old.is_some() {
-				bail!(DuplicateLocalVar(v.clone()))
-			}
+			new_bindings.try_bind(v.clone(), parent)?;
 		}
 		#[cfg(feature = "exp-destruct")]
 		Destruct::Skip => {}
@@ -187,10 +180,10 @@ pub fn destruct<H: BuildHasher>(
 	Ok(())
 }
 
-pub fn evaluate_dest<H: BuildHasher>(
+pub fn evaluate_dest(
 	d: &BindSpec,
 	fctx: Pending<Context>,
-	new_bindings: &mut HashMap<IStr, Thunk<Val>, H>,
+	new_bindings: &mut ContextBuilder,
 ) -> Result<()> {
 	match d {
 		BindSpec::Field { into, value } => {
@@ -210,13 +203,10 @@ pub fn evaluate_dest<H: BuildHasher>(
 			let params = params.clone();
 			let name = name.clone();
 			let value = value.clone();
-			let old = new_bindings.insert(name.clone(), {
-				let name = name.clone();
-				Thunk!(move || Ok(evaluate_method(fctx.unwrap(), name, params, value)))
-			});
-			if old.is_some() {
-				bail!(DuplicateLocalVar(name))
-			}
+			new_bindings.try_bind(
+				name.clone(),
+				Thunk!(move || Ok(evaluate_method(fctx.unwrap(), name, params, value))),
+			)?;
 		}
 	}
 	Ok(())
