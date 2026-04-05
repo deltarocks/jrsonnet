@@ -2,9 +2,9 @@
 
 use std::fmt::Display;
 
-use jrsonnet_gcmodule::Trace;
+use jrsonnet_gcmodule::Acyclic;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Trace)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Acyclic)]
 pub enum ValType {
 	Bool,
 	Null,
@@ -40,8 +40,7 @@ impl Display for ValType {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Trace)]
-#[trace(skip)]
+#[derive(Debug, Clone, PartialEq, Acyclic)]
 pub enum ComplexValType {
 	Any,
 	Char,
