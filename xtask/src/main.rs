@@ -123,8 +123,18 @@ fn main() -> Result<()> {
 			.run()?;
 			sh.remove_path("cpp_test_suite")?;
 			sh.remove_path("go_testdata")?;
+			sh.remove_path("cpp_perf_tests")?;
+			sh.remove_path("cpp_benchmarks")?;
+			sh.remove_path("go_builtin_benchmarks")?;
 			cmd!(sh, "mv {git_dir_path}/jsonnet/test_suite cpp_test_suite").run()?;
 			cmd!(sh, "mv {git_dir_path}/go-jsonnet/testdata go_testdata").run()?;
+			cmd!(sh, "mv {git_dir_path}/jsonnet/perf_tests cpp_perf_tests").run()?;
+			cmd!(sh, "mv {git_dir_path}/jsonnet/benchmarks cpp_benchmarks").run()?;
+			cmd!(
+				sh,
+				"mv {git_dir_path}/go-jsonnet/builtin-benchmarks go_builtin_benchmarks"
+			)
+			.run()?;
 
 			Ok(())
 		}

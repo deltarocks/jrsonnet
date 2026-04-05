@@ -29,5 +29,5 @@ criterion.workspace = true
 bench = false
 
 [[bench]]
-name = "prim_comparsion"
+name = "cpp_test_suite"
 harness = false

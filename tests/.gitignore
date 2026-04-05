@@ -1,2 +1,5 @@
 /cpp_test_suite
 /go_testdata
+/go_builtin_benchmarks
+/cpp_benchmarks
+/cpp_perf_tests
