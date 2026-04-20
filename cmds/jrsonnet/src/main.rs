@@ -9,6 +9,7 @@ use jrsonnet_cli::{GcOpts, ManifestOpts, MiscOpts, OutputOpts, StdOpts, TlaOpts,
 use jrsonnet_evaluator::{
 	ResultExt, State, Val, apply_tla, bail,
 	error::{Error as JrError, ErrorKind},
+	manifest::ManifestFormat,
 };
 use jrsonnet_ir::{SourceDefaultIgnoreJpath, SourcePath};
 
@@ -249,13 +250,18 @@ fn main_real(opts: Opts) -> Result<(), Error> {
 			dir.pop();
 			create_dir_all(dir)?;
 		}
-		let mut file = File::create(path)?;
-		writeln!(file, "{}", val.manifest(manifest_format)?)?;
-	} else {
-		let output = val.manifest(manifest_format)?;
-		if !output.is_empty() {
-			println!("{output}");
+		let mut file = std::io::BufWriter::new(File::create(path)?);
+		if manifest_format.manifest_write(val, &mut file)? {
+			file.write_all(b"\n")?;
 		}
+		file.flush()?;
+	} else {
+		let stdout = std::io::stdout();
+		let mut out = std::io::BufWriter::new(stdout.lock());
+		if manifest_format.manifest_write(val, &mut out)? {
+			out.write_all(b"\n")?;
+		}
+		out.flush()?;
 	}
 
 	Ok(())

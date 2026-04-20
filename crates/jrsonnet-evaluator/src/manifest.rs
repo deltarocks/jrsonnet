@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt::Write, ptr};
+use std::{borrow::Cow, fmt::Write, io, ptr};
 
 use crate::{Result, ResultExt, Val, bail, in_description_frame};
 
@@ -8,6 +8,22 @@ pub trait ManifestFormat {
 		let mut out = String::new();
 		self.manifest_buf(val, &mut out)?;
 		Ok(out)
+	}
+	/// Write manifested output directly to a writer, enabling streaming for large outputs.
+	///
+	/// The default implementation buffers into a String and writes it all at once.
+	/// Streaming formats (like YamlStreamFormat) override this to write incrementally,
+	/// keeping only one stream element in memory at a time.
+	///
+	/// Returns `true` if any output was written, `false` if the output was empty.
+	fn manifest_write(&self, val: Val, out: &mut dyn io::Write) -> Result<bool> {
+		let s = self.manifest(val)?;
+		if !s.is_empty() {
+			write_io(out, s.as_bytes())?;
+			Ok(true)
+		} else {
+			Ok(false)
+		}
 	}
 	/// When outputing to file, is it safe to append a trailing newline (I.e newline won't change
 	/// the meaning).
@@ -25,6 +41,10 @@ where
 		let inner = &**self;
 		inner.manifest_buf(val, buf)
 	}
+	fn manifest_write(&self, val: Val, out: &mut dyn io::Write) -> Result<bool> {
+		let inner = &**self;
+		inner.manifest_write(val, out)
+	}
 	fn file_trailing_newline(&self) -> bool {
 		let inner = &**self;
 		inner.file_trailing_newline()
@@ -37,6 +57,10 @@ where
 	fn manifest_buf(&self, val: Val, buf: &mut String) -> Result<()> {
 		let inner = &**self;
 		inner.manifest_buf(val, buf)
+	}
+	fn manifest_write(&self, val: Val, out: &mut dyn io::Write) -> Result<bool> {
+		let inner = &**self;
+		inner.manifest_write(val, out)
 	}
 	fn file_trailing_newline(&self) -> bool {
 		let inner = &**self;
@@ -433,6 +457,42 @@ impl<I: ManifestFormat> ManifestFormat for YamlStreamFormat<I> {
 		}
 		Ok(())
 	}
+
+	fn manifest_write(&self, val: Val, out: &mut dyn io::Write) -> Result<bool> {
+		let Val::Arr(arr) = val else {
+			bail!(
+				"output should be array for yaml stream format, got {}",
+				val.value_type()
+			)
+		};
+		let mut buf = String::new();
+		for (i, v) in arr.iter().enumerate() {
+			let v = v.with_description(|| format!("elem <{i}> evaluation"))?;
+			buf.clear();
+			if i != 0 {
+				buf.push('\n');
+			}
+			buf.push_str("---\n");
+			in_description_frame(
+				|| format!("elem <{i}> manifestification"),
+				|| self.inner.manifest_buf(v, &mut buf),
+			)?;
+			write_io(out, buf.as_bytes())?;
+		}
+		if self.c_document_end {
+			write_io(out, b"\n...")?;
+		}
+		if self.end_newline {
+			write_io(out, b"\n")?;
+		}
+		Ok(true)
+	}
+}
+
+fn write_io(out: &mut dyn io::Write, data: &[u8]) -> Result<()> {
+	out.write_all(data)
+		.map_err(|e| crate::error::ErrorKind::ImportIo(e.to_string()))?;
+	Ok(())
 }
 
 pub fn escape_string_json(s: &str) -> String {
