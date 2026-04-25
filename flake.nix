@@ -349,6 +349,7 @@
       hercules-ci.cargo-publish = {
         enable = true;
         secretName = "crates-io";
+        extraPublishArgs = [ "--workspace" ];
       };
       hercules-ci.flake-update = {
         enable = true;
