@@ -9,10 +9,10 @@ use jrsonnet_types::ValType;
 use thiserror::Error;
 
 use crate::{
+	ObjValue, ResolvePathOwned,
 	function::{CallLocation, FunctionSignature, ParamName},
 	stdlib::format::FormatError,
 	typed::TypeLocError,
-	ObjValue, ResolvePathOwned,
 };
 
 #[derive(Debug, Clone, Acyclic)]
@@ -286,11 +286,11 @@ impl Error {
 }
 impl fmt::Display for Error {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		writeln!(f, "{}", self.0 .0)?;
-		for el in &self.0 .1 .0 {
+		writeln!(f, "{}", self.0.0)?;
+		for el in &self.0.1.0 {
 			write!(f, "\t{}", el.desc)?;
 			if let Some(loc) = &el.location {
-				write!(f, "at {}", loc.0 .0 .0)?;
+				write!(f, "at {}", loc.0.0.0)?;
 				loc.0.map_source_locations(&[loc.1, loc.2]);
 			}
 			writeln!(f)?;

@@ -7,9 +7,9 @@ use jrsonnet_gcmodule::Acyclic;
 use jrsonnet_interner::IStr;
 
 use crate::{
+	NumValue,
 	function::{FunctionSignature, ParamDefault, ParamName, ParamParse},
 	source::Source,
-	NumValue,
 };
 
 #[derive(Debug, PartialEq, Acyclic)]

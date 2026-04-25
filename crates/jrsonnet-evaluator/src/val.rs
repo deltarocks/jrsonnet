@@ -17,7 +17,13 @@ use rustc_hash::FxHashMap;
 
 pub use crate::arr::{ArrValue, ArrayLike};
 use crate::{
-	NumValue, ObjValue, Result, SupThis, Unbound, WeakSupThis, bail, error::{Error, ErrorKind::*}, evaluate::operator::{evaluate_compare_op, evaluate_mod_op}, function::FuncVal, gc::WithCapacityExt as _, manifest::{ManifestFormat, ToStringFormat}, typed::BoundedUsize
+	NumValue, ObjValue, Result, SupThis, Unbound, WeakSupThis, bail,
+	error::{Error, ErrorKind::*},
+	evaluate::operator::{evaluate_compare_op, evaluate_mod_op},
+	function::FuncVal,
+	gc::WithCapacityExt as _,
+	manifest::{ManifestFormat, ToStringFormat},
+	typed::BoundedUsize,
 };
 
 pub trait ThunkValue: Trace {

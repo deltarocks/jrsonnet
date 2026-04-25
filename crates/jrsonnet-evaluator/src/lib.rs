@@ -39,7 +39,7 @@ pub use error::{Error, ErrorKind::*, Result, ResultExt};
 pub use evaluate::ensure_sufficient_stack;
 use function::CallLocation;
 pub use import::*;
-use jrsonnet_gcmodule::{cc_dyn, Cc, Trace};
+use jrsonnet_gcmodule::{Cc, Trace, cc_dyn};
 pub use jrsonnet_interner::{IBytes, IStr};
 use jrsonnet_ir::Expr;
 pub use jrsonnet_ir::{NumValue, Source, SourcePath, Span};

@@ -1,11 +1,11 @@
 use jrsonnet_gcmodule::Acyclic;
 use jrsonnet_ir::{
-	unescape, ArgsDesc, AssertExpr, AssertStmt, BinaryOp, BinaryOpType, BindSpec, CompSpec,
-	Destruct, Expr, ExprParam, ExprParams, FieldMember, FieldName, ForSpecData, IStr, IfElse,
-	IfSpecData, ImportKind, IndexPart, LiteralType, Member, NumValue, ObjBody, ObjComp, ObjMembers,
-	Slice, SliceDesc, Source, Span, Spanned, UnaryOpType, Visibility,
+	ArgsDesc, AssertExpr, AssertStmt, BinaryOp, BinaryOpType, BindSpec, CompSpec, Destruct, Expr,
+	ExprParam, ExprParams, FieldMember, FieldName, ForSpecData, IStr, IfElse, IfSpecData,
+	ImportKind, IndexPart, LiteralType, Member, NumValue, ObjBody, ObjComp, ObjMembers, Slice,
+	SliceDesc, Source, Span, Spanned, UnaryOpType, Visibility, unescape,
 };
-use jrsonnet_lexer::{collect_lexed_str_block, Lexeme, Lexer, Span as LexSpan, SyntaxKind, T};
+use jrsonnet_lexer::{Lexeme, Lexer, Span as LexSpan, SyntaxKind, T, collect_lexed_str_block};
 
 pub struct ParserSettings {
 	pub source: Source,

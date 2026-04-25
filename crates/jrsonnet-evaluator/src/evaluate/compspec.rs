@@ -7,12 +7,12 @@ use super::{
 	evaluate_field_member_static, evaluate_field_member_unbound,
 };
 use crate::{
+	Context, ContextBuilder, ObjValue, ObjValueBuilder, Pending, Result, Thunk, Val,
 	analyze::{LArrComp, LBind, LCompSpec, LDestruct, LExpr, LFieldMember, LObjComp, LocalId},
 	arr::ArrValue,
 	bail,
 	error::ErrorKind::*,
 	evaluate::evaluate,
-	Context, ContextBuilder, ObjValue, ObjValueBuilder, Pending, Result, Thunk, Val,
 };
 
 trait CompCollector {

@@ -4,7 +4,7 @@ use educe::Educe;
 use jrsonnet_gcmodule::{Cc, Trace};
 use jrsonnet_interner::IStr;
 
-use crate::{analyze::LocalId, error, error::ErrorKind::*, Pending, Result, SupThis, Thunk, Val};
+use crate::{Pending, Result, SupThis, Thunk, Val, analyze::LocalId, error, error::ErrorKind::*};
 
 #[derive(Debug, Trace, Clone, Educe)]
 #[educe(PartialEq)]

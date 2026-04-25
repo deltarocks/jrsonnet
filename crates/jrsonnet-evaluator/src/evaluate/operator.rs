@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 use jrsonnet_ir::{BinaryOpType, UnaryOpType};
 
 use crate::{
+	Context, Result, Val,
 	analyze::LExpr,
 	arr::ArrValue,
 	bail, error,
@@ -10,8 +11,7 @@ use crate::{
 	evaluate::evaluate,
 	stdlib::std_format,
 	typed::IntoUntyped as _,
-	val::{equals, StrValue},
-	Context, Result, Val,
+	val::{StrValue, equals},
 };
 
 pub fn evaluate_unary_op(op: UnaryOpType, b: &Val) -> Result<Val> {

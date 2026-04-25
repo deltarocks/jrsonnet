@@ -3,10 +3,9 @@
 use std::cmp::Ordering;
 
 use jrsonnet_evaluator::{
-	bail,
+	Result, Thunk, Val, bail,
 	function::builtin,
-	val::{equals, ArrValue},
-	Result, Thunk, Val,
+	val::{ArrValue, equals},
 };
 
 use crate::{eval_on_empty, keyf::KeyF};

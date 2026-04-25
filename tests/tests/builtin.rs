@@ -1,7 +1,11 @@
 mod common;
 
 use jrsonnet_evaluator::{
-	ContextInitializer, FileImportResolver, InitialContextBuilder, Result, Source, State, Thunk, Val, function::{CallLocation, FuncVal, builtin, builtin::{Builtin}}, trace::PathResolver, typed::FromUntyped
+	ContextInitializer, FileImportResolver, InitialContextBuilder, Result, Source, State, Thunk,
+	Val,
+	function::{CallLocation, FuncVal, builtin, builtin::Builtin},
+	trace::PathResolver,
+	typed::FromUntyped,
 };
 use jrsonnet_gcmodule::Trace;
 use jrsonnet_stdlib::ContextInitializer as StdContextInitializer;

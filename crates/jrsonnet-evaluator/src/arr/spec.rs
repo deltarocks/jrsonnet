@@ -11,13 +11,13 @@ use jrsonnet_interner::{IBytes, IStr};
 
 use super::ArrValue;
 use crate::{
+	Context, Error, ObjValue, Result, Thunk, Val,
 	analyze::LExpr,
 	error::ErrorKind::InfiniteRecursionDetected,
 	evaluate::evaluate,
 	function::NativeFn,
 	typed::{IntoUntyped, Typed},
 	val::ThunkValue,
-	Context, Error, ObjValue, Result, Thunk, Val,
 };
 
 pub trait ArrayLike: Any + Trace + Debug {

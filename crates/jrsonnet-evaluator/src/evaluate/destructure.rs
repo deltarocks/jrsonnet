@@ -3,10 +3,10 @@ use std::rc::Rc;
 use jrsonnet_gcmodule::Trace;
 
 use crate::{
+	Context, ContextBuilder, Pending, Result, SupThis, Thunk, Unbound, Val,
 	analyze::{LBind, LDestruct, LDestructField, LDestructRest, LExpr, LocalId},
 	bail,
 	evaluate::evaluate,
-	Context, ContextBuilder, Pending, Result, SupThis, Thunk, Unbound, Val,
 };
 
 #[allow(dead_code, reason = "not dead in exp-destruct")]
@@ -97,7 +97,7 @@ fn destruct_object(
 	use jrsonnet_interner::IStr;
 	use rustc_hash::FxHashSet;
 
-	use crate::{bail, ObjValueBuilder};
+	use crate::{ObjValueBuilder, bail};
 
 	let captured_fields: FxHashSet<IStr> = fields.iter().map(|f| f.name.clone()).collect();
 	let field_names: Vec<(IStr, bool)> = fields

@@ -8,13 +8,13 @@ pub use jrsonnet_macros::builtin;
 
 use self::{
 	builtin::Builtin,
-	prepared::{parse_prepared_builtin_call, PreparedCall},
+	prepared::{PreparedCall, parse_prepared_builtin_call},
 };
 use crate::{
+	Context, ContextBuilder, Result, Thunk, Val,
 	analyze::{LDestruct, LExpr, LFunction},
 	evaluate::{destructure::destruct, ensure_sufficient_stack, evaluate, evaluate_trivial},
 	function::builtin::BuiltinFunc,
-	Context, ContextBuilder, Result, Thunk, Val,
 };
 
 pub mod builtin;
@@ -210,8 +210,7 @@ impl FuncVal {
 					return false;
 				}
 				#[allow(irrefutable_let_patterns, reason = "refutable with exp-destruct")]
-				let LDestruct::Full(id) = &param.destruct
-				else {
+				let LDestruct::Full(id) = &param.destruct else {
 					return false;
 				};
 				matches!(&*desc.func.body, LExpr::Local(v) if v == id)

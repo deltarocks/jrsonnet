@@ -12,7 +12,12 @@ pub use compat::*;
 pub use encoding::*;
 pub use hash::*;
 use jrsonnet_evaluator::{
-	IStr, InitialContextBuilder, NumValue, ObjValue, ObjValueBuilder, Source, Thunk, Val, error::Result, function::{CallLocation, FuncVal, builtin_id}, tla::TlaArg, trace::PathResolver, typed::SerializeTypedObj as _
+	IStr, InitialContextBuilder, NumValue, ObjValue, ObjValueBuilder, Source, Thunk, Val,
+	error::Result,
+	function::{CallLocation, FuncVal, builtin_id},
+	tla::TlaArg,
+	trace::PathResolver,
+	typed::SerializeTypedObj as _,
 };
 use jrsonnet_gcmodule::{Acyclic, Cc, Trace};
 use jrsonnet_macros::{IntoUntyped, Typed};

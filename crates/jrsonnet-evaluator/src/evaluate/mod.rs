@@ -11,19 +11,20 @@ use self::{
 	operator::evaluate_binary_op_special,
 };
 use crate::{
+	Context, Error, ObjValue, ObjValueBuilder, ObjectAssertion, Result, ResultExt as _, SupThis,
+	Unbound, Val,
 	analyze::{
 		LArgsDesc, LAssertStmt, LExpr, LFieldMember, LFieldName, LFunction, LIndexPart, LObjBody,
 		LObjMembers,
 	},
 	bail,
-	error::{suggest_object_fields, ErrorKind::*},
+	error::{ErrorKind::*, suggest_object_fields},
 	evaluate::operator::evaluate_unary_op,
-	function::{prepared::PreparedFuncVal, CallLocation, FuncDesc, FuncVal},
+	function::{CallLocation, FuncDesc, FuncVal, prepared::PreparedFuncVal},
 	in_frame, runtime_error,
 	typed::FromUntyped as _,
 	val::{CachedUnbound, Thunk},
-	with_state, Context, Error, ObjValue, ObjValueBuilder, ObjectAssertion, Result, ResultExt as _,
-	SupThis, Unbound, Val,
+	with_state,
 };
 
 pub mod compspec;

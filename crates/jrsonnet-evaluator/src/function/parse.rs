@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use crate::{
+	Context, ContextBuilder, Result, Thunk,
 	analyze::LFunction,
 	evaluate::{destructure::destruct, evaluate},
-	Context, ContextBuilder, Result, Thunk,
 };
 
 /// Creates Context with all argument default values applied

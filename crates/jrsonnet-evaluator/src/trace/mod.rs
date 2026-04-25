@@ -10,7 +10,7 @@ use jrsonnet_ir::CodeLocation;
 #[cfg(feature = "explaining-traces")]
 use jrsonnet_ir::Span;
 
-use crate::{error::ErrorKind, Error};
+use crate::{Error, error::ErrorKind};
 
 /// The way paths should be displayed
 #[derive(Clone, Trace)]
@@ -259,7 +259,7 @@ impl TraceFormat for HiDocFormat {
 		struct ResetData {
 			loc: Span,
 		}
-		use hi_doc::{source_to_ansi, Formatting, SnippetBuilder, Text};
+		use hi_doc::{Formatting, SnippetBuilder, Text, source_to_ansi};
 
 		write!(out, "{}", error.error())?;
 		if let ErrorKind::ImportSyntaxError { path, error } = error.error() {
@@ -277,14 +277,15 @@ impl TraceFormat for HiDocFormat {
 			use crate::analyze::DiagLevel;
 			let mut builder: Option<SnippetBuilder> = None;
 			let mut current_src: Option<&str> = None;
-			let flush =
-				|builder: Option<SnippetBuilder>, out: &mut dyn std::fmt::Write| -> Result<(), std::fmt::Error> {
-					if let Some(b) = builder {
-						let ansi = source_to_ansi(&b.build());
-						write!(out, "\n{}", ansi.trim_end())?;
-					}
-					Ok(())
-				};
+			let flush = |builder: Option<SnippetBuilder>,
+			             out: &mut dyn std::fmt::Write|
+			 -> Result<(), std::fmt::Error> {
+				if let Some(b) = builder {
+					let ansi = source_to_ansi(&b.build());
+					write!(out, "\n{}", ansi.trim_end())?;
+				}
+				Ok(())
+			};
 			for diag in diagnostics {
 				if let Some(span) = &diag.span {
 					let src = span.0.code();
@@ -295,14 +296,12 @@ impl TraceFormat for HiDocFormat {
 					}
 					let b = builder.as_mut().unwrap();
 					let ab = match diag.level {
-						DiagLevel::Error => b.error(Text::fragment(
-							diag.message.clone(),
-							Formatting::default(),
-						)),
-						DiagLevel::Warning => b.warning(Text::fragment(
-							diag.message.clone(),
-							Formatting::default(),
-						)),
+						DiagLevel::Error => {
+							b.error(Text::fragment(diag.message.clone(), Formatting::default()))
+						}
+						DiagLevel::Warning => {
+							b.warning(Text::fragment(diag.message.clone(), Formatting::default()))
+						}
 					};
 					ab.range(span.range()).build();
 				} else {

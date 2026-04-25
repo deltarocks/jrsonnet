@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use jrsonnet_evaluator::{function::builtin, val::ArrValue, Result, Val};
+use jrsonnet_evaluator::{Result, Val, function::builtin, val::ArrValue};
 
 #[builtin]
 #[allow(non_snake_case)]

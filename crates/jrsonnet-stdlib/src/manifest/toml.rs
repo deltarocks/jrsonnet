@@ -1,7 +1,10 @@
 use std::borrow::Cow;
 
 use jrsonnet_evaluator::{
-	Error, IStr, ObjValue, Result, ResultExt, Val, bail, ensure_sufficient_stack, in_description_frame, manifest::{ManifestFormat, escape_string_json_buf}, val::ArrValue
+	Error, IStr, ObjValue, Result, ResultExt, Val, bail, ensure_sufficient_stack,
+	in_description_frame,
+	manifest::{ManifestFormat, escape_string_json_buf},
+	val::ArrValue,
 };
 
 pub struct TomlFormat<'s> {
@@ -218,14 +221,16 @@ fn manifest_table_internal(
 		}
 		first = false;
 		path.push(k.clone());
-		ensure_sufficient_stack(|| in_description_frame(
-			|| format!("section <{k}> manifestification"),
-			|| match v {
-				Val::Obj(obj) => manifest_table(&obj, path, buf, cur_padding, options),
-				Val::Arr(arr) => manifest_table_array(&arr, path, buf, cur_padding, options),
-				_ => unreachable!("iterating over sections"),
-			},
-		))?;
+		ensure_sufficient_stack(|| {
+			in_description_frame(
+				|| format!("section <{k}> manifestification"),
+				|| match v {
+					Val::Obj(obj) => manifest_table(&obj, path, buf, cur_padding, options),
+					Val::Arr(arr) => manifest_table_array(&arr, path, buf, cur_padding, options),
+					_ => unreachable!("iterating over sections"),
+				},
+			)
+		})?;
 		path.pop();
 	}
 	Ok(())

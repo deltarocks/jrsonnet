@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use jrsonnet_evaluator::{function::builtin, val::ArrValue, Result, Thunk, Val};
+use jrsonnet_evaluator::{Result, Thunk, Val, function::builtin, val::ArrValue};
 
 use crate::keyf::KeyF;
 

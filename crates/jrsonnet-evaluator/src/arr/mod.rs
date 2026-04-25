@@ -5,9 +5,9 @@ use std::{
 	rc::Rc,
 };
 
-use jrsonnet_gcmodule::{cc_dyn, Cc};
+use jrsonnet_gcmodule::{Cc, cc_dyn};
 
-use crate::{analyze::LExpr, function::NativeFn, typed::IntoUntyped, Context, Result, Thunk, Val};
+use crate::{Context, Result, Thunk, Val, analyze::LExpr, function::NativeFn, typed::IntoUntyped};
 
 mod spec;
 pub use spec::{ArrayLike, *};

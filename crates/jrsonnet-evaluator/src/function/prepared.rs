@@ -5,10 +5,7 @@ use jrsonnet_ir::{IStr, function::FunctionSignature};
 use rustc_hash::FxHashSet;
 
 use super::{CallLocation, FuncVal};
-use crate::{
-	Result, Thunk, Val, bail,
-	error::ErrorKind::*,
-};
+use crate::{Result, Thunk, Val, bail, error::ErrorKind::*};
 
 #[derive(Debug, Trace, Clone)]
 pub struct PreparedFuncVal {

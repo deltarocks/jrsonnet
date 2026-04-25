@@ -21,10 +21,10 @@ use hi_doc::{Formatting, SnippetBuilder, Text};
 use jrsonnet_gcmodule::Acyclic;
 use jrsonnet_interner::IStr;
 use jrsonnet_ir::{
-	function::FunctionSignature, ArgsDesc, AssertExpr, AssertStmt, BinaryOp, BinaryOpType,
-	BindSpec, CompSpec, Destruct, Expr, ExprParams, FieldName, ForSpecData, IfElse, IfSpecData,
-	ImportKind, LiteralType, NumValue, ObjBody, ObjComp, ObjMembers, Slice, SliceDesc, Span,
-	Spanned, UnaryOpType, Visibility,
+	ArgsDesc, AssertExpr, AssertStmt, BinaryOp, BinaryOpType, BindSpec, CompSpec, Destruct, Expr,
+	ExprParams, FieldName, ForSpecData, IfElse, IfSpecData, ImportKind, LiteralType, NumValue,
+	ObjBody, ObjComp, ObjMembers, Slice, SliceDesc, Span, Spanned, UnaryOpType, Visibility,
+	function::FunctionSignature,
 };
 use rustc_hash::FxHashMap;
 use smallvec::SmallVec;
