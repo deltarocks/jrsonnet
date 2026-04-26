@@ -130,7 +130,16 @@ pub fn evaluate_arr_comp(ctx: Context, comp: &LArrComp) -> Result<Val> {
 	'eager: {
 		let mut out = Vec::new();
 
-		if evaluate_compspecs_eager(
+		if comp.compspecs.iter().all(|c| {
+			matches!(
+				c,
+				LCompSpec::If(_)
+					| LCompSpec::For {
+						destruct: LDestruct::Full(_),
+						..
+					}
+			)
+		}) && evaluate_compspecs_eager(
 			ctx.clone(),
 			&comp.compspecs,
 			&cached_overs,
@@ -241,28 +250,7 @@ fn evaluate_compspecs_eager(
 				}
 				// TODO: Should not be eager? CoW won't work here
 				#[cfg(feature = "exp-destruct")]
-				_ => {
-					for (i, item) in arr.iter().enumerate() {
-						let item_val = item?;
-						let mut inner_builder = ContextBuilder::extend(ctx.clone(), 1);
-						let fctx = Pending::new();
-						destructure::destruct(
-							destruct,
-							Thunk::evaluated(item_val),
-							fctx.clone(),
-							&mut inner_builder,
-						);
-						let inner_ctx = inner_builder.build().into_future(fctx);
-						evaluate_compspecs_eager(
-							inner_ctx,
-							specs,
-							cached_overs,
-							idx + 1,
-							if i == 0 { inner_reserve } else { 0 },
-							collector,
-						)?;
-					}
-				}
+				_ => unreachable!("eager compspecs are not possible with non-full patterns"),
 			}
 		}
 	}
