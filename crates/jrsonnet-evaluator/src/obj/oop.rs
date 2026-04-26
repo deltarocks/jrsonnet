@@ -27,7 +27,7 @@ use crate::{
 #[trace(tracking(force))]
 pub struct OopObject {
 	assertion: Option<CcObjectAssertion>,
-	this_entries: FxHashMap<IStr, ObjMember>,
+	this_entries: FxHashMap<IStr, (ObjMember, FieldIndex)>,
 }
 impl fmt::Debug for OopObject {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -43,7 +43,7 @@ impl OopObject {
 }
 impl OopObject {
 	pub fn new(
-		this_entries: FxHashMap<IStr, ObjMember>,
+		this_entries: FxHashMap<IStr, (ObjMember, FieldIndex)>,
 		assertion: Option<CcObjectAssertion>,
 	) -> Self {
 		Self {
@@ -59,11 +59,11 @@ impl ObjectCore for OopObject {
 		super_depth: &mut SuperDepth,
 		handler: &mut EnumFieldsHandler<'_>,
 	) -> bool {
-		for (name, member) in &self.this_entries {
+		for (name, (member, idx)) in &self.this_entries {
 			if matches!(
 				handler(
 					*super_depth,
-					member.original_index,
+					*idx,
 					name.clone(),
 					EnumFields::Normal(member.flags.visibility()),
 				),
@@ -88,7 +88,7 @@ impl ObjectCore for OopObject {
 			return Ok(GetFor::NotFound);
 		}
 		match self.this_entries.get(&key) {
-			Some(k) => {
+			Some((k, _)) => {
 				let v = k.invoke.evaluate(sup_this)?;
 				Ok(if k.flags.add() {
 					GetFor::SuperPlus(v)
@@ -102,7 +102,7 @@ impl ObjectCore for OopObject {
 	fn field_visibility_core(&self, name: IStr) -> FieldVisibility {
 		self.this_entries
 			.get(&name)
-			.map_or(FieldVisibility::NotFound, |f| {
+			.map_or(FieldVisibility::NotFound, |(f, _)| {
 				FieldVisibility::Found(f.flags.visibility())
 			})
 	}
@@ -219,16 +219,16 @@ pub struct ValueBuilder<'v>(&'v mut ObjValueBuilder);
 impl ObjMemberBuilder<ValueBuilder<'_>> {
 	/// Inserts value, replacing if it is already defined
 	pub fn value(self, value: impl Into<Val>) {
-		let (receiver, name, member) =
+		let (receiver, name, idx, member) =
 			self.build_member(MaybeUnbound::Bound(Thunk::evaluated(value.into())));
 		let entry = receiver.0.new.this_entries.entry(name);
-		entry.insert_entry(member);
+		entry.insert_entry((member, idx));
 	}
 	/// Inserts thunk, replacing if it is already defined
 	pub fn thunk(self, value: impl Into<Thunk<Val>>) {
-		let (receiver, name, member) = self.build_member(MaybeUnbound::Bound(value.into()));
+		let (receiver, name, idx, member) = self.build_member(MaybeUnbound::Bound(value.into()));
 		let entry = receiver.0.new.this_entries.entry(name);
-		entry.insert_entry(member);
+		entry.insert_entry((member, idx));
 	}
 
 	/// Tries to insert value, returns an error if it was already defined
@@ -242,9 +242,13 @@ impl ObjMemberBuilder<ValueBuilder<'_>> {
 		self.binding(MaybeUnbound::Unbound(CcUnbound::new(bindable)))
 	}
 	pub fn binding(self, binding: MaybeUnbound) -> Result<()> {
-		let (receiver, name, member) = self.build_member(binding);
+		let (receiver, name, idx, member) = self.build_member(binding);
 		let location = member.location.clone();
-		let old = receiver.0.new.this_entries.insert(name.clone(), member);
+		let old = receiver
+			.0
+			.new
+			.this_entries
+			.insert(name.clone(), (member, idx));
 		if old.is_some() {
 			in_frame(
 				CallLocation(location.as_ref()),

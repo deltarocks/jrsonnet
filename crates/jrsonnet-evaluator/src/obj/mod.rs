@@ -136,7 +136,6 @@ impl Debug for ObjFieldFlags {
 #[derive(Debug, Trace)]
 pub struct ObjMember {
 	flags: ObjFieldFlags,
-	original_index: FieldIndex,
 	pub invoke: MaybeUnbound,
 	pub location: Option<Span>,
 }
@@ -1048,13 +1047,13 @@ impl<Kind> ObjMemberBuilder<Kind> {
 		self.location = Some(location);
 		self
 	}
-	fn build_member(self, binding: MaybeUnbound) -> (Kind, IStr, ObjMember) {
+	fn build_member(self, binding: MaybeUnbound) -> (Kind, IStr, FieldIndex, ObjMember) {
 		(
 			self.kind,
 			self.name,
+			self.original_index,
 			ObjMember {
 				flags: ObjFieldFlags::new(self.add, self.visibility),
-				original_index: self.original_index,
 				invoke: binding,
 				location: self.location,
 			},
@@ -1071,7 +1070,7 @@ impl ObjMemberBuilder<ExtendBuilder<'_>> {
 		self.binding(MaybeUnbound::Unbound(CcUnbound::new(bindable)));
 	}
 	pub fn binding(self, binding: MaybeUnbound) {
-		let (receiver, name, member) = self.build_member(binding);
+		let (receiver, name, _, member) = self.build_member(binding);
 		let new = receiver.0.clone();
 		*receiver.0 = new.extend_with_raw_member(name, member);
 	}
