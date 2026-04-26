@@ -41,9 +41,13 @@ pub fn builtin_base64_decode_bytes(str: IStr) -> Result<IBytes> {
 }
 
 #[builtin]
-pub fn builtin_base64_decode(str: IStr) -> Result<String> {
+pub fn builtin_base64_decode(str: IStr, #[default(false)] lossy: bool) -> Result<String> {
 	let bytes = STANDARD
 		.decode(str.as_bytes())
 		.map_err(|e| runtime_error!("invalid base64: {e}"))?;
-	String::from_utf8(bytes).map_err(|_| runtime_error!("bad utf8"))
+	if lossy {
+		Ok(String::from_utf8_lossy(&bytes).to_string())
+	} else {
+		String::from_utf8(bytes).map_err(|e| runtime_error!("bad utf8: {e}"))
+	}
 }
