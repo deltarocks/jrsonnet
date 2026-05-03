@@ -46,6 +46,12 @@ impl PreparedCall {
 	pub fn defaults(&self) -> &[usize] {
 		&self.defaults
 	}
+	pub const fn empty() -> Self {
+		Self {
+			named: Vec::new(),
+			defaults: Vec::new(),
+		}
+	}
 }
 
 pub fn prepare_call(

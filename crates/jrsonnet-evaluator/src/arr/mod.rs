@@ -7,7 +7,12 @@ use std::{
 
 use jrsonnet_gcmodule::{Cc, cc_dyn};
 
-use crate::{Context, Result, Thunk, Val, analyze::LExpr, function::NativeFn, typed::IntoUntyped};
+use crate::{
+	Context, Result, Thunk, Val,
+	analyze::{ClosureShape, LExpr},
+	function::NativeFn,
+	typed::IntoUntyped,
+};
 
 mod spec;
 pub use spec::{ArrayLike, *};
@@ -36,8 +41,8 @@ impl ArrValue {
 		Self::new(())
 	}
 
-	pub fn expr(ctx: Context, exprs: Rc<Vec<LExpr>>) -> Self {
-		Self::new(ExprArray::new(ctx, exprs))
+	pub fn expr(ctx: Context, shape: &ClosureShape, exprs: Rc<Vec<LExpr>>) -> Self {
+		Self::new(ExprArray::new(ctx, shape, exprs))
 	}
 
 	pub fn repeated(data: Self, repeats: u32) -> Option<Self> {

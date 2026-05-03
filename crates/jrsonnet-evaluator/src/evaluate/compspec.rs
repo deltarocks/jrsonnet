@@ -3,16 +3,19 @@ use std::rc::Rc;
 use jrsonnet_types::ValType;
 
 use super::{
-	destructure::{self, evaluate_locals, evaluate_locals_unbound},
+	destructure::{destruct, evaluate_locals_unbound, fill_letrec_binds},
 	evaluate_field_member_static, evaluate_field_member_unbound,
 };
 use crate::{
-	Context, ContextBuilder, ObjValue, ObjValueBuilder, Pending, Result, Thunk, Val,
-	analyze::{LArrComp, LBind, LCompSpec, LDestruct, LExpr, LFieldMember, LObjComp, LocalId},
+	Context, ObjValue, ObjValueBuilder, Result, Thunk, Val,
+	analyze::{
+		ClosureShape, LArrComp, LBind, LCompSpec, LDestruct, LExpr, LFieldMember, LObjComp,
+		LocalSlot,
+	},
 	arr::ArrValue,
 	bail,
 	error::ErrorKind::*,
-	evaluate::evaluate,
+	evaluate::{evaluate, evaluate_trivial},
 };
 
 trait CompCollector {
@@ -22,6 +25,7 @@ trait CompCollector {
 
 struct EagerArrCollector<'a> {
 	out: &'a mut Vec<Val>,
+	value_shape: &'a ClosureShape,
 	value: &'a LExpr,
 }
 impl CompCollector for EagerArrCollector<'_> {
@@ -29,13 +33,23 @@ impl CompCollector for EagerArrCollector<'_> {
 		self.out.reserve(size_hint);
 	}
 	fn collect(&mut self, ctx: Context) -> Result<()> {
-		self.out.push(evaluate(ctx, self.value)?);
+		if let Some(v) = evaluate_trivial(self.value) {
+			self.out.push(v);
+			return Ok(());
+		}
+		if let LExpr::Slot(slot) = self.value {
+			self.out.push(ctx.slot(*slot).evaluate()?);
+			return Ok(());
+		}
+		let env = Context::enter_using(&ctx, self.value_shape);
+		self.out.push(evaluate(env, self.value)?);
 		Ok(())
 	}
 }
 
 struct LazyArrCollector<'a> {
 	out: &'a mut Vec<Thunk<Val>>,
+	value_shape: &'a ClosureShape,
 	value: &'a Rc<LExpr>,
 }
 impl CompCollector for LazyArrCollector<'_> {
@@ -43,14 +57,24 @@ impl CompCollector for LazyArrCollector<'_> {
 		self.out.reserve(size_hint);
 	}
 	fn collect(&mut self, ctx: Context) -> Result<()> {
+		if let Some(v) = evaluate_trivial(self.value) {
+			self.out.push(Thunk::evaluated(v));
+			return Ok(());
+		}
+		if let LExpr::Slot(slot) = self.value.as_ref() {
+			self.out.push(ctx.slot(*slot));
+			return Ok(());
+		}
+		let env = Context::enter_using(&ctx, self.value_shape);
 		let value_expr = self.value.clone();
-		self.out.push(Thunk!(move || evaluate(ctx, &value_expr)));
+		self.out.push(Thunk!(move || evaluate(env, &value_expr)));
 		Ok(())
 	}
 }
 
 struct ObjCompCollectorStatic<'a> {
 	builder: &'a mut ObjValueBuilder,
+	frame_shape: &'a ClosureShape,
 	locals: &'a [LBind],
 	field: &'a LFieldMember,
 }
@@ -59,15 +83,23 @@ impl CompCollector for ObjCompCollectorStatic<'_> {
 		self.builder.reserve_fields(guaranteed);
 	}
 	fn collect(&mut self, inner_ctx: Context) -> Result<()> {
-		let value_ctx = evaluate_locals(inner_ctx.clone(), self.locals);
+		// Build the object's A-frame fresh per iteration: captures from
+		// the comp's iter ctx, locals = `this` (slot 0, unfilled in the
+		// static path) + member-locals via letrec.
+		let value_ctx = inner_ctx
+			.pack_captures_sup_this(self.frame_shape)
+			.enter(|fill, ctx| {
+				fill_letrec_binds(fill, &ctx, self.locals);
+			});
 		evaluate_field_member_static(self.builder, inner_ctx, value_ctx, self.field)
 	}
 }
 
 struct ObjCompCollectorUnbound<'a> {
 	builder: &'a mut ObjValueBuilder,
+	frame_shape: Rc<ClosureShape>,
 	locals: Rc<Vec<LBind>>,
-	this_id: Option<LocalId>,
+	this_slot: Option<LocalSlot>,
 	field: &'a LFieldMember,
 }
 impl CompCollector for ObjCompCollectorUnbound<'_> {
@@ -75,7 +107,12 @@ impl CompCollector for ObjCompCollectorUnbound<'_> {
 		self.builder.reserve_fields(guaranteed);
 	}
 	fn collect(&mut self, inner_ctx: Context) -> Result<()> {
-		let uctx = evaluate_locals_unbound(inner_ctx.clone(), self.locals.clone(), self.this_id);
+		let uctx = evaluate_locals_unbound(
+			&inner_ctx,
+			&self.frame_shape,
+			self.this_slot,
+			self.locals.clone(),
+		);
 		evaluate_field_member_unbound(self.builder, inner_ctx, uctx, self.field)
 	}
 }
@@ -100,8 +137,9 @@ pub fn evaluate_obj_comp(
 			0,
 			&mut ObjCompCollectorUnbound {
 				builder: &mut builder,
+				frame_shape: comp.frame_shape.clone(),
 				locals: comp.locals.clone(),
-				this_id: comp.this,
+				this_slot: comp.this,
 				field: &comp.field,
 			},
 		)?;
@@ -114,6 +152,7 @@ pub fn evaluate_obj_comp(
 			0,
 			&mut ObjCompCollectorStatic {
 				builder: &mut builder,
+				frame_shape: &comp.frame_shape,
 				locals: &comp.locals,
 				field: &comp.field,
 			},
@@ -126,7 +165,9 @@ pub fn evaluate_obj_comp(
 pub fn evaluate_arr_comp(ctx: Context, comp: &LArrComp) -> Result<Val> {
 	let cached_overs = cache_overs(&ctx, &comp.compspecs)?;
 
-	// In eager evaluation, Context is not captured, thus updates in CoW fashion will likely to success
+	// Eager fast-path: when the comp has only `if` and `for { destruct: Full(_) }`
+	// specs, allocate one Iter A-frame per for-spec and re-set the slot
+	// per iteration as long as the frame's refcount stays at 1.
 	'eager: {
 		let mut out = Vec::new();
 
@@ -147,6 +188,7 @@ pub fn evaluate_arr_comp(ctx: Context, comp: &LArrComp) -> Result<Val> {
 			0,
 			&mut EagerArrCollector {
 				out: &mut out,
+				value_shape: &comp.value_shape,
 				value: &comp.value,
 			},
 		)
@@ -166,6 +208,7 @@ pub fn evaluate_arr_comp(ctx: Context, comp: &LArrComp) -> Result<Val> {
 		0,
 		&mut LazyArrCollector {
 			out: &mut items,
+			value_shape: &comp.value_shape,
 			value: &comp.value,
 		},
 	)?;
@@ -220,7 +263,12 @@ fn evaluate_compspecs_eager(
 				evaluate_compspecs_eager(ctx, specs, cached_overs, idx + 1, 0, collector)?;
 			}
 		}
-		LCompSpec::For { destruct, over, .. } => {
+		LCompSpec::For {
+			frame_shape,
+			destruct,
+			over,
+			..
+		} => {
 			let arr = if let Some(cached) = &cached_overs[idx] {
 				cached.clone()
 			} else {
@@ -232,21 +280,24 @@ fn evaluate_compspecs_eager(
 			};
 			let inner_reserve = guaranteed_reserve.max(1) * arr.len() as usize;
 			match destruct {
-				LDestruct::Full(id) => {
-					let id = *id;
-					let mut inner_ctx = ContextBuilder::extend(ctx, 1).build();
-					for (i, item) in arr.iter().enumerate() {
-						// TODO: reuse one ContextBuilder for full evaluate_compspecs pipeline
-						inner_ctx.cow_fill_binding(id, Thunk::evaluated(item?));
-						evaluate_compspecs_eager(
-							inner_ctx.clone(),
-							specs,
-							cached_overs,
-							idx + 1,
-							if i == 0 { inner_reserve } else { 0 },
-							collector,
-						)?;
-					}
+				LDestruct::Full(slot) => {
+					Context::enter_iter(&ctx, frame_shape, |it| {
+						for (i, item) in arr.iter().enumerate() {
+							let item = item?;
+							let ctx = it.create(|f| {
+								f.set(*slot, Thunk::evaluated(item));
+							})?;
+							evaluate_compspecs_eager(
+								ctx,
+								specs,
+								cached_overs,
+								idx + 1,
+								if i == 0 { inner_reserve } else { 0 },
+								collector,
+							)?;
+						}
+						Ok(())
+					})?;
 				}
 				// TODO: Should not be eager? CoW won't work here
 				#[cfg(feature = "exp-destruct")]
@@ -283,7 +334,12 @@ fn evaluate_compspecs(
 				evaluate_compspecs(ctx, specs, cached_overs, idx + 1, 0, collector)?;
 			}
 		}
-		LCompSpec::For { destruct, over, .. } => {
+		LCompSpec::For {
+			frame_shape,
+			destruct: dst,
+			over,
+			..
+		} => {
 			let arr = if let Some(cached) = &cached_overs[idx] {
 				cached.clone()
 			} else {
@@ -295,16 +351,10 @@ fn evaluate_compspecs(
 			};
 			let inner_reserve = guaranteed_reserve.max(1) * arr.len() as usize;
 			for (i, item) in arr.iter().enumerate() {
-				let item_val = item?;
-				let mut inner_builder = ContextBuilder::extend(ctx.clone(), 1);
-				let fctx = Pending::new();
-				destructure::destruct(
-					destruct,
-					Thunk::evaluated(item_val),
-					fctx.clone(),
-					&mut inner_builder,
-				);
-				let inner_ctx = inner_builder.build().into_future(fctx);
+				let item = item?;
+				let inner_ctx = ctx.pack_captures_sup_this(frame_shape).enter(|fill, ctx| {
+					destruct(dst, fill, Thunk::evaluated(item), &ctx);
+				});
 				evaluate_compspecs(
 					inner_ctx,
 					specs,

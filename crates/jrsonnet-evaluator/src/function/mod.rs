@@ -11,9 +11,12 @@ use self::{
 	prepared::{PreparedCall, parse_prepared_builtin_call},
 };
 use crate::{
-	Context, ContextBuilder, Result, Thunk, Val,
-	analyze::{LDestruct, LExpr, LFunction},
-	evaluate::{destructure::destruct, ensure_sufficient_stack, evaluate, evaluate_trivial},
+	PackedContextSupThis, Result, Thunk, Val,
+	analyze::LFunction,
+	evaluate::{
+		destructure::{build_b_thunk, destruct},
+		ensure_sufficient_stack, evaluate, evaluate_trivial,
+	},
 	function::builtin::BuiltinFunc,
 };
 
@@ -56,16 +59,7 @@ pub struct FuncDesc {
 	/// { a() = ... }
 	/// ```
 	pub name: IStr,
-	/// Context, in which this function was evaluated.
-	///
-	/// # Example
-	/// In
-	/// ```jsonnet
-	/// local a = 2;
-	/// function() ...
-	/// ```
-	/// context will contain `a`.
-	pub ctx: Context,
+	pub(crate) body_captures: PackedContextSupThis,
 
 	#[educe(PartialEq(method = Rc::ptr_eq))]
 	pub func: Rc<LFunction>,
@@ -82,44 +76,34 @@ impl FuncDesc {
 		named: &[Thunk<Val>],
 		prepared: &PreparedCall,
 	) -> Result<Val> {
-		let has_defaults = !prepared.defaults().is_empty();
-		let mut builder = ContextBuilder::extend(self.ctx.clone(), self.func.params.len());
+		let body_ctx = self.body_captures.clone().enter(|fill, ctx| {
+			// Place each provided arg-thunk into its destructured slots.
+			for (param_idx, thunk) in unnamed.iter().enumerate() {
+				destruct(
+					&self.func.params[param_idx].destruct,
+					fill,
+					thunk.clone(),
+					&ctx,
+				);
+			}
+			for &(param_idx, arg_idx) in prepared.named() {
+				destruct(
+					&self.func.params[param_idx].destruct,
+					fill,
+					named[arg_idx].clone(),
+					&ctx,
+				);
+			}
 
-		let fctx = Context::new_future();
-		for (param_idx, thunk) in unnamed.iter().enumerate() {
-			destruct(
-				&self.func.params[param_idx].destruct,
-				thunk.clone(),
-				fctx.clone(),
-				&mut builder,
-			);
-		}
-
-		for &(param_idx, arg_idx) in prepared.named() {
-			destruct(
-				&self.func.params[param_idx].destruct,
-				named[arg_idx].clone(),
-				fctx.clone(),
-				&mut builder,
-			);
-		}
-
-		if has_defaults {
 			for &param_idx in prepared.defaults() {
 				let param = &self.func.params[param_idx];
-				if let Some(default_expr) = &param.default {
-					let default_expr = default_expr.clone();
-					let fctxc = fctx.clone();
-					let thunk = Thunk!(move || {
-						let ctx = fctxc.unwrap();
-						evaluate(ctx, &default_expr)
-					});
-					destruct(&param.destruct, thunk, fctx.clone(), &mut builder);
-				}
+				let (shape, expr) = param.default.as_ref().expect("default exists");
+				let thunk = build_b_thunk(&ctx, shape, expr.clone());
+				destruct(&param.destruct, fill, thunk, &ctx);
 			}
-		};
-		let ctx = builder.build().into_future(fctx);
-		ensure_sufficient_stack(|| evaluate(ctx, &self.func.body))
+		});
+
+		ensure_sufficient_stack(|| evaluate(body_ctx, &self.func.body))
 	}
 
 	pub fn evaluate_trivial(&self) -> Option<Val> {
@@ -155,6 +139,10 @@ pub const fn builtin_id(x: Thunk<Val>) -> Thunk<Val> {
 impl FuncVal {
 	pub fn builtin(builtin: impl Builtin) -> Self {
 		Self::Builtin(BuiltinFunc::new(builtin))
+	}
+
+	pub fn identity() -> Self {
+		Self::builtin(builtin_id {})
 	}
 
 	pub fn params(&self) -> FunctionSignature {
@@ -194,26 +182,11 @@ impl FuncVal {
 
 	/// Is this function an identity function.
 	///
-	/// Currently only works for builtin `std.id`, aka `Self::Id` value, and `function(x) x`.
-	///
 	/// This function should only be used for optimization, not for the conditional logic, i.e code should work with syntetic identity function too
 	pub fn is_identity(&self) -> bool {
 		match self {
 			Self::Builtin(b) => b.as_any().downcast_ref::<builtin_id>().is_some(),
-			Self::Normal(desc) => {
-				if desc.func.params.len() != 1 {
-					return false;
-				}
-				let param = &desc.func.params[0];
-				if param.default.is_some() {
-					return false;
-				}
-				#[allow(irrefutable_let_patterns, reason = "refutable with exp-destruct")]
-				let LDestruct::Full(id) = &param.destruct else {
-					return false;
-				};
-				matches!(&*desc.func.body, LExpr::Local(v) if v == id)
-			}
+			Self::Normal(_) => false,
 		}
 	}
 

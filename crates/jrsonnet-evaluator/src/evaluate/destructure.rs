@@ -3,8 +3,10 @@ use std::rc::Rc;
 use jrsonnet_gcmodule::Trace;
 
 use crate::{
-	Context, ContextBuilder, Pending, Result, SupThis, Thunk, Unbound, Val,
-	analyze::{LBind, LDestruct, LDestructField, LDestructRest, LExpr, LocalId},
+	Context, LocalsFrame, PackedContext, Result, SupThis, Thunk, Unbound, Val,
+	analyze::{
+		ClosureShape, LBind, LDestruct, LDestructField, LDestructRest, LExpr, LLocalExpr, LocalSlot,
+	},
 	bail,
 	evaluate::evaluate,
 };
@@ -15,9 +17,9 @@ fn destruct_array(
 	rest: Option<&LDestructRest>,
 	end: &[LDestruct],
 
+	fill: &LocalsFrame,
 	value: Thunk<Val>,
-	fctx: Pending<Context>,
-	builder: &mut ContextBuilder,
+	a_ctx: &Context,
 ) {
 	let min_len = start.len() + end.len();
 	let has_rest = rest.is_some();
@@ -44,19 +46,19 @@ fn destruct_array(
 		let full = full.clone();
 		destruct(
 			d,
+			fill,
 			Thunk!(move || Ok(full.evaluate()?.get(i as u32)?.expect("length is checked"))),
-			fctx.clone(),
-			builder,
+			a_ctx,
 		);
 	}
 
 	let start_len = start.len() as u32;
 	let end_len = end.len() as u32;
 
-	if let Some(crate::analyze::LDestructRest::Keep(id)) = rest {
+	if let Some(LDestructRest::Keep(slot)) = rest {
 		let full = full.clone();
-		builder.bind(
-			*id,
+		fill.set(
+			*slot,
 			Thunk!(move || {
 				let full = full.evaluate()?;
 				let to = full.len() - end_len;
@@ -73,14 +75,14 @@ fn destruct_array(
 		let full = full.clone();
 		destruct(
 			d,
+			fill,
 			Thunk!(move || {
 				let full = full.evaluate()?;
 				Ok(full
 					.get(full.len() - end_len + i as u32)?
 					.expect("length is checked"))
 			}),
-			fctx.clone(),
-			builder,
+			a_ctx,
 		);
 	}
 }
@@ -90,9 +92,9 @@ fn destruct_object(
 	fields: &[LDestructField],
 	rest: Option<&LDestructRest>,
 
+	fill: &LocalsFrame,
 	value: Thunk<Val>,
-	fctx: Pending<Context>,
-	builder: &mut ContextBuilder,
+	a_ctx: &Context,
 ) {
 	use jrsonnet_interner::IStr;
 	use rustc_hash::FxHashSet;
@@ -124,10 +126,10 @@ fn destruct_object(
 		Ok(obj)
 	});
 
-	if let Some(crate::analyze::LDestructRest::Keep(id)) = rest {
+	if let Some(LDestructRest::Keep(slot)) = rest {
 		let full = full.clone();
-		builder.bind(
-			*id,
+		fill.set(
+			*slot,
 			Thunk!(move || {
 				let full = full.evaluate()?;
 				let mut out = ObjValueBuilder::new();
@@ -140,121 +142,100 @@ fn destruct_object(
 
 	for field in fields {
 		let field_name = field.name.clone();
-		let default: Option<(Pending<Context>, Rc<LExpr>)> =
-			field.default.as_ref().map(|e| (fctx.clone(), e.clone()));
+		let default_thunk: Option<Thunk<Val>> = field
+			.default
+			.as_ref()
+			.map(|(shape, expr)| build_b_thunk(a_ctx, shape, expr.clone()));
+
 		let field_full = full.clone();
 		let value_thunk = Thunk!(move || {
 			let obj = field_full.evaluate()?;
 			obj.get(field_name)?.map_or_else(
-				|| {
-					let (fctx, expr) = default.as_ref().expect("shape is checked");
-					evaluate(fctx.unwrap(), expr)
-				},
+				|| default_thunk.as_ref().expect("shape is checked").evaluate(),
 				Ok,
 			)
 		});
 
 		if let Some(into) = &field.into {
-			destruct(into, value_thunk, fctx.clone(), builder);
+			destruct(into, fill, value_thunk, a_ctx);
 		} else {
 			unreachable!("analyzer lowers object-destruct shorthands into `into`");
 		}
 	}
 }
 
-/// Bind a pre-built thunk to an [`LDestruct`] pattern, inserting one
-/// binding per [`LocalId`] the pattern introduces.
-///
-/// `fctx` is needed for object-destruct defaults (feature `exp-destruct`).
 #[allow(unused_variables)]
-pub fn destruct(
-	d: &LDestruct,
-	value: Thunk<Val>,
-	fctx: Pending<Context>,
-	builder: &mut ContextBuilder,
-) {
+pub fn destruct(d: &LDestruct, fill: &LocalsFrame, value: Thunk<Val>, a_ctx: &Context) {
 	match d {
-		LDestruct::Full(id) => builder.bind(*id, value),
+		LDestruct::Full(slot) => fill.set(*slot, value),
 		#[cfg(feature = "exp-destruct")]
 		LDestruct::Skip => {}
 		#[cfg(feature = "exp-destruct")]
 		LDestruct::Array { start, rest, end } => {
-			destruct_array(start, rest.as_ref(), end, value, fctx, builder)
+			destruct_array(start, rest.as_ref(), end, fill, value, a_ctx)
 		}
 		#[cfg(feature = "exp-destruct")]
-		LDestruct::Object { fields, rest } => {
-			destruct_object(fields, rest.as_ref(), value, fctx, builder)
-		}
+		LDestruct::Object { fields, rest } => destruct_object(fields, rest.as_ref(), fill, value, a_ctx),
 	}
 }
 
-/// Bind one [`LBind`] as a lazy thunk that evaluates in the given
-/// future context. Mirrors the old `evaluate_dest` — one entry per
-/// binding in a `local … ;` frame.
-pub fn evaluate_dest(bind: &LBind, fctx: Pending<Context>, builder: &mut ContextBuilder) {
-	let value = bind.value.clone();
-	let fctx_clone = fctx.clone();
-	let thunk = Thunk!(move || {
-		let ctx = fctx_clone.unwrap();
-		evaluate(ctx, &value)
-	});
-	destruct(&bind.destruct, thunk, fctx, builder);
+pub fn build_b_thunk(a_ctx: &Context, shape: &ClosureShape, expr: Rc<LExpr>) -> Thunk<Val> {
+	let env = Context::enter_using(a_ctx, shape);
+	Thunk!(move || evaluate(env, &expr))
+}
+pub fn build_b_thunk_uno(a_ctx: &Context, shape: Rc<(ClosureShape, LExpr)>) -> Thunk<Val> {
+	let env = Context::enter_using(a_ctx, &shape.0);
+	Thunk!(move || evaluate(env, &shape.1))
 }
 
-/// Bind each LBind's value as a lazy thunk. Mutually recursive locals
-/// resolve lazily through the shared Pending<Context>.
-pub fn evaluate_locals(parent: Context, binds: &[LBind]) -> Context {
-	if binds.is_empty() {
-		return parent;
-	}
-	let fctx = Context::new_future();
-	let mut builder =
-		ContextBuilder::extend(parent, binds.iter().map(|b| b.destruct.ids().len()).sum());
+pub fn fill_letrec_binds(fill: &LocalsFrame, ctx: &Context, binds: &[LBind]) {
 	for bind in binds {
-		evaluate_dest(bind, fctx.clone(), &mut builder);
+		let value_thunk = build_b_thunk(ctx, &bind.value_shape, bind.value.clone());
+		destruct(&bind.destruct, fill, value_thunk, ctx);
 	}
-	builder.build().into_future(fctx)
+}
+
+pub fn evaluate_local_expr(parent: Context, l: &LLocalExpr) -> Result<Val> {
+	let ctx = parent
+		.pack_captures_sup_this(&l.frame_shape)
+		.enter(|fill, ctx| {
+			fill_letrec_binds(fill, ctx, &l.binds);
+		});
+	evaluate(ctx, &l.body)
 }
 
 pub trait CloneableUnbound<T>: Unbound<Bound = T> + Clone {}
 impl<V, T> CloneableUnbound<T> for V where V: Unbound<Bound = T> + Clone {}
 
 pub fn evaluate_locals_unbound(
-	fctx: Context,
+	outer: &Context,
+	frame_shape: &ClosureShape,
+	this_slot: Option<LocalSlot>,
 	locals: Rc<Vec<LBind>>,
-	this_id: Option<LocalId>,
 ) -> impl CloneableUnbound<Context> {
 	#[derive(Trace, Clone)]
 	struct UnboundLocals {
-		fctx: Context,
+		captures: PackedContext,
+		this_slot: Option<LocalSlot>,
 		locals: Rc<Vec<LBind>>,
-		this_id: Option<LocalId>,
 	}
 	impl Unbound for UnboundLocals {
 		type Bound = Context;
 
 		fn bind(&self, sup_this: SupThis) -> Result<Context> {
-			let parent = self.fctx.clone();
-
-			let fctx = Context::new_future();
-			let mut builder = ContextBuilder::extend(
-				parent,
-				self.locals.iter().map(|b| b.destruct.ids().len()).sum(),
-			);
-			for b in self.locals.iter() {
-				evaluate_dest(b, fctx.clone(), &mut builder);
-			}
-			if let Some(this_id) = self.this_id {
-				builder.bind(this_id, Thunk::evaluated(Val::Obj(sup_this.this().clone())));
-			}
-			let ctx = builder.build_sup_this(sup_this).into_future(fctx);
-			Ok(ctx)
+			Ok(self.captures.clone().enter(sup_this, |fill, ctx| {
+				if let Some(slot) = self.this_slot {
+					let this_obj = ctx.sup_this().expect("sup_this set above").this().clone();
+					fill.set(slot, Thunk::evaluated(Val::Obj(this_obj)));
+				}
+				fill_letrec_binds(fill, ctx, &self.locals);
+			}))
 		}
 	}
 
 	UnboundLocals {
-		fctx,
+		captures: outer.pack_captures(frame_shape),
+		this_slot,
 		locals,
-		this_id,
 	}
 }

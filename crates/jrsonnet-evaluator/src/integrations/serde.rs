@@ -12,7 +12,7 @@ use serde::{
 };
 
 use crate::{
-	Error as JrError, ObjValue, ObjValueBuilder, Result, Val, in_description_frame, runtime_error,
+	Error as JrError, ObjValue, ObjValueBuilder, Result, Val, error, in_description_frame,
 };
 
 impl<'de> Deserialize<'de> for Val {
@@ -629,6 +629,6 @@ impl serde::ser::Error for JrError {
 	where
 		T: std::fmt::Display,
 	{
-		runtime_error!("serde: {msg}")
+		error!("serde: {msg}")
 	}
 }

@@ -12,7 +12,7 @@ use jrsonnet_interner::{IBytes, IStr};
 use super::ArrValue;
 use crate::{
 	Context, Error, ObjValue, Result, Thunk, Val,
-	analyze::LExpr,
+	analyze::{ClosureShape, LExpr},
 	error::ErrorKind::InfiniteRecursionDetected,
 	evaluate::evaluate,
 	function::NativeFn,
@@ -123,9 +123,9 @@ pub struct ExprArray {
 	cached: Cc<RefCell<Vec<ArrayThunk>>>,
 }
 impl ExprArray {
-	pub fn new(ctx: Context, src: Rc<Vec<LExpr>>) -> Self {
+	pub fn new(outer: Context, shape: &ClosureShape, src: Rc<Vec<LExpr>>) -> Self {
 		Self {
-			ctx,
+			ctx: Context::enter_using(&outer, shape),
 			cached: Cc::new(RefCell::new(vec![ArrayThunk::Waiting; src.len()])),
 			src,
 		}

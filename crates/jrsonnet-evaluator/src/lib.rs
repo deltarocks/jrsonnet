@@ -58,6 +58,7 @@ pub use tla::apply_tla;
 pub use val::{Thunk, Val};
 
 pub mod analyze;
+use self::analyze::{LExpr, analyze_root};
 use crate::gc::WithCapacityExt as _;
 
 #[allow(clippy::needless_return)]
@@ -408,12 +409,15 @@ impl State {
 		file.evaluating = true;
 		// Dropping file cache guard here, as evaluation may use this map too
 		drop(file_cache);
-		let (ctx, externals) = self.create_default_context(file_name.clone()).build();
-		let report = analyze::analyze_root(&parsed, externals);
+		let (externals, thunks) = self.create_default_context(file_name).build();
+		let report = analyze_root(&parsed, externals);
 		if report.errored {
 			return Err(StaticAnalysisError(report.diagnostics_list).into());
 		}
-		let res = evaluate::evaluate(ctx.build(), &report.lir);
+		debug_assert_eq!(report.root_shape.n_locals as usize, thunks.len());
+		debug_assert!(report.root_shape.captures.is_empty());
+		let ctx = Context::root(thunks);
+		let res = evaluate::evaluate(ctx, &report.lir);
 
 		let mut file_cache = self.file_cache();
 		let mut file = file_cache.entry(path);
@@ -501,11 +505,52 @@ impl ContextInitializer for InitialUnderscore {
 	}
 }
 
+pub struct PreparedSnippet {
+	lir: LExpr,
+	thunks: Vec<Thunk<Val>>,
+}
+
 /// Raw methods evaluate passed values but don't perform TLA execution
 impl State {
-	/// Parses and evaluates the given snippet
-	pub fn evaluate_snippet(&self, name: impl Into<IStr>, code: impl Into<IStr>) -> Result<Val> {
-		self.evaluate_snippet_with(name, code, &())
+	/// Parses and analyses the given snippet with a custom context
+	/// modifier.
+	pub fn prepare_snippet_with(
+		&self,
+		name: impl Into<IStr>,
+		code: impl Into<IStr>,
+		context_initializer: &dyn ContextInitializer,
+	) -> Result<PreparedSnippet> {
+		let code = code.into();
+		let source = Source::new_virtual(name.into(), code.clone());
+		let parsed = parse_jsonnet(&code, source.clone()).map_err(|e| ImportSyntaxError {
+			path: source.clone(),
+			error: Box::new(e),
+		})?;
+		let (externals, thunks) = self
+			.create_default_context_with(source, context_initializer)
+			.build();
+		let report = analyze_root(&parsed, externals);
+		if report.errored {
+			return Err(StaticAnalysisError(report.diagnostics_list).into());
+		}
+		debug_assert_eq!(report.root_shape.n_locals as usize, thunks.len());
+		debug_assert!(report.root_shape.captures.is_empty());
+		Ok(PreparedSnippet {
+			lir: report.lir,
+			thunks,
+		})
+	}
+	/// Parses and analyses the given snippet
+	pub fn prepare_snippet(
+		&self,
+		name: impl Into<IStr>,
+		code: impl Into<IStr>,
+	) -> Result<PreparedSnippet> {
+		self.prepare_snippet_with(name, code, &())
+	}
+	pub fn evaluate_prepared_snippet(&self, prepared: &PreparedSnippet) -> Result<Val> {
+		let ctx = Context::root(prepared.thunks.clone());
+		evaluate::evaluate(ctx, &prepared.lir)
 	}
 	/// Parses and evaluates the given snippet with custom context modifier
 	pub fn evaluate_snippet_with(
@@ -514,20 +559,12 @@ impl State {
 		code: impl Into<IStr>,
 		context_initializer: &dyn ContextInitializer,
 	) -> Result<Val> {
-		let code = code.into();
-		let source = Source::new_virtual(name.into(), code.clone());
-		let parsed = parse_jsonnet(&code, source.clone()).map_err(|e| ImportSyntaxError {
-			path: source.clone(),
-			error: Box::new(e),
-		})?;
-		let (ctx, externals) = self
-			.create_default_context_with(source.clone(), context_initializer)
-			.build();
-		let report = analyze::analyze_root(&parsed, externals);
-		if report.errored {
-			return Err(StaticAnalysisError(report.diagnostics_list).into());
-		}
-		evaluate::evaluate(ctx.build(), &report.lir)
+		let prepared = self.prepare_snippet_with(name, code, context_initializer)?;
+		self.evaluate_prepared_snippet(&prepared)
+	}
+	/// Parses and evaluates the given snippet
+	pub fn evaluate_snippet(&self, name: impl Into<IStr>, code: impl Into<IStr>) -> Result<Val> {
+		self.evaluate_snippet_with(name, code, &())
 	}
 }
 

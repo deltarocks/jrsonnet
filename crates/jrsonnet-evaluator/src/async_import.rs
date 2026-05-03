@@ -4,7 +4,7 @@ use jrsonnet_gcmodule::Acyclic;
 use jrsonnet_ir::{IStr, Source, SourcePath, visit::Visitor};
 use rustc_hash::FxHashMap;
 
-use crate::{AsPathLike, FileData, ImportResolver, ResolvePathOwned, State};
+use crate::{AsPathLike, FileData, ImportResolver, ResolvePathOwned, Result, State};
 
 pub struct Import {
 	path: ResolvePathOwned,
@@ -109,23 +109,23 @@ where
 				}
 			}
 			Job::ParseFile(path) => {
-				if let Some(file) = s.0.file_cache.borrow_mut().get_mut(&path) {
-					if file.parsed.is_none() {
-						let Some(code) = file.get_string() else {
-							continue;
-						};
-						let source = Source::new(path.clone(), code.clone());
-						// If failed - then skip import
-						file.parsed = crate::parse_jsonnet(&code, source).map(Rc::new).ok();
-						if let Some(parsed) = &file.parsed {
-							let mut imports = FoundImports(vec![]);
-							imports.visit_expr(parsed);
-							for import in imports.0 {
-								queue.push(Job::ResolveImport {
-									from: path.clone(),
-									import,
-								});
-							}
+				if let Some(file) = s.0.file_cache.borrow_mut().get_mut(&path)
+					&& file.parsed.is_none()
+				{
+					let Some(code) = file.get_string() else {
+						continue;
+					};
+					let source = Source::new(path.clone(), code.clone());
+					// If failed - then skip import
+					file.parsed = crate::parse_jsonnet(&code, source).map(Rc::new).ok();
+					if let Some(parsed) = &file.parsed {
+						let mut imports = FoundImports(vec![]);
+						imports.visit_expr(parsed);
+						for import in imports.0 {
+							queue.push(Job::ResolveImport {
+								from: path.clone(),
+								import,
+							});
 						}
 					}
 				}

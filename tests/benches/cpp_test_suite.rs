@@ -1,10 +1,8 @@
-use std::{collections::HashMap, fs::read_dir, hint::black_box, path::Path};
+use std::{collections::HashMap, fs, fs::read_dir, hint::black_box, path::Path};
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use jrsonnet_evaluator::{
-	FileImportResolver, State, apply_tla,
-	manifest::{BlackBoxFormat, JsonFormat},
-	stack::limit_stack_depth,
+	FileImportResolver, State, apply_tla, manifest::JsonFormat, stack::limit_stack_depth,
 	trace::PathResolver,
 };
 
@@ -12,31 +10,37 @@ use jrsonnet_evaluator::{
 static GLOBAL: mimallocator::Mimalloc = mimallocator::Mimalloc;
 
 fn bench_entry(c: &mut Criterion, path: &Path) {
-	c.bench_function(
-		path.file_name()
-			.expect("file path")
-			.to_str()
-			.expect("name is utf-8"),
-		|b| {
-			let _stack = limit_stack_depth(200_000);
+	let name = path
+		.file_name()
+		.expect("file path")
+		.to_str()
+		.expect("name is utf-8")
+		.to_owned();
+	let code = fs::read_to_string(path).expect("read bench source");
 
-			let mut s = State::builder();
+	c.bench_function(&name, |b| {
+		let _stack = limit_stack_depth(200_000);
 
-			s.context_initializer(jrsonnet_stdlib::ContextInitializer::new(
-				PathResolver::Absolute,
-			))
-			.import_resolver(FileImportResolver::new(vec![]));
+		let mut s = State::builder();
+		s.context_initializer(jrsonnet_stdlib::ContextInitializer::new(
+			PathResolver::Absolute,
+		))
+		.import_resolver(FileImportResolver::new(vec![]));
+		let s = s.build();
+		let _entered = s.enter();
 
-			let s = s.build();
-			let _s = s.enter();
+		// Parse + analysis happen once; each iter only measures
+		// evaluation + manifestation.
+		let prepared = s
+			.prepare_snippet(name.clone(), code.clone())
+			.expect("prepared");
 
-			b.iter(|| {
-				let imported = s.import(path).expect("evaluated");
-				let res = apply_tla(&HashMap::new(), imported).expect("tla applied");
-				black_box(res.manifest(JsonFormat::cli(3)).expect("manifested"));
-			});
-		},
-	);
+		b.iter(|| {
+			let imported = s.evaluate_prepared_snippet(&prepared).expect("evaluated");
+			let res = apply_tla(&HashMap::new(), imported).expect("tla applied");
+			black_box(res.manifest(JsonFormat::cli(3)).expect("manifested"));
+		});
+	});
 }
 fn criterion_benchmark(c: &mut Criterion) {
 	for entry in read_dir("go_builtin_benchmarks").expect("dir exists") {

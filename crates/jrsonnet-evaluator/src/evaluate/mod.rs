@@ -7,21 +7,22 @@ use jrsonnet_types::ValType;
 
 use self::{
 	compspec::{evaluate_arr_comp, evaluate_obj_comp},
-	destructure::{evaluate_locals, evaluate_locals_unbound},
+	destructure::{build_b_thunk_uno, evaluate_local_expr, evaluate_locals_unbound},
 	operator::evaluate_binary_op_special,
 };
 use crate::{
 	Context, Error, ObjValue, ObjValueBuilder, ObjectAssertion, Result, ResultExt as _, SupThis,
 	Unbound, Val,
 	analyze::{
-		LArgsDesc, LAssertStmt, LExpr, LFieldMember, LFieldName, LFunction, LIndexPart, LObjBody,
-		LObjMembers,
+		ClosureShape, LArgsDesc, LAssertStmt, LExpr, LFieldMember, LFieldName, LFunction,
+		LIndexPart, LObjAsserts, LObjBody, LObjMembers, LSlot,
 	},
-	bail,
+	arr::ArrValue,
+	bail, error,
 	error::{ErrorKind::*, suggest_object_fields},
-	evaluate::operator::evaluate_unary_op,
+	evaluate::{destructure::fill_letrec_binds, operator::evaluate_unary_op},
 	function::{CallLocation, FuncDesc, FuncVal, prepared::PreparedFuncVal},
-	in_frame, runtime_error,
+	in_frame,
 	typed::FromUntyped as _,
 	val::{CachedUnbound, Thunk},
 	with_state,
@@ -62,11 +63,10 @@ pub fn evaluate_trivial(expr: &LExpr) -> Option<Val> {
 	})
 }
 
-/// Evaluate a method definition.
 pub fn evaluate_method(ctx: Context, name: IStr, func: &Rc<LFunction>) -> Val {
 	Val::Func(FuncVal::Normal(Cc::new(FuncDesc {
 		name,
-		ctx,
+		body_captures: ctx.pack_captures_sup_this(&func.body_shape),
 		func: func.clone(),
 	})))
 }
@@ -91,6 +91,15 @@ pub fn evaluate_field_name(ctx: Context, field_name: &LFieldName) -> Result<Opti
 }
 
 pub fn evaluate_thunk(ctx: Context, expr: Rc<LExpr>, tailstrict: bool) -> Result<Thunk<Val>> {
+	match &*expr {
+		LExpr::Slot(LSlot::Local(i)) => return Ok(ctx.local(*i)),
+		LExpr::Slot(LSlot::Capture(i)) => return Ok(ctx.capture(*i)),
+		_ => {
+			if let Some(v) = evaluate_trivial(&expr) {
+				return Ok(Thunk::evaluated(v));
+			}
+		}
+	}
 	Ok(if tailstrict {
 		Thunk::evaluated(evaluate(ctx, &expr)?)
 	} else {
@@ -106,40 +115,21 @@ mod names {
 	}
 }
 
-pub fn evaluate_named(name: &IStr, ctx: Context, expr: &LExpr) -> Result<Val> {
-	if let LExpr::Function(f) = &expr {
-		return Ok(evaluate_method(
-			ctx,
-			f.name.clone().unwrap_or_else(|| name.clone()),
-			f,
-		));
-	}
-	evaluate(ctx, expr)
-}
-
 pub fn evaluate(ctx: Context, expr: &LExpr) -> Result<Val> {
 	Ok(match expr {
 		LExpr::Null => Val::Null,
 		LExpr::Bool(b) => Val::Bool(*b),
 		LExpr::Str(s) => Val::string(s.clone()),
 		LExpr::Num(n) => Val::Num(*n),
-		LExpr::Local(id) => {
-			let Some(thunk) = ctx.binding(*id) else {
-				bail!("should not happen: unbound local {id:?}");
-			};
-			thunk.evaluate()?
-		}
+		LExpr::Slot(slot) => ctx.slot(*slot).evaluate()?,
 		LExpr::BadLocal(name) => panic!("unresolvable reference: {name}"),
-		LExpr::Arr(items) => Val::Arr(crate::arr::ArrValue::expr(ctx, items.clone())),
+		LExpr::Arr { shape, items } => Val::Arr(ArrValue::expr(ctx, shape, items.clone())),
 		LExpr::UnaryOp(op, value) => {
 			let value = evaluate(ctx, value)?;
 			evaluate_unary_op(*op, &value)?
 		}
 		LExpr::BinaryOp { lhs, op, rhs } => evaluate_binary_op_special(ctx, lhs, *op, rhs)?,
-		LExpr::LocalExpr { binds, body } => {
-			let ctx = evaluate_locals(ctx, binds);
-			evaluate(ctx, body)?
-		}
+		LExpr::LocalExpr(local_expr) => evaluate_local_expr(ctx, local_expr)?,
 		LExpr::IfElse {
 			cond,
 			cond_then,
@@ -176,6 +166,7 @@ pub fn evaluate(ctx: Context, expr: &LExpr) -> Result<Val> {
 			func.name.clone().unwrap_or_else(names::anonymous),
 			func,
 		),
+		LExpr::IdentityFunction => Val::Func(FuncVal::identity()),
 		LExpr::Apply {
 			applicable,
 			args,
@@ -240,8 +231,7 @@ pub fn evaluate(ctx: Context, expr: &LExpr) -> Result<Val> {
 					let n = v.as_num().ok_or_else(|| -> crate::Error {
 						TypeMismatch("slice step", vec![ValType::Num], v.value_type()).into()
 					})?;
-					BoundedUsize::new(n as usize)
-						.ok_or_else(|| runtime_error!("slice step must be >= 1"))
+					BoundedUsize::new(n as usize).ok_or_else(|| error!("slice step must be >= 1"))
 				})
 				.transpose()?;
 			Val::from(indexable.slice(start, end, step)?)
@@ -278,13 +268,58 @@ fn evaluate_apply(
 		bail!(OnlyFunctionsCanBeCalledGot(func_val.value_type()))
 	};
 
+	if func.is_identity() && args.names.is_empty() && args.unnamed.len() == 1 {
+		return evaluate_thunk(ctx, args.unnamed[0].clone(), tailstrict)?.evaluate();
+	}
+
 	let name = func.name();
+
+	if args.names.is_empty() && args.unnamed.len() == 1 && func.params().len() == 1 {
+		use crate::function::prepared::PreparedCall;
+		let prepared_inline = PreparedCall::empty();
+		let arg = evaluate_thunk(ctx, args.unnamed[0].clone(), tailstrict)?;
+		let arg_slice = std::slice::from_ref(&arg);
+		return in_frame(
+			loc,
+			|| format!("function <{name}> call"),
+			|| {
+				func.evaluate_prepared(
+					&prepared_inline,
+					CallLocation::native(),
+					arg_slice,
+					&[],
+					tailstrict,
+				)
+			},
+		);
+	}
+
 	let unnamed = args
 		.unnamed
 		.iter()
 		.cloned()
 		.map(|e| evaluate_thunk(ctx.clone(), e, tailstrict))
 		.collect::<Result<Vec<_>>>()?;
+
+	// Fast path: positional-only multi-arg call fully covering the
+	// params, no defaults.
+	if args.names.is_empty() && unnamed.len() == func.params().len() {
+		use crate::function::prepared::PreparedCall;
+		let prepared_inline = PreparedCall::empty();
+		return in_frame(
+			loc,
+			|| format!("function <{name}> call"),
+			|| {
+				func.evaluate_prepared(
+					&prepared_inline,
+					CallLocation::native(),
+					&unnamed,
+					&[],
+					tailstrict,
+				)
+			},
+		);
+	}
 
 	let named = args
 		.values
@@ -302,7 +337,7 @@ fn evaluate_apply(
 }
 
 fn evaluate_index(ctx: Context, indexable: &LExpr, parts: &[LIndexPart]) -> Result<Val> {
-	let mut value = if let LExpr::Super = indexable {
+	let mut value = if matches!(indexable, LExpr::Super) {
 		let sup_this = ctx.try_sup_this()?;
 		// First part must be evaluated to get the super field name
 		if parts.is_empty() {
@@ -422,13 +457,15 @@ pub fn evaluate_field_member_unbound<B: Unbound<Bound = Context> + Clone>(
 	#[derive(Trace)]
 	struct UnboundValue<B: Trace> {
 		uctx: B,
-		value: Rc<LExpr>,
+		value: Rc<(ClosureShape, LExpr)>,
 		name: IStr,
 	}
 	impl<B: Unbound<Bound = Context>> Unbound for UnboundValue<B> {
 		type Bound = Val;
 		fn bind(&self, sup_this: SupThis) -> Result<Val> {
-			evaluate(self.uctx.bind(sup_this)?, &self.value)
+			let a_ctx = self.uctx.bind(sup_this)?;
+			let b_ctx = Context::enter_using(&a_ctx, &self.value.0);
+			evaluate(b_ctx, &self.value.1)
 		}
 	}
 
@@ -468,12 +505,12 @@ pub fn evaluate_field_member_static(
 		return Ok(());
 	};
 
-	let value = value.clone();
+	let thunk = build_b_thunk_uno(&value_ctx, value.clone());
 	builder
 		.field(name)
 		.with_add(*plus)
 		.with_visibility(*visibility)
-		.try_thunk(Thunk!(move || { evaluate(value_ctx, &value) }))?;
+		.try_thunk(thunk)?;
 	Ok(())
 }
 
@@ -491,34 +528,33 @@ fn evaluate_obj_members(
 
 	if needs_unbound {
 		let uctx = CachedUnbound::new(evaluate_locals_unbound(
-			ctx.clone(),
-			members.locals.clone(),
+			&ctx,
+			&members.frame_shape,
 			members.this,
+			members.locals.clone(),
 		));
 		for field in &members.fields {
 			evaluate_field_member_unbound(&mut builder, ctx.clone(), uctx.clone(), field)?;
 		}
-		if !members.asserts.is_empty() {
+		if let Some(asserts_block) = &members.asserts {
 			builder.assert(evaluate_object_assertions_unbound(
 				uctx,
-				members.asserts.clone(),
+				asserts_block.clone(),
 			));
 		}
 	} else {
-		let field_ctx = ctx;
-		let value_ctx = evaluate_locals(field_ctx.clone(), &members.locals);
+		let a_ctx = ctx
+			.pack_captures_sup_this(&members.frame_shape)
+			.enter(|fill, ctx| {
+				fill_letrec_binds(fill, &ctx, &members.locals);
+			});
 		for field in &members.fields {
-			evaluate_field_member_static(
-				&mut builder,
-				field_ctx.clone(),
-				value_ctx.clone(),
-				field,
-			)?;
+			evaluate_field_member_static(&mut builder, ctx.clone(), a_ctx.clone(), field)?;
 		}
-		if !members.asserts.is_empty() {
+		if let Some(asserts_block) = &members.asserts {
 			builder.assert(evaluate_object_assertions_static(
-				value_ctx,
-				members.asserts.clone(),
+				a_ctx,
+				asserts_block.clone(),
 			));
 		}
 	}
@@ -529,7 +565,7 @@ fn evaluate_obj_members(
 pub fn evaluate_assert(ctx: Context, assertion: &LAssertStmt) -> Result<()> {
 	let LAssertStmt { cond, message } = assertion;
 	let assertion_result = in_frame(
-		CallLocation::native(),
+		CallLocation::new(&cond.span),
 		|| "assertion condition".to_owned(),
 		|| bool::from_untyped(evaluate(ctx.clone(), cond)?),
 	)?;
@@ -550,18 +586,19 @@ pub fn evaluate_assert(ctx: Context, assertion: &LAssertStmt) -> Result<()> {
 
 fn evaluate_object_assertions_unbound<B: Unbound<Bound = Context>>(
 	uctx: B,
-	asserts: Rc<Vec<LAssertStmt>>,
+	asserts: Rc<LObjAsserts>,
 ) -> impl ObjectAssertion {
 	#[derive(Trace)]
 	struct ObjectAssert<B: Trace> {
 		uctx: B,
-		asserts: Rc<Vec<LAssertStmt>>,
+		asserts: Rc<LObjAsserts>,
 	}
 	impl<B: Unbound<Bound = Context>> ObjectAssertion for ObjectAssert<B> {
 		fn run(&self, sup_this: SupThis) -> Result<()> {
-			let ctx = self.uctx.bind(sup_this)?;
-			for assert in &*self.asserts {
-				evaluate_assert(ctx.clone(), assert)?;
+			let a_ctx = self.uctx.bind(sup_this)?;
+			let assert_env = Context::enter_using(&a_ctx, &self.asserts.shape);
+			for assert in &self.asserts.asserts {
+				evaluate_assert(assert_env.clone(), assert)?;
 			}
 			Ok(())
 		}
@@ -569,21 +606,25 @@ fn evaluate_object_assertions_unbound<B: Unbound<Bound = Context>>(
 	ObjectAssert { uctx, asserts }
 }
 fn evaluate_object_assertions_static(
-	ctx: Context,
-	asserts: Rc<Vec<LAssertStmt>>,
+	a_ctx: Context,
+	asserts: Rc<LObjAsserts>,
 ) -> impl ObjectAssertion {
 	#[derive(Trace)]
 	struct ObjectAssert {
-		ctx: Context,
-		asserts: Rc<Vec<LAssertStmt>>,
+		assert_env: Context,
+		asserts: Rc<LObjAsserts>,
 	}
 	impl ObjectAssertion for ObjectAssert {
 		fn run(&self, _sup_this: SupThis) -> Result<()> {
-			for assert in &*self.asserts {
-				evaluate_assert(self.ctx.clone(), assert)?;
+			for assert in &self.asserts.asserts {
+				evaluate_assert(self.assert_env.clone(), assert)?;
 			}
 			Ok(())
 		}
 	}
-	ObjectAssert { ctx, asserts }
+	let assert_env = Context::enter_using(&a_ctx, &asserts.shape);
+	ObjectAssert {
+		assert_env,
+		asserts,
+	}
 }
