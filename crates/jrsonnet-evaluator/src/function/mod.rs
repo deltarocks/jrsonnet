@@ -19,7 +19,6 @@ use crate::{
 
 pub mod builtin;
 mod native;
-mod parse;
 pub(crate) mod prepared;
 
 pub use jrsonnet_ir::function::*;
