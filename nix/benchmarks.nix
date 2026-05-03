@@ -99,7 +99,7 @@ stdenv.mkDerivation {
             echo "> Note: No results for C++, ${skipCpp}" >> $out
             echo >> $out
           ''}
-          ${optionalString (!quick && !omitSource) ''
+          ${optionalString (!omitSource) ''
             echo ".Source" >> $out
             echo "[%collapsible]" >> $out
             echo "====" >> $out
@@ -162,7 +162,7 @@ stdenv.mkDerivation {
       cd $temp
 
       touch $out
-      ${optionalString (!quick) ''
+      ${optionalString (true) ''
         cat ${./benchmarks.adoc} >> $out
         echo >> $out
 
@@ -194,7 +194,6 @@ stdenv.mkDerivation {
         omitSource = true;
         skipCpp = "takes longer than a hour";
         skipGo = skipSlow;
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "Kube-prometheus manifests";
@@ -203,7 +202,6 @@ stdenv.mkDerivation {
         omitSource = true;
         skipCpp = "too slow, takes hours, skews results";
         skipGo = skipSlow;
-        skipScala = skipSlow;
       }}
 
       echo >> $out
@@ -211,7 +209,6 @@ stdenv.mkDerivation {
       ${mkBench {
         name = "Large string join";
         path = "${jsonnetBench}/perf_tests/large_string_join.jsonnet";
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "Large string template";
@@ -219,21 +216,18 @@ stdenv.mkDerivation {
         path = "${jsonnetBench}/perf_tests/large_string_template.jsonnet";
         skipGo = "fails with os stack size exhausion";
         skipCpp = "too slow, takes hours, skews results";
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "Realistic 1";
         path = "${jsonnetBench}/perf_tests/realistic1.jsonnet";
         skipGo = skipSlow;
         skipCpp = "too slow, takes hours, skews results";
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "Realistic 2";
         path = "${jsonnetBench}/perf_tests/realistic2.jsonnet";
         skipGo = skipSlow;
         skipCpp = "too slow, takes hours, skews results";
-        skipScala = skipSlow;
       }}
 
       echo >> $out
@@ -241,7 +235,6 @@ stdenv.mkDerivation {
       ${mkBench {
         name = "Tail call";
         path = "${jsonnetBench}/benchmarks/bench.01.jsonnet";
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "Inheritance recursion";
@@ -252,14 +245,12 @@ stdenv.mkDerivation {
       ${mkBench {
         name = "Simple recursive call";
         path = "${jsonnetBench}/benchmarks/bench.03.jsonnet";
-        skipScala = skipSlow;
         skipGo = skipSlow;
       }}
       ${mkBench {
         name = "Foldl string concat";
         path = "${jsonnetBench}/benchmarks/bench.04.jsonnet";
         skipCpp = skipSlow;
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "Array sorts";
@@ -275,19 +266,16 @@ stdenv.mkDerivation {
         name = "Inheritance function recursion";
         path = "${jsonnetBench}/benchmarks/bench.08.jsonnet";
         skipCpp = skipSlow;
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "String strips";
         path = "${jsonnetBench}/benchmarks/bench.09.jsonnet";
         skipCpp = "too slow, takes hours, skews results";
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "Big object";
         path = "${jsonnetBench}/benchmarks/gen_big_object.jsonnet";
         pathIsGenerator = true;
-        skipScala = skipSlow;
       }}
 
       echo >> $out
@@ -297,14 +285,12 @@ stdenv.mkDerivation {
         path = "${goJsonnetBench}/base64.jsonnet";
         skipRustAlternative = skipSlow;
         skipCpp = "too slow, takes hours, skews results";
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "std.base64Decode";
         path = "${goJsonnetBench}/base64Decode.jsonnet";
         skipRustAlternative = skipSlow;
         skipCpp = skipSlow;
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "std.base64DecodeBytes";
@@ -312,7 +298,6 @@ stdenv.mkDerivation {
         skipRustAlternative = skipSlow;
         skipCpp = skipSlow;
         skipGo = skipSlow;
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "std.base64 (byte array)";
@@ -320,17 +305,14 @@ stdenv.mkDerivation {
         skipRustAlternative = skipSlow;
         skipCpp = skipSlow;
         skipGo = skipSlow;
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "std.foldl";
         path = "${goJsonnetBench}/foldl.jsonnet";
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "std.manifestJsonEx";
         path = "${goJsonnetBench}/manifestJsonEx.jsonnet";
-        skipScala = skipSlow;
         skipCpp = skipSlow;
       }}
       ${mkBench {
@@ -341,7 +323,6 @@ stdenv.mkDerivation {
       ${mkBench {
         name = "std.parseInt";
         path = "${goJsonnetBench}/parseInt.jsonnet";
-        skipScala = skipSlow;
         skipCpp = skipSlow;
       }}
       ${mkBench {
@@ -353,7 +334,6 @@ stdenv.mkDerivation {
       ${mkBench {
         name = "std.substr";
         path = "${goJsonnetBench}/substr.jsonnet";
-        skipScala = skipSlow;
       }}
       ${mkBench {
         name = "Comparsion for array";
@@ -366,7 +346,6 @@ stdenv.mkDerivation {
         skipRustAlternative = skipSlow;
         skipCpp = "can't run: uses up to 192GB of RAM";
         skipGo = skipSlow;
-        skipScala = skipSlow;
       }}
     '';
 }
