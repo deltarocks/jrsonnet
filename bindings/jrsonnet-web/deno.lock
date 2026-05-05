@@ -1,12 +1,15 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@david/code-block-writer@^13.0.3": "13.0.3",
     "jsr:@david/path@0.2": "0.2.0",
     "jsr:@david/temp@~0.1.1": "0.1.1",
+    "jsr:@deno/dnt@~0.42.3": "0.42.3",
     "jsr:@deno/wasmbuild@~0.21.1": "0.21.1",
     "jsr:@std/assert@^1.0.19": "1.0.19",
     "jsr:@std/cli@^1.0.11": "1.0.29",
     "jsr:@std/encoding@^1.0.6": "1.0.10",
+    "jsr:@std/fmt@1": "1.0.10",
     "jsr:@std/fmt@^1.0.4": "1.0.10",
     "jsr:@std/fs@1": "1.0.23",
     "jsr:@std/fs@^1.0.10": "1.0.23",
@@ -14,9 +17,14 @@
     "jsr:@std/path@1": "1.1.4",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/streams@^1.0.17": "1.1.0",
-    "jsr:@std/tar@~0.1.4": "0.1.10"
+    "jsr:@std/tar@~0.1.4": "0.1.10",
+    "jsr:@ts-morph/bootstrap@0.27": "0.27.0",
+    "jsr:@ts-morph/common@0.27": "0.27.0"
   },
   "jsr": {
+    "@david/code-block-writer@13.0.3": {
+      "integrity": "f98c77d320f5957899a61bfb7a9bead7c6d83ad1515daee92dbacc861e13bb7f"
+    },
     "@david/path@0.2.0": {
       "integrity": "f2d7aa7f02ce5a55e27c09f9f1381794acb09d328f8d3c8a2e3ab3ffc294dccd",
       "dependencies": [
@@ -30,6 +38,16 @@
         "jsr:@david/path"
       ]
     },
+    "@deno/dnt@0.42.3": {
+      "integrity": "62a917a0492f3c8af002dce90605bb0d41f7d29debc06aca40dba72ab65d8ae3",
+      "dependencies": [
+        "jsr:@david/code-block-writer",
+        "jsr:@std/fmt@1",
+        "jsr:@std/fs@1",
+        "jsr:@std/path@1",
+        "jsr:@ts-morph/bootstrap"
+      ]
+    },
     "@deno/wasmbuild@0.21.1": {
       "integrity": "f60afdffefbd61067cb8a0083cde7d22f5eb74084b074c672a87b8e92042b456",
       "dependencies": [
@@ -37,7 +55,7 @@
         "jsr:@david/temp",
         "jsr:@std/cli",
         "jsr:@std/encoding",
-        "jsr:@std/fmt",
+        "jsr:@std/fmt@^1.0.4",
         "jsr:@std/fs@^1.0.10",
         "jsr:@std/tar"
       ]
@@ -81,10 +99,24 @@
       "dependencies": [
         "jsr:@std/streams"
       ]
+    },
+    "@ts-morph/bootstrap@0.27.0": {
+      "integrity": "b8d7bc8f7942ce853dde4161b28f9aa96769cef3d8eebafb379a81800b9e2448",
+      "dependencies": [
+        "jsr:@ts-morph/common"
+      ]
+    },
+    "@ts-morph/common@0.27.0": {
+      "integrity": "c7b73592d78ce8479b356fd4f3d6ec3c460d77753a8680ff196effea7a939052",
+      "dependencies": [
+        "jsr:@std/fs@1",
+        "jsr:@std/path@1"
+      ]
     }
   },
   "workspace": {
     "dependencies": [
+      "jsr:@deno/dnt@~0.42.3",
       "jsr:@deno/wasmbuild@~0.21.1",
       "jsr:@std/assert@^1.0.19"
     ]
