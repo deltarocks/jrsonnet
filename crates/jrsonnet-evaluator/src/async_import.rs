@@ -91,6 +91,7 @@ enum Job {
 pub async fn async_import<H>(
 	s: State,
 	handler: H,
+	from: &SourcePath,
 	path: &dyn AsPathLike,
 ) -> Result<SourcePath, H::Error>
 where
@@ -100,7 +101,7 @@ where
 		.downcast_ref::<ResolvedImportResolver>()
 		.expect("for async imports, import_resolver should be set to ResolvedImportResolver");
 
-	let entry = handler.resolve_from_default(path).await?;
+	let entry = handler.resolve_from(from, path).await?;
 	let mut queue = vec![Job::LoadFile {
 		path: entry.clone(),
 		parse: true,
