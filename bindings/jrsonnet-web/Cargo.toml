@@ -1,0 +1,28 @@
+[package]
+name = "jrsonnet-web"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+console_error_panic_hook.workspace = true
+getrandom = { workspace = true, features = ["wasm_js"] }
+hi-doc.workspace = true
+jrsonnet-evaluator.workspace = true
+jrsonnet-formatter.workspace = true
+jrsonnet-gcmodule.workspace = true
+jrsonnet-stdlib.workspace = true
+jrsonnet-types.workspace = true
+js-sys.workspace = true
+url.workspace = true
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+name = "jsonnet_web"
+crate-type = ["cdylib"]

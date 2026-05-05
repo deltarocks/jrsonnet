@@ -70,6 +70,7 @@
             ])
             rustfmt
             rust-analyzer
+            pkgs.fenix.targets.wasm32-unknown-unknown.stable.rust-std
           ];
           craneLib = (inputs.crane.mkLib pkgs).overrideToolchain toolchain;
           treefmt =
