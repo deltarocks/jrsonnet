@@ -68,7 +68,7 @@ pub fn builtin_native(this: &builtin_native, x: IStr) -> Val {
 		.ext_natives
 		.get(&x)
 		.cloned()
-		.map_or(Val::Null, Val::Func)
+		.unwrap_or(Val::Null)
 }
 
 #[builtin(fields(
