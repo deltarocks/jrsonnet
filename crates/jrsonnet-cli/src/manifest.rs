@@ -38,6 +38,9 @@ pub struct ManifestOpts {
 	/// [default: 3 for json, 2 for yaml/toml]
 	#[clap(long)]
 	line_padding: Option<usize>,
+	/// No not add a trailing newline to the output
+	#[clap(long)]
+	pub no_trailing_newline: bool,
 	/// Preserve order in object manifestification
 	#[cfg(feature = "exp-preserve-order")]
 	#[clap(long)]

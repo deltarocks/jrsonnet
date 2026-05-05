@@ -44,8 +44,8 @@ pub extern "C" fn _start() {}
 /// If this does not match `LIB_JSONNET_VERSION`
 /// then there is a mismatch between header and compiled library.
 #[unsafe(no_mangle)]
-pub extern "C" fn jsonnet_version() -> &'static [u8; 12] {
-	b"v0.22.0-rc1\0"
+pub extern "C" fn jsonnet_version() -> &'static [u8; 8] {
+	b"v0.22.0\0"
 }
 
 unsafe fn parse_path(input: &CStr) -> Cow<'_, Path> {
@@ -105,6 +105,7 @@ impl ImportResolver for VMImportResolver {
 pub struct VM {
 	state: State,
 	manifest_format: Box<dyn ManifestFormat>,
+	trailing_newline: bool,
 	trace_format: Box<dyn TraceFormat>,
 	tla_args: FxHashMap<IStr, TlaArg>,
 }
@@ -142,6 +143,7 @@ pub extern "C" fn jsonnet_make() -> *mut VM {
 		state,
 		manifest_format: Box::new(JsonFormat::default()),
 		trace_format: Box::new(CompactFormat::default()),
+		trailing_newline: true,
 		tla_args: FxHashMap::new(),
 	}))
 }
@@ -179,6 +181,12 @@ pub extern "C" fn jsonnet_string_output(vm: &mut VM, v: c_int) {
 		1 => Box::new(ToStringFormat),
 		_ => panic!("incorrect output format"),
 	};
+}
+
+/// Enable/disable trailing newline in manifested/string output.
+#[unsafe(no_mangle)]
+pub extern "C" fn jsonnet_set_trailing_newline(vm: &mut VM, enable: c_int) {
+	vm.trailing_newline = enable != 0;
 }
 
 /// Allocate, resize, or free a buffer.  This will abort if the memory cannot be allocated. It will
@@ -285,7 +293,10 @@ pub unsafe extern "C" fn jsonnet_evaluate_snippet(
 		.and_then(|val| apply_tla(&vm.tla_args, val))
 		.and_then(|val| val.manifest(&vm.manifest_format))
 	{
-		Ok(v) => {
+		Ok(mut v) => {
+			if vm.trailing_newline {
+				v.push('\n');
+			}
 			*error = 0;
 			CString::new(&*v as &str).unwrap().into_raw()
 		}
@@ -312,7 +323,7 @@ fn val_to_multi(val: Val, format: &dyn ManifestFormat) -> Result<Vec<(IStr, IStr
 	Ok(out)
 }
 
-fn multi_to_raw(multi: Vec<(IStr, IStr)>) -> *const c_char {
+fn multi_to_raw(multi: Vec<(IStr, IStr)>, trailing_newline: bool) -> *const c_char {
 	let mut out = Vec::new();
 	for (i, (k, v)) in multi.iter().enumerate() {
 		if i != 0 {
@@ -321,6 +332,9 @@ fn multi_to_raw(multi: Vec<(IStr, IStr)>) -> *const c_char {
 		out.extend_from_slice(k.as_bytes());
 		out.push(0);
 		out.extend_from_slice(v.as_bytes());
+		if trailing_newline {
+			out.push(b'\n');
+		}
 	}
 	out.push(0);
 	out.push(0);
@@ -345,7 +359,7 @@ pub unsafe extern "C" fn jsonnet_evaluate_file_multi(
 	{
 		Ok(v) => {
 			*error = 0;
-			multi_to_raw(v)
+			multi_to_raw(v, vm.trailing_newline)
 		}
 		Err(e) => {
 			*error = 1;
@@ -374,7 +388,7 @@ pub unsafe extern "C" fn jsonnet_evaluate_snippet_multi(
 	{
 		Ok(v) => {
 			*error = 0;
-			multi_to_raw(v)
+			multi_to_raw(v, vm.trailing_newline)
 		}
 		Err(e) => {
 			*error = 1;
@@ -396,13 +410,16 @@ fn val_to_stream(val: Val, format: &dyn ManifestFormat) -> Result<Vec<IStr>> {
 	Ok(out)
 }
 
-fn stream_to_raw(multi: Vec<IStr>) -> *const c_char {
+fn stream_to_raw(multi: Vec<IStr>, trailing_newline: bool) -> *const c_char {
 	let mut out = Vec::new();
 	for (i, v) in multi.iter().enumerate() {
 		if i != 0 {
 			out.push(0);
 		}
 		out.extend_from_slice(v.as_bytes());
+		if trailing_newline {
+			out.push(b'\n');
+		}
 	}
 	out.push(0);
 	out.push(0);
@@ -427,7 +444,7 @@ pub unsafe extern "C" fn jsonnet_evaluate_file_stream(
 	{
 		Ok(v) => {
 			*error = 0;
-			stream_to_raw(v)
+			stream_to_raw(v, vm.trailing_newline)
 		}
 		Err(e) => {
 			*error = 1;
@@ -456,7 +473,7 @@ pub unsafe extern "C" fn jsonnet_evaluate_snippet_stream(
 	{
 		Ok(v) => {
 			*error = 0;
-			stream_to_raw(v)
+			stream_to_raw(v, vm.trailing_newline)
 		}
 		Err(e) => {
 			*error = 1;

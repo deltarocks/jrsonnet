@@ -11,13 +11,6 @@ pub trait ManifestFormat {
 		self.manifest_buf(val, &mut out)?;
 		Ok(out)
 	}
-	/// When outputing to file, is it safe to append a trailing newline (I.e newline won't change
-	/// the meaning).
-	///
-	/// Default implementation returns `true`
-	fn file_trailing_newline(&self) -> bool {
-		true
-	}
 }
 impl<T> ManifestFormat for Box<T>
 where
@@ -27,10 +20,6 @@ where
 		let inner = &**self;
 		inner.manifest_buf(val, buf)
 	}
-	fn file_trailing_newline(&self) -> bool {
-		let inner = &**self;
-		inner.file_trailing_newline()
-	}
 }
 impl<T> ManifestFormat for &'_ T
 where
@@ -39,10 +28,6 @@ where
 	fn manifest_buf(&self, val: Val, buf: &mut String) -> Result<()> {
 		let inner = &**self;
 		inner.manifest_buf(val, buf)
-	}
-	fn file_trailing_newline(&self) -> bool {
-		let inner = &**self;
-		inner.file_trailing_newline()
 	}
 }
 
@@ -399,9 +384,6 @@ impl ManifestFormat for ToStringFormat {
 		}
 		JSON_TO_STRING.manifest_buf(val, out)
 	}
-	fn file_trailing_newline(&self) -> bool {
-		false
-	}
 }
 pub struct StringFormat;
 impl ManifestFormat for StringFormat {
@@ -414,9 +396,6 @@ impl ManifestFormat for StringFormat {
 		};
 		write!(out, "{s}").unwrap();
 		Ok(())
-	}
-	fn file_trailing_newline(&self) -> bool {
-		false
 	}
 }
 
