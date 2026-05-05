@@ -713,6 +713,9 @@ fn expr_basic(p: &mut Parser<'_>) -> Result<Expr> {
 			p.eat(T![local])?;
 			let mut binds = Vec::new();
 			loop {
+				if p.at(T![;]) {
+					break;
+				}
 				binds.push(bind(p)?);
 				if !p.try_eat(T![,]) {
 					break;
