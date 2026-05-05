@@ -198,4 +198,4 @@ stack overflow, try to reduce recursion, or set --max-stack to bigger value
     field <a> manifestification
     field <a> manifestification
     field <a> manifestification
-    builtin_manifestYamlDoc_cyclic.jsonnet:1:20-29: function <builtin_manifest_yaml_doc> call
+    builtin_manifestYamlDoc_cyclic.jsonnet:1:20-27: function <builtin_manifest_yaml_doc> call

@@ -1,3 +1,3 @@
 runtime error: foo
-    error.04.jsonnet:17:21-27: error statement
+    error.04.jsonnet:17:21-25: error statement
     field <x> evaluation

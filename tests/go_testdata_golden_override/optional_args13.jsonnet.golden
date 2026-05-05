@@ -1,3 +1,3 @@
 function argument is not passed: y
 Function has the following signature: (x, y)
-    optional_args13.jsonnet:1:20-27: function <anonymous> preparation
+    optional_args13.jsonnet:1:20-25: function <anonymous> preparation

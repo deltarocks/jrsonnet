@@ -1,3 +1,3 @@
 too many args, function has 3
 Function has the following signature: (x, y, z)
-    too_many_arguments.jsonnet:1:23-36: function <anonymous> preparation
+    too_many_arguments.jsonnet:1:23-34: function <anonymous> preparation

@@ -1,2 +1,2 @@
 runtime error: 42
-    error.jsonnet:1:1-7: error statement
+    error.jsonnet:1:1-5: error statement

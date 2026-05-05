@@ -1,5 +1,5 @@
 //! jsonnet interpreter implementation
-#![cfg_attr(nightly, feature(thread_local, type_alias_impl_trait))]
+#![cfg_attr(nightly, feature(thread_local))]
 
 // For jrsonnet-macros
 extern crate self as jrsonnet_evaluator;

@@ -1,2 +1,2 @@
 runtime error: "hello" is not a base 10 integer
-    builtin_parseInt_invalid.jsonnet:1:13-23: function <builtin_parse_int> call
+    builtin_parseInt_invalid.jsonnet:1:13-21: function <builtin_parse_int> call

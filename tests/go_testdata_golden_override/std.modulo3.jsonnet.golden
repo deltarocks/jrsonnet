@@ -1,3 +1,3 @@
 type error: expected number, got string
     argument <x> evaluation
-    std.modulo3.jsonnet:1:11-23: function <builtin_modulo> call
+    std.modulo3.jsonnet:1:11-21: function <builtin_modulo> call

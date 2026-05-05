@@ -21,7 +21,8 @@ use common::ContextInitializer as TestContextInitializer;
 fn run(file: &Path, root: &Path) -> String {
 	let mut s = State::builder();
 
-	let std_context = ContextInitializer::new(PathResolver::Relative(root.to_owned()));
+	let resolver = PathResolver::Relative(root.to_owned());
+	let std_context = ContextInitializer::new(resolver.clone());
 	// C++ test suite
 	std_context.add_ext_str("var1".into(), "test".into());
 	std_context
@@ -59,7 +60,7 @@ fn run(file: &Path, root: &Path) -> String {
 	let _entered = s.enter();
 
 	let trace_format = CompactFormat {
-		resolver: PathResolver::FileName,
+		resolver: resolver.clone(),
 		max_trace: 20,
 		padding: 4,
 	};
@@ -168,14 +169,9 @@ const SKIPPED: &[&str] = &[
 	"string_times_number.jsonnet",
 ];
 
-#[test]
-fn cpp_test_suite() -> io::Result<()> {
-	for root_dir in ["cpp_test_suite", "go_testdata"] {
-		let root_tests = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-		let root = root_tests.join(root_dir);
-		let root_override = root_tests.join(format!("{root_dir}_golden_override"));
-
-		for entry in fs::read_dir(&root).map_err(|e| io::Error::other(format!("failed to enumerate cpp_test_suite dir (Note: it needs to be cloned from C++ jsonnet repo for this test): {e}")))? {
+fn run_test_suite(root: PathBuf, root_override: PathBuf) -> io::Result<()> {
+	dbg!(&root);
+	for entry in fs::read_dir(&root).map_err(|e| io::Error::other(format!("failed to enumerate test suite dir (Note: it needs to be cloned from upstream jsonnet repo for this test): {e}")))? {
 		let entry = entry?;
 		if entry.path().extension().is_none_or(|e| e != "jsonnet") {
 			continue;
@@ -265,6 +261,25 @@ fn cpp_test_suite() -> io::Result<()> {
 		}
 		println!("done!");
 	}
+	Ok(())
+}
+
+#[test]
+fn upstream_test_suite() -> io::Result<()> {
+	let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+	if let Some(cpp_jsonnet) = std::env::var_os("CPP_JSONNET_FOR_TESTS") {
+		let path = PathBuf::from(cpp_jsonnet).join("test_suite");
+		let path_override = manifest.join("cpp_test_suite_golden_override");
+		run_test_suite(path, path_override)?;
+	} else {
+		eprintln!("no cpp jsonnet available for tests");
+	}
+	if let Some(go_jsonnet) = std::env::var_os("GO_JSONNET_FOR_TESTS") {
+		let path = PathBuf::from(go_jsonnet).join("testdata");
+		let path_override = manifest.join("go_testdata_golden_override");
+		run_test_suite(path, path_override)?;
+	} else {
+		eprintln!("no go jsonnet available for tests");
 	}
 
 	jrsonnet_gcmodule::with_thread_object_space(ObjectSpace::leak);

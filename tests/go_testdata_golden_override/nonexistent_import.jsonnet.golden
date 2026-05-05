@@ -1,1 +1,1 @@
-can't resolve no chance a file with this name exists from /home/lach/build/jrsonnet-pr/tests/go_testdata/nonexistent_import.jsonnet
+import file not found no chance a file with this name exists from nonexistent_import.jsonnet

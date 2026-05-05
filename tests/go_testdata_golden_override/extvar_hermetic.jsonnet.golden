@@ -1,2 +1,2 @@
 external variable is not defined: UndeclaredX
-    extvar_hermetic.jsonnet:1:25-41: function <builtin_ext_var> call
+    extvar_hermetic.jsonnet:1:25-39: function <builtin_ext_var> call

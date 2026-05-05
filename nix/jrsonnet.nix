@@ -4,6 +4,9 @@
   makeWrapper,
   withExperimentalFeatures ? false,
   forBenchmarks ? false,
+
+  cpp-jsonnet-for-tests,
+  go-jsonnet-for-tests,
 }:
 let
   inherit (lib) optionalString;
@@ -17,6 +20,9 @@ craneLib.buildPackage {
   version = "current${optionalString withExperimentalFeatures "-experimental"}";
 
   cargoExtraArgs = "--locked --features=mimalloc${optionalString withExperimentalFeatures ",experimental"}";
+
+  CPP_JSONNET_FOR_TESTS = cpp-jsonnet-for-tests;
+  GO_JSONNET_FOR_TESTS = go-jsonnet-for-tests;
 
   nativeBuildInputs = [ makeWrapper ];
 

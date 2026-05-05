@@ -198,4 +198,4 @@ stack overflow, try to reduce recursion, or set --max-stack to bigger value
     field <a> manifestification
     field <a> manifestification
     field <a> manifestification
-    builtinManifestJsonEx_cyclic.jsonnet:1:19-33: function <builtin_manifest_json_ex> call
+    builtinManifestJsonEx_cyclic.jsonnet:1:19-31: function <builtin_manifest_json_ex> call

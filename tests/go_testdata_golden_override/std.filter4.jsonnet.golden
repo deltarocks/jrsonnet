@@ -1,3 +1,3 @@
 type error: expected function, got number
     argument <func> evaluation
-    std.filter4.jsonnet:1:11-20: function <builtin_filter> call
+    std.filter4.jsonnet:1:11-18: function <builtin_filter> call

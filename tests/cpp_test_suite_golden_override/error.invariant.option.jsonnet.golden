@@ -1,6 +1,6 @@
 type error: expected array, got string
     argument <a> evaluation
-    error.invariant.option.jsonnet:19:33-56: function <builtin_set_inter> call
+    error.invariant.option.jsonnet:19:33-54: function <builtin_set_inter> call
     argument <x> evaluation
-    error.invariant.option.jsonnet:19:20-57: function <builtin_length> call
-    error.invariant.option.jsonnet:19:10-61: assertion condition
+    error.invariant.option.jsonnet:19:20-55: function <builtin_length> call
+    error.invariant.option.jsonnet:19:10-59: assertion condition

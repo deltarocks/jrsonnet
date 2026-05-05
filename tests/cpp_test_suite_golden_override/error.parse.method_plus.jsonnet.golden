@@ -1,2 +1,3 @@
 syntax error: expected ':', got '+'
     error.parse.method_plus.jsonnet:17:18
+    error.parse.method_plus.jsonnet:17:18-18: parse imported

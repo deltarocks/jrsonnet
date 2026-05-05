@@ -2,4 +2,4 @@ type error: every failed from BoundedNumber<0, 9007199254740991> | BoundedNumber
   - number out of bounds: -2 not in 0..9007199254740991
   - number out of bounds: -2 not in -1..-1
     argument <maxsplits> evaluation
-    builtinSplitLimitR5.jsonnet:1:16-45: function <builtin_splitlimitr> call
+    builtinSplitLimitR5.jsonnet:1:16-43: function <builtin_splitlimitr> call

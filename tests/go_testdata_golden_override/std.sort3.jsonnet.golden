@@ -1,3 +1,3 @@
 runtime error: foo
-    std.sort3.jsonnet:1:16-22: error statement
-    std.sort3.jsonnet:1:9-30:  function <builtin_sort> call
+    std.sort3.jsonnet:1:16-20: error statement
+    std.sort3.jsonnet:1:9-28:  function <builtin_sort> call

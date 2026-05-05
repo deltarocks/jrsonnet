@@ -1,2 +1,2 @@
 runtime error: "123.12" is not a base 10 integer
-    builtin_parseInt_invalid_decimal.jsonnet:1:13-24: function <builtin_parse_int> call
+    builtin_parseInt_invalid_decimal.jsonnet:1:13-22: function <builtin_parse_int> call

@@ -1,2 +1,2 @@
 runtime error: Foo.
-    error.02.jsonnet:17:1-7: error statement
+    error.02.jsonnet:17:1-5: error statement

@@ -198,4 +198,4 @@ stack overflow, try to reduce recursion, or set --max-stack to bigger value
     section <a> manifestification
     section <b> manifestification
     section <a> manifestification
-    builtin_manifestTomlEx_cyclic.jsonnet:1:19-38: function <builtin_manifest_toml_ex> call
+    builtin_manifestTomlEx_cyclic.jsonnet:1:19-36: function <builtin_manifest_toml_ex> call

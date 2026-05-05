@@ -4,4 +4,4 @@ expression: result
 input_file: tests/golden/issue187.rev.jsonnet
 ---
 runtime error: bad utf8
-    issue187.rev.jsonnet:1:15-92: function <builtin_decode_utf8> call
+    issue187.rev.jsonnet:1:15-90: function <builtin_decode_utf8> call

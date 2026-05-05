@@ -1,1 +1,1 @@
-can't resolve C:\can't possibly exist~ from /home/lach/build/jrsonnet-pr/tests/cpp_test_suite/error.verbatim_import.jsonnet
+import file not found C:\can't possibly exist~ from error.verbatim_import.jsonnet

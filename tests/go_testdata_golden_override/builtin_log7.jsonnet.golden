@@ -1,2 +1,2 @@
 convert num value: non-finite
-    builtin_log7.jsonnet:1:8-13: function <builtin_log> call
+    builtin_log7.jsonnet:1:8-11: function <builtin_log> call

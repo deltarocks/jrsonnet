@@ -1,2 +1,2 @@
 runtime error: x
-    bitwise_and4.jsonnet:1:5-11: error statement
+    bitwise_and4.jsonnet:1:5-9: error statement

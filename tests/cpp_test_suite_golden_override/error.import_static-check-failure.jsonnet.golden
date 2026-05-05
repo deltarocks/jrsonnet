@@ -1,2 +1,2 @@
 static analysis errors: undefined local: x
-    error.import_static-check-failure.jsonnet:1:1-8: import
+    error.import_static-check-failure.jsonnet:1:1-6: import

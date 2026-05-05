@@ -1,4 +1,4 @@
 runtime error: sarcasm
-    error.07.jsonnet:18:31-37: error statement
-    error.07.jsonnet:17:33-35: element <3> access
-    error.07.jsonnet:18:20-55: function <third> call
+    error.07.jsonnet:18:31-35: error statement
+    error.07.jsonnet:17:33-33: element <3> access
+    error.07.jsonnet:18:20-53: function <third> call

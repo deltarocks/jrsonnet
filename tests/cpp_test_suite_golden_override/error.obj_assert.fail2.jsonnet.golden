@@ -1,2 +1,2 @@
 assert failed: foo was not equal to bar
-    error.obj_assert.fail2.jsonnet:20:23-30: assertion failure
+    error.obj_assert.fail2.jsonnet:20:23-28: assertion failure

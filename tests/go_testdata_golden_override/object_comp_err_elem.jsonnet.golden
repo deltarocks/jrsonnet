@@ -1,3 +1,3 @@
 runtime error: xxx
-    object_comp_err_elem.jsonnet:1:11-17: error statement
+    object_comp_err_elem.jsonnet:1:11-15: error statement
     field <x> evaluation

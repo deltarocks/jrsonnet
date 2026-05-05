@@ -1,4 +1,4 @@
 runtime error: x
-    std.filter2.jsonnet:1:12-18: error statement
+    std.filter2.jsonnet:1:12-16: error statement
     argument <func> evaluation
-    std.filter2.jsonnet:1:11-27: function <builtin_filter> call
+    std.filter2.jsonnet:1:11-25: function <builtin_filter> call

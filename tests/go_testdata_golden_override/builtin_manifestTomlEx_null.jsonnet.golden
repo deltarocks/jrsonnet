@@ -1,4 +1,4 @@
 type error: expected object, got null
     argument <value> evaluation
-    builtin_manifestTomlEx_null.jsonnet:2:29-43: function <builtin_manifest_toml_ex> call
+    builtin_manifestTomlEx_null.jsonnet:2:29-41: function <builtin_manifest_toml_ex> call
     field <null> evaluation

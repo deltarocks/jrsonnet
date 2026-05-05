@@ -1,2 +1,2 @@
 argument x is already bound
-    optional_args9.jsonnet:1:16-27: function <builtin_id> preparation
+    optional_args9.jsonnet:1:16-25: function <builtin_id> preparation

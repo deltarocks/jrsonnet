@@ -17,3 +17,6 @@ quote.workspace = true
 ungrammar.workspace = true
 xshell.workspace = true
 clap = { workspace = true, features = ["derive"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+nix.workspace = true

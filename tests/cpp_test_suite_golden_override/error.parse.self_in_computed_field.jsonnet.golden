@@ -1,2 +1,3 @@
 syntax error: expected field name, got 'self'
     error.parse.self_in_computed_field.jsonnet:17:15
+    error.parse.self_in_computed_field.jsonnet:17:15-18: parse imported

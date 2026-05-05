@@ -1,3 +1,3 @@
 type error: expected function, got array
     argument <func> evaluation
-    std.filter_swapped_args.jsonnet:1:11-39: function <builtin_filter> call
+    std.filter_swapped_args.jsonnet:1:11-37: function <builtin_filter> call

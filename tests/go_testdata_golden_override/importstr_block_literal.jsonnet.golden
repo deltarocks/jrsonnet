@@ -1,2 +1,2 @@
-can't resolve block_literals_for_imports_are_not_allowed_and_make_exactly_zero_sense
- from /home/lach/build/jrsonnet-pr/tests/go_testdata/importstr_block_literal.jsonnet
+import file not found block_literals_for_imports_are_not_allowed_and_make_exactly_zero_sense
+ from importstr_block_literal.jsonnet

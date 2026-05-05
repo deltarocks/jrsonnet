@@ -1,2 +1,2 @@
 runtime error: foobar
-    error.inside_equals_array.jsonnet:18:18-24: error statement
+    error.inside_equals_array.jsonnet:18:18-22: error statement

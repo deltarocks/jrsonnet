@@ -1,4 +1,4 @@
 runtime error: xxx
-    tailstrict2.jsonnet:1:13-19: error statement
-    tailstrict2.jsonnet:2:15-19: function <e> call
-    tailstrict2.jsonnet:2:19-27: function <anonymous> call
+    tailstrict2.jsonnet:1:13-17: error statement
+    tailstrict2.jsonnet:2:15-17: function <e> call
+    tailstrict2.jsonnet:2:19-25: function <anonymous> call

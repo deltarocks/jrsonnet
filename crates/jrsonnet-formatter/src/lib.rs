@@ -913,6 +913,8 @@ impl FormatOptions {
 pub fn format(input: &str, opts: &FormatOptions) -> Result<String, SnippetBuilder> {
 	let (parsed, errors) = jrsonnet_rowan_parser::parse(input);
 	if !errors.is_empty() {
+		// Reserve one char for EOF display
+		let input = format!("{input} ");
 		let mut builder = hi_doc::SnippetBuilder::new(input);
 		for error in errors {
 			builder

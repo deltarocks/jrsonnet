@@ -1,2 +1,2 @@
 assert failed: null
-    error.assert.fail1.jsonnet:20:8-15: assertion failure
+    error.assert.fail1.jsonnet:20:8-13: assertion failure

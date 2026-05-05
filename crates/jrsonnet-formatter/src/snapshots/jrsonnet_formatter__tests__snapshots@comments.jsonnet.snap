@@ -14,3 +14,6 @@ input_file: crates/jrsonnet-formatter/src/tests/comments.jsonnet
       value: 42,
    },
 }
+// Empty before
+// 
+// Empty after

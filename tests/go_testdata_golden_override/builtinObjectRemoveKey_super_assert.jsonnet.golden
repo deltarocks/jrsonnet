@@ -1,2 +1,2 @@
 no such field: x
-    builtinObjectRemoveKey_super_assert.jsonnet:2:10-17: assertion condition
+    builtinObjectRemoveKey_super_assert.jsonnet:2:10-15: assertion condition

@@ -4,5 +4,5 @@ expression: result
 input_file: tests/golden/issue40.jsonnet
 ---
 assert failed: is number
-    issue40.jsonnet:6:10-31: assertion failure
-    issue40.jsonnet:9:19-32: function <builtin_manifest_json_ex> call
+    issue40.jsonnet:6:10-29: assertion failure
+    issue40.jsonnet:9:19-30: function <builtin_manifest_json_ex> call

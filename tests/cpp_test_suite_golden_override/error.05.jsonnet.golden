@@ -1,4 +1,4 @@
 runtime error: foo
-    error.05.jsonnet:17:21-27: error statement
+    error.05.jsonnet:17:21-25: error statement
     field <x> evaluation
     field <y> manifestification

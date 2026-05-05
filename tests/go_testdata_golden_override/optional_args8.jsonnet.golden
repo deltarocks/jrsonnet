@@ -1,2 +1,2 @@
 parameter y is not defined
-    optional_args8.jsonnet:2:4-11: function <foo> preparation
+    optional_args8.jsonnet:2:4-9: function <foo> preparation

@@ -3,4 +3,4 @@ runtime error: failed to parse yaml: error: line 1 column 5: mapping values are 
   |
 1 | a: b:
   |     ^ mapping values are not allowed in this context
-    error.std_parseYaml1.jsonnet:1:14-24: function <builtin_parse_yaml> call
+    error.std_parseYaml1.jsonnet:1:14-22: function <builtin_parse_yaml> call

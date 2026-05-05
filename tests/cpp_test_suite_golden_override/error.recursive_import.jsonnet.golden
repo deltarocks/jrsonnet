@@ -1,2 +1,2 @@
 infinite recursion detected
-    error.recursive_import.jsonnet:17:15-22: import
+    error.recursive_import.jsonnet:17:15-20: import

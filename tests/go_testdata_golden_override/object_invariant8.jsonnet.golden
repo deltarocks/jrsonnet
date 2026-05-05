@@ -1,2 +1,2 @@
 assert failed: null
-    object_invariant8.jsonnet:1:16-28: assertion failure
+    object_invariant8.jsonnet:1:16-26: assertion failure

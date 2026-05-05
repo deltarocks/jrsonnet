@@ -1,2 +1,3 @@
 syntax error: unexpected end of text block
     error.parse.text_block_eof.jsonnet:17:1
+    error.parse.text_block_eof.jsonnet:17:1-18:6: parse imported

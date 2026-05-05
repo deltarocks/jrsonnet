@@ -2,4 +2,4 @@ type error: every failed from array | string:
   - expected array, got object
   - expected string, got object
     argument <arr> evaluation
-    error.flatMap_seq_typecheck.jsonnet:1:12-52: function <builtin_flatmap> call
+    error.flatMap_seq_typecheck.jsonnet:1:12-50: function <builtin_flatmap> call

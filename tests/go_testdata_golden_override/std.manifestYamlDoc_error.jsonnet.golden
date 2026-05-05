@@ -1,5 +1,5 @@
 runtime error: foo
-    std.manifestYamlDoc_error.jsonnet:1:31-37: error statement
+    std.manifestYamlDoc_error.jsonnet:1:31-35: error statement
     field <y> evaluation
     field <x> manifestification
-    std.manifestYamlDoc_error.jsonnet:1:20-48: function <builtin_manifest_yaml_doc> call
+    std.manifestYamlDoc_error.jsonnet:1:20-46: function <builtin_manifest_yaml_doc> call

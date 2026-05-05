@@ -1,2 +1,3 @@
 syntax error: expected '}', got identifier "z"
     error.parse.object_comma.jsonnet:17:11
+    error.parse.object_comma.jsonnet:17:11-11: parse imported

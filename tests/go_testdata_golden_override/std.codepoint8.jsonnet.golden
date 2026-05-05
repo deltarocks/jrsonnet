@@ -1,3 +1,3 @@
 type error: expected char, got number
     argument <str> evaluation
-    std.codepoint8.jsonnet:1:14-19: function <builtin_codepoint> call
+    std.codepoint8.jsonnet:1:14-17: function <builtin_codepoint> call

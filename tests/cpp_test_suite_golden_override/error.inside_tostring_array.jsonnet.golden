@@ -1,3 +1,3 @@
 runtime error: foobar
-    error.inside_tostring_array.jsonnet:17:8-14: error statement
+    error.inside_tostring_array.jsonnet:17:8-12: error statement
     elem <2> evaluation

@@ -1,5 +1,5 @@
 runtime error: foo
-    error.01.jsonnet:17:29-35: error statement
-    error.01.jsonnet:18:36-40: function <bananas> call
-    error.01.jsonnet:19:35-39: function <oranges> call
-    error.01.jsonnet:20:7-11:  function <apples> call
+    error.01.jsonnet:17:29-33: error statement
+    error.01.jsonnet:18:36-38: function <bananas> call
+    error.01.jsonnet:19:35-37: function <oranges> call
+    error.01.jsonnet:20:7-9:   function <apples> call

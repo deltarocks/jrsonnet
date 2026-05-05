@@ -1,2 +1,2 @@
 assert failed: my error message
-    error.invariant.simple2.jsonnet:18:10-17: assertion failure
+    error.invariant.simple2.jsonnet:18:10-15: assertion failure

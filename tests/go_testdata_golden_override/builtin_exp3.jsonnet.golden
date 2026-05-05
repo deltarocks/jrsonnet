@@ -1,2 +1,2 @@
 convert num value: non-finite
-    builtin_exp3.jsonnet:1:8-15: function <builtin_exp> call
+    builtin_exp3.jsonnet:1:8-13: function <builtin_exp> call

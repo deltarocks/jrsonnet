@@ -1,4 +1,4 @@
 too many args, function has 2
 Function has the following signature: (str, rest = <default>)
-    error.trace_three_param.jsonnet:17:20-33: function <builtin_trace> preparation
+    error.trace_three_param.jsonnet:17:20-31: function <builtin_trace> preparation
     field <a> evaluation

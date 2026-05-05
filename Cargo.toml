@@ -30,7 +30,7 @@ jrsonnet-cli = { path = "./crates/jrsonnet-cli", version = "0.5.0-pre98" }
 jrsonnet-types = { path = "./crates/jrsonnet-types", version = "0.5.0-pre98" }
 jrsonnet-formatter = { path = "./crates/jrsonnet-formatter", version = "0.5.0-pre98" }
 jrsonnet-lexer = { path = "./crates/jrsonnet-lexer", version = "0.5.0-pre98" }
-jrsonnet-gcmodule = { version = "0.4.6" }
+jrsonnet-gcmodule = { version = "0.5.0" }
 # Diagnostics.
 # hi-doc is my library, which handles text formatting very well, but isn't polished enough yet
 # Previous implementation was based on annotate-snippets, which I don't like for many reasons.
@@ -47,7 +47,7 @@ clap_complete = "4.5"
 # Parsing, manifestification is implemented manually everywhere
 serde = "1.0.228"
 serde_json = "1.0.149"
-serde-saphyr = { version = "0.0.25", default-features = false, features = [
+serde-saphyr = { version = "0.0.26", default-features = false, features = [
   "deserialize",
 ] }
 
@@ -99,7 +99,7 @@ itertools = "0.14.0"
 xshell = "0.2.7"
 
 regex = "1.12"
-lru = "0.17.0"
+lru = "0.18.0"
 
 syn-dissect-closure = "0.1.0"
 
@@ -107,6 +107,7 @@ syn-dissect-closure = "0.1.0"
 insta = { version = "1.46", features = ["glob"] }
 criterion = { version = "0.8" }
 strip-ansi-escapes = "0.2.1"
+nix = { version = "0.31", features = ["process"] }
 
 # Web
 wasm-bindgen = "=0.2.106"

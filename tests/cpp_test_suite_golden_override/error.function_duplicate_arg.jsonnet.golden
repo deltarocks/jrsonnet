@@ -1,2 +1,2 @@
 argument x is already bound
-    error.function_duplicate_arg.jsonnet:17:21-30: function <anonymous> preparation
+    error.function_duplicate_arg.jsonnet:17:21-28: function <anonymous> preparation

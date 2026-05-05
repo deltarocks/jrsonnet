@@ -1,2 +1,2 @@
 assert failed: Custom Message
-    assert_failed_custom.jsonnet:1:8-14: assertion failure
+    assert_failed_custom.jsonnet:1:8-12: assertion failure

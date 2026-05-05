@@ -1,2 +1,2 @@
 assert failed: null
-    supersugar8.jsonnet:1:10-17: assertion failure
+    supersugar8.jsonnet:1:10-15: assertion failure

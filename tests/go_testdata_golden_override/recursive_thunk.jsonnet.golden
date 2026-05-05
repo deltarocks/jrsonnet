@@ -1,8 +1,8 @@
 runtime error: xxx
-    recursive_thunk.jsonnet:1:35-41: error statement
-    recursive_thunk.jsonnet:2:19-39: function <bar> call
-    recursive_thunk.jsonnet:2:23-31: function <foo> call
-    recursive_thunk.jsonnet:2:19-39: function <bar> call
-    recursive_thunk.jsonnet:2:23-31: function <foo> call
-    recursive_thunk.jsonnet:2:19-39: function <bar> call
-    recursive_thunk.jsonnet:3:4-8:   function <foo> call
+    recursive_thunk.jsonnet:1:35-39: error statement
+    recursive_thunk.jsonnet:2:19-37: function <bar> call
+    recursive_thunk.jsonnet:2:23-29: function <foo> call
+    recursive_thunk.jsonnet:2:19-37: function <bar> call
+    recursive_thunk.jsonnet:2:23-29: function <foo> call
+    recursive_thunk.jsonnet:2:19-37: function <bar> call
+    recursive_thunk.jsonnet:3:4-6:   function <foo> call

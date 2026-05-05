@@ -1,2 +1,2 @@
 external variable is not defined: UNKNOWN
-    extvar_unknown.jsonnet:1:11-23: function <builtin_ext_var> call
+    extvar_unknown.jsonnet:1:11-21: function <builtin_ext_var> call

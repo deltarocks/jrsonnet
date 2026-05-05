@@ -1,3 +1,3 @@
 runtime error: foobar
-    error.inside_tostring_object.jsonnet:17:12-18: error statement
+    error.inside_tostring_object.jsonnet:17:12-16: error statement
     field <b> evaluation

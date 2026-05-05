@@ -1,2 +1,2 @@
 runtime error: failed to parse json: expected value at line 1 column 1
-    error.parse_json.jsonnet:1:14-30: function <builtin_parse_json> call
+    error.parse_json.jsonnet:1:14-28: function <builtin_parse_json> call

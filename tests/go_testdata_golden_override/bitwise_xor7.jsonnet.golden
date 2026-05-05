@@ -1,2 +1,2 @@
 runtime error: x
-    bitwise_xor7.jsonnet:1:5-11: error statement
+    bitwise_xor7.jsonnet:1:5-9: error statement

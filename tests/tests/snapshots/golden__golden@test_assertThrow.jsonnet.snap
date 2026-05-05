@@ -4,4 +4,4 @@ expression: result
 input_file: tests/golden/test_assertThrow.jsonnet
 ---
 runtime error: expected argument to throw on evaluation, but it returned instead
-    test_assertThrow.jsonnet:2:17-26: function <assert_throw> call
+    test_assertThrow.jsonnet:2:17-24: function <assert_throw> call

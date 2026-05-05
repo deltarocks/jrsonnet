@@ -2,4 +2,4 @@ type error: every failed from string | Array<BoundedNumber<0, 255>>:
   - expected string, got array
   - expected BoundedNumber<0, 255>, got string at self[1]
     argument <input> evaluation
-    builtinBase64_invalid_byte_array.jsonnet:1:11-24: function <builtin_base64> call
+    builtinBase64_invalid_byte_array.jsonnet:1:11-22: function <builtin_base64> call

@@ -8,4 +8,4 @@ three
 four
 
 </B>
-    error.assert_equal_str.jsonnet:17:16-46: function <builtin_assert_equal> call
+    error.assert_equal_str.jsonnet:17:16-44: function <builtin_assert_equal> call

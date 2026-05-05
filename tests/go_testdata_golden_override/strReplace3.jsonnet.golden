@@ -1,2 +1,2 @@
 runtime error: `from` string must not be zero length
-    strReplace3.jsonnet:1:15-36: function <builtin_str_replace> call
+    strReplace3.jsonnet:1:15-34: function <builtin_str_replace> call

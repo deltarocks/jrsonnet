@@ -1,4 +1,4 @@
 runtime error: assertion failed: A != B
 A: 1
 B: 2
-    error.sanity.jsonnet:17:16-23: function <builtin_assert_equal> call
+    error.sanity.jsonnet:17:16-21: function <builtin_assert_equal> call

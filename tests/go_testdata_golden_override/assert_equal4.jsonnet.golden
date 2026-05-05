@@ -5,4 +5,4 @@ A: {
 B: {
   "x": 2
 }
-    assert_equal4.jsonnet:1:16-33: function <builtin_assert_equal> call
+    assert_equal4.jsonnet:1:16-31: function <builtin_assert_equal> call

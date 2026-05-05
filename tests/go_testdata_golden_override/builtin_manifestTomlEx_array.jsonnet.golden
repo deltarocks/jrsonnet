@@ -1,4 +1,4 @@
 type error: expected object, got array
     argument <value> evaluation
-    builtin_manifestTomlEx_array.jsonnet:11:28-42: function <builtin_manifest_toml_ex> call
+    builtin_manifestTomlEx_array.jsonnet:11:28-40: function <builtin_manifest_toml_ex> call
     field <array> evaluation

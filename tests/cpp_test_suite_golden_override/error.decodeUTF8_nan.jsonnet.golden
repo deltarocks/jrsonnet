@@ -1,4 +1,4 @@
 type error: expected BoundedNumber<0, 255>, got string at self[0]
     array index 0
     argument <arr> evaluation
-    error.decodeUTF8_nan.jsonnet:1:15-25: function <builtin_decode_utf8> call
+    error.decodeUTF8_nan.jsonnet:1:15-23: function <builtin_decode_utf8> call

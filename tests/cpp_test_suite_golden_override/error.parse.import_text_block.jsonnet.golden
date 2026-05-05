@@ -1,3 +1,3 @@
-can't resolve This is a paragraph of text, which is being used in the place of
+import file not found This is a paragraph of text, which is being used in the place of
 a filename.  That is quite unusual, and probably not intended.
- from /home/lach/build/jrsonnet-pr/tests/cpp_test_suite/error.parse.import_text_block.jsonnet
+ from error.parse.import_text_block.jsonnet

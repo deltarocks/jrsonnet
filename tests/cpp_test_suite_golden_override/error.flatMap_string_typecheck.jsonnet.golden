@@ -1,2 +1,2 @@
 runtime error: in std.join all items should be strings
-    error.flatMap_string_typecheck.jsonnet:1:12-50: function <builtin_flatmap> call
+    error.flatMap_string_typecheck.jsonnet:1:12-48: function <builtin_flatmap> call

@@ -1,2 +1,2 @@
 runtime error: invalid base64: Invalid symbol 196, offset 0.
-    builtinBase64Decode_high_codepoint.jsonnet:1:17-25: function <builtin_base64_decode> call
+    builtinBase64Decode_high_codepoint.jsonnet:1:17-23: function <builtin_base64_decode> call

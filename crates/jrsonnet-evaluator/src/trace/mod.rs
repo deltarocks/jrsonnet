@@ -2,6 +2,7 @@
 use std::cell::RefCell;
 use std::{
 	any::Any,
+	fmt,
 	path::{Component, Path, PathBuf},
 };
 
@@ -10,7 +11,7 @@ use jrsonnet_ir::CodeLocation;
 #[cfg(feature = "explaining-traces")]
 use jrsonnet_ir::Span;
 
-use crate::{Error, error::ErrorKind};
+use crate::{Error, ResolvePathOwned, error::ErrorKind};
 
 /// The way paths should be displayed
 #[derive(Clone, Trace)]
@@ -61,12 +62,8 @@ impl PathResolver {
 /// Implements pretty-printing of traces
 #[allow(clippy::module_name_repetitions)]
 pub trait TraceFormat: Trace {
-	fn write_trace(
-		&self,
-		out: &mut dyn std::fmt::Write,
-		error: &Error,
-	) -> Result<(), std::fmt::Error>;
-	fn format(&self, error: &Error) -> Result<String, std::fmt::Error> {
+	fn write_trace(&self, out: &mut dyn fmt::Write, error: &Error) -> Result<(), fmt::Error>;
+	fn format(&self, error: &Error) -> Result<String, fmt::Error> {
 		let mut out = String::new();
 		self.write_trace(&mut out, error)?;
 		Ok(out)
@@ -76,10 +73,10 @@ pub trait TraceFormat: Trace {
 }
 
 fn print_code_location(
-	out: &mut impl std::fmt::Write,
+	out: &mut impl fmt::Write,
 	start: &CodeLocation,
 	end: &CodeLocation,
-) -> Result<(), std::fmt::Error> {
+) -> Result<(), fmt::Error> {
 	if start.line == end.line {
 		if start.column == end.column {
 			write!(out, "{}:{}", start.line, start.column)?;
@@ -123,12 +120,20 @@ impl Default for CompactFormat {
 }
 
 impl TraceFormat for CompactFormat {
-	fn write_trace(
-		&self,
-		out: &mut dyn std::fmt::Write,
-		error: &Error,
-	) -> Result<(), std::fmt::Error> {
-		write!(out, "{}", error.error())?;
+	fn write_trace(&self, out: &mut dyn fmt::Write, error: &Error) -> Result<(), fmt::Error> {
+		if let ErrorKind::ImportFileNotFound(from, import) = error.error() {
+			let from = from
+				.path()
+				.map_or_else(|| from.to_string(), |path| self.resolver.resolve(path));
+			let import = match import {
+				ResolvePathOwned::Str(s) => s.clone(),
+				ResolvePathOwned::Path(path_buf) => self.resolver.resolve(path_buf),
+			};
+			write!(out, "import file not found {import} from {from}")?;
+		} else {
+			write!(out, "{}", error.error())?;
+		}
+
 		if let ErrorKind::ImportSyntaxError { path, error } = error.error() {
 			use std::fmt::Write;
 
@@ -212,11 +217,7 @@ pub struct JsFormat {
 	pub max_trace: usize,
 }
 impl TraceFormat for JsFormat {
-	fn write_trace(
-		&self,
-		out: &mut dyn std::fmt::Write,
-		error: &Error,
-	) -> Result<(), std::fmt::Error> {
+	fn write_trace(&self, out: &mut dyn fmt::Write, error: &Error) -> Result<(), fmt::Error> {
 		write!(out, "{}", error.error())?;
 		for item in &error.trace().0 {
 			writeln!(out)?;
@@ -257,11 +258,7 @@ pub struct HiDocFormat {
 }
 #[cfg(feature = "explaining-traces")]
 impl TraceFormat for HiDocFormat {
-	fn write_trace(
-		&self,
-		out: &mut dyn std::fmt::Write,
-		error: &Error,
-	) -> Result<(), std::fmt::Error> {
+	fn write_trace(&self, out: &mut dyn fmt::Write, error: &Error) -> Result<(), fmt::Error> {
 		struct ResetData {
 			loc: Span,
 		}
@@ -284,8 +281,8 @@ impl TraceFormat for HiDocFormat {
 			let mut builder: Option<SnippetBuilder> = None;
 			let mut current_src: Option<&str> = None;
 			let flush = |builder: Option<SnippetBuilder>,
-			             out: &mut dyn std::fmt::Write|
-			 -> Result<(), std::fmt::Error> {
+			             out: &mut dyn fmt::Write|
+			 -> Result<(), fmt::Error> {
 				if let Some(b) = builder {
 					let ansi = source_to_ansi(&b.build());
 					write!(out, "\n{}", ansi.trim_end())?;

@@ -1,4 +1,4 @@
 function argument is not passed: str
 Function has the following signature: (str, rest = <default>)
-    error.trace_zero_param.jsonnet:17:20-23: function <builtin_trace> preparation
+    error.trace_zero_param.jsonnet:17:20-21: function <builtin_trace> preparation
     field <a> evaluation

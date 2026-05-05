@@ -1,3 +1,4 @@
 syntax error: unterminated double-quoted string
-    syntax_error.jsonnet:1:1
-    error.import_syntax-error.jsonnet:1:1-8: import
+    lib/syntax_error.jsonnet:1:1
+    lib/syntax_error.jsonnet:1:1-2:0:        parse imported
+    error.import_syntax-error.jsonnet:1:1-6: import

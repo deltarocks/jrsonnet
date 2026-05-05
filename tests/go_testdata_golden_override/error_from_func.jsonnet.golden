@@ -1,3 +1,3 @@
 runtime error: xxx
-    error_from_func.jsonnet:1:25-31: error statement
-    error_from_func.jsonnet:1:37-45: function <foo> call
+    error_from_func.jsonnet:1:25-29: error statement
+    error_from_func.jsonnet:1:37-43: function <foo> call

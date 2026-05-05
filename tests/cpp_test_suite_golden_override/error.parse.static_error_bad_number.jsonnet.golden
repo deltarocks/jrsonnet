@@ -1,2 +1,3 @@
 syntax error: unexpected '.'
     error.parse.static_error_bad_number.jsonnet:17:1
+    error.parse.static_error_bad_number.jsonnet:17:1-1: parse imported

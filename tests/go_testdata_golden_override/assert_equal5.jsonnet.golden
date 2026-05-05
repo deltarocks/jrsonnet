@@ -7,4 +7,4 @@ B: <B>
 
 
 </B>
-    assert_equal5.jsonnet:1:16-30: function <builtin_assert_equal> call
+    assert_equal5.jsonnet:1:16-28: function <builtin_assert_equal> call

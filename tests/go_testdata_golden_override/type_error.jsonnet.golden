@@ -1,4 +1,4 @@
 runtime error: xxx
-    type_error.jsonnet:1:10-16: error statement
+    type_error.jsonnet:1:10-14: error statement
     argument <x> evaluation
-    type_error.jsonnet:1:9-23:  function <builtin_type> call
+    type_error.jsonnet:1:9-21:  function <builtin_type> call

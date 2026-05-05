@@ -1,3 +1,3 @@
 type error: expected number, got string
     argument <x> evaluation
-    pow8.jsonnet:1:8-20: function <builtin_pow> call
+    pow8.jsonnet:1:8-18: function <builtin_pow> call

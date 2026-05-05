@@ -1,2 +1,3 @@
 syntax error: expected '}', got ':'
     error.parse.object_comprehension_local_clash.jsonnet:17:29
+    error.parse.object_comprehension_local_clash.jsonnet:17:29-29: parse imported

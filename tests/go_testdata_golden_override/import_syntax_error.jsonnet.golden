@@ -1,3 +1,4 @@
 syntax error: unexpected end of file
     syntax_error.jsonnet:1:4
-    import_syntax_error.jsonnet:1:1-8: import
+    syntax_error.jsonnet:1:4-0:0:      parse imported
+    import_syntax_error.jsonnet:1:1-6: import

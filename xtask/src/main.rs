@@ -1,7 +1,11 @@
+#[cfg(not(target_os = "linux"))]
+use anyhow::bail;
 use anyhow::Result;
 use clap::Parser;
-use xshell::{Shell, cmd};
+use xshell::{cmd, Shell};
 
+#[cfg(target_os = "linux")]
+mod bench;
 mod sourcegen;
 
 #[derive(Parser)]
@@ -35,8 +39,18 @@ enum Opts {
 		test_file: String,
 		args: Vec<String>,
 	},
-	/// Update C++/Golang golden testsuites from git
-	UpdateTestsuites,
+	/// Benchmark a command: repeated runs, reports time + RSS stats (Linux only)
+	Bench {
+		#[arg(long, default_value_t = 10)]
+		runs: u32,
+		#[arg(long, default_value_t = 1)]
+		warmup: u32,
+		/// Show command output
+		#[arg(long, short = 'q')]
+		output: bool,
+		#[arg(trailing_var_arg = true, required = true)]
+		args: Vec<String>,
+	},
 }
 
 fn main() -> Result<()> {
@@ -107,36 +121,12 @@ fn main() -> Result<()> {
 
 			Ok(())
 		}
-		Opts::UpdateTestsuites => {
-			let _pushd = sh.push_dir("tests");
-			let git_dir = sh.create_temp_dir()?;
-			let git_dir_path = git_dir.path();
-			cmd!(
-				sh,
-				"git clone https://github.com/google/jsonnet.git --depth=1 {git_dir_path}/jsonnet"
-			)
-			.run()?;
-			cmd!(
-				sh,
-				"git clone https://github.com/google/go-jsonnet.git --depth=1 {git_dir_path}/go-jsonnet"
-			)
-			.run()?;
-			sh.remove_path("cpp_test_suite")?;
-			sh.remove_path("go_testdata")?;
-			sh.remove_path("cpp_perf_tests")?;
-			sh.remove_path("cpp_benchmarks")?;
-			sh.remove_path("go_builtin_benchmarks")?;
-			cmd!(sh, "mv {git_dir_path}/jsonnet/test_suite cpp_test_suite").run()?;
-			cmd!(sh, "mv {git_dir_path}/go-jsonnet/testdata go_testdata").run()?;
-			cmd!(sh, "mv {git_dir_path}/jsonnet/perf_tests cpp_perf_tests").run()?;
-			cmd!(sh, "mv {git_dir_path}/jsonnet/benchmarks cpp_benchmarks").run()?;
-			cmd!(
-				sh,
-				"mv {git_dir_path}/go-jsonnet/builtin-benchmarks go_builtin_benchmarks"
-			)
-			.run()?;
-
-			Ok(())
-		}
+		#[cfg(target_os = "linux")]
+		Opts::Bench {
+			runs,
+			warmup,
+			output,
+			args,
+		} => bench::bench_cmd(&args, runs, warmup, output),
 	}
 }

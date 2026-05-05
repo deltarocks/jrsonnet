@@ -1,3 +1,3 @@
 type error: expected function, got array
     argument <func> evaluation
-    std.filter8.jsonnet:1:11-37: function <builtin_filter> call
+    std.filter8.jsonnet:1:11-35: function <builtin_filter> call

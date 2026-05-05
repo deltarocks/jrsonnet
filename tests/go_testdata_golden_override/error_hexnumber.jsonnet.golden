@@ -1,2 +1,3 @@
 syntax error: expected end of file, got identifier "x42"
     error_hexnumber.jsonnet:1:2
+    error_hexnumber.jsonnet:1:2-4: parse imported

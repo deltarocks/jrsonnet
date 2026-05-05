@@ -1,2 +1,2 @@
 assert failed: null
-    stacktrace_assert.jsonnet:1:10-16: assertion failure
+    stacktrace_assert.jsonnet:1:10-14: assertion failure

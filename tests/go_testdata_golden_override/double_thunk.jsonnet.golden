@@ -1,2 +1,2 @@
 runtime error: xxx
-    double_thunk.jsonnet:1:21-27: error statement
+    double_thunk.jsonnet:1:21-25: error statement

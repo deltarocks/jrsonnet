@@ -1,2 +1,2 @@
 parameter blahblah is not defined
-    std.makeArrayNamed3.jsonnet:1:14-55: function <builtin_make_array> preparation
+    std.makeArrayNamed3.jsonnet:1:14-53: function <builtin_make_array> preparation

@@ -2,4 +2,4 @@ runtime error: tried to manifest null
     table <c> manifestification
     section <b> manifestification
     section <a> manifestification
-    error.manifest_toml_null_value.jsonnet:17:19-55: function <builtin_manifest_toml_ex> call
+    error.manifest_toml_null_value.jsonnet:17:19-53: function <builtin_manifest_toml_ex> call

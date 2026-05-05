@@ -1,2 +1,2 @@
 runtime error: invalid base64: Invalid input length: 5
-    builtinBase64Decode_invalid_base64_data.jsonnet:1:17-27: function <builtin_base64_decode> call
+    builtinBase64Decode_invalid_base64_data.jsonnet:1:17-25: function <builtin_base64_decode> call

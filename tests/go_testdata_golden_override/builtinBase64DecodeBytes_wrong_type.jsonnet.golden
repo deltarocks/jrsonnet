@@ -1,3 +1,3 @@
 type error: expected string, got number
     argument <str> evaluation
-    builtinBase64DecodeBytes_wrong_type.jsonnet:1:22-26: function <builtin_base64_decode_bytes> call
+    builtinBase64DecodeBytes_wrong_type.jsonnet:1:22-24: function <builtin_base64_decode_bytes> call

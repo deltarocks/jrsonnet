@@ -1,2 +1,2 @@
 assert failed: foo was not equal to bar
-    error.assert.fail2.jsonnet:20:8-15: assertion failure
+    error.assert.fail2.jsonnet:20:8-13: assertion failure

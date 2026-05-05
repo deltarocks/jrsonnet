@@ -1,2 +1,2 @@
 attempted to divide by zero
-    error.06.jsonnet:19:2-5: function <f> call
+    error.06.jsonnet:19:2-3: function <f> call
