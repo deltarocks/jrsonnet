@@ -1,5 +1,6 @@
 [package]
 name = "jrsonnet-web"
+description = "WASM JS bindings for jrsonnet"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true

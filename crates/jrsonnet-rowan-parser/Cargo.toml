@@ -1,5 +1,6 @@
 [package]
 name = "jrsonnet-rowan-parser"
+description = "Rowan-based CST for jrsonnet"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
