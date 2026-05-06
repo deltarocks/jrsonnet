@@ -11,9 +11,10 @@ version.workspace = true
 
 [features]
 default = []
-experimental = ["exp-null-coaelse", "exp-destruct"]
+experimental = ["exp-null-coaelse", "exp-destruct", "exp-object-iteration"]
 exp-null-coaelse = ["jrsonnet-ir/exp-null-coaelse"]
 exp-destruct = ["jrsonnet-ir/exp-destruct"]
+exp-object-iteration = ["jrsonnet-ir/exp-object-iteration"]
 
 [dependencies]
 insta.workspace = true

@@ -1862,6 +1862,8 @@ fn analyze_comp_specs<R>(
 				);
 				(r, rest)
 			}
+			#[cfg(feature = "exp-object-iteration")]
+			CompSpec::ForObjSpec(_) => todo!(),
 		}
 	}
 	let outer_depth = stack.depth;

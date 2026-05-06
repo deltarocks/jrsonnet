@@ -1,5 +1,7 @@
 use jrsonnet_interner::IStr;
 
+#[cfg(feature = "exp-object-iteration")]
+use crate::ForObjSpecData;
 use crate::{
 	ArgsDesc, AssertExpr, AssertStmt, BinaryOp, BindSpec, CompSpec, Destruct, Expr, ExprParam,
 	ExprParams, FieldMember, FieldName, ForSpecData, IfElse, IfSpecData, ImportKind, IndexPart,
@@ -67,6 +69,17 @@ pub fn visit_comp_spec<V: Visitor>(v: &mut V, c: &CompSpec) {
 		CompSpec::ForSpec(for_spec_data) => {
 			let ForSpecData { destruct, over } = for_spec_data;
 			visit_destruct(v, destruct);
+			v.visit_expr(over);
+		}
+		#[cfg(feature = "exp-object-iteration")]
+		CompSpec::ForObjSpec(for_obj_spec_data) => {
+			let ForObjSpecData {
+				key: _,
+				visibility: _,
+				value,
+				over,
+			} = for_obj_spec_data;
+			visit_destruct(v, value);
 			v.visit_expr(over);
 		}
 	}

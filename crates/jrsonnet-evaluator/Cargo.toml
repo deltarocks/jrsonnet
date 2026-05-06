@@ -40,8 +40,12 @@ exp-destruct = [
   "jrsonnet-peg-parser?/exp-destruct",
   "jrsonnet-ir-parser?/exp-destruct",
 ]
-# Iteration over objects yields [key, value] elements
-exp-object-iteration = []
+# Iteration over objects using [key]: value syntax
+exp-object-iteration = [
+  "jrsonnet-ir/exp-object-iteration",
+  "jrsonnet-peg-parser?/exp-object-iteration",
+  "jrsonnet-ir-parser?/exp-object-iteration",
+]
 # Bigint type
 exp-bigint = ["num-bigint", "jrsonnet-types/exp-bigint"]
 # obj?.field, obj?.['field']

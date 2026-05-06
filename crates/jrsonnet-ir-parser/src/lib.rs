@@ -66,6 +66,13 @@ impl<'a> Parser<'a> {
 		!self.at_eof() && self.peek() == kind
 	}
 
+	#[allow(dead_code)]
+	fn nth(&self, n: usize) -> SyntaxKind {
+		self.lexemes
+			.get(self.offset + n)
+			.map_or(SyntaxKind::EOF, |l| l.kind)
+	}
+
 	fn eat_any(&mut self) {
 		self.offset += 1;
 	}
@@ -561,20 +568,36 @@ fn member(p: &mut Parser<'_>) -> Result<Member> {
 	}
 }
 
-fn for_spec(p: &mut Parser<'_>) -> Result<ForSpecData> {
+fn for_spec(p: &mut Parser<'_>) -> Result<CompSpec> {
 	p.eat(T![for])?;
+	#[cfg(feature = "exp-object-iteration")]
+	if p.at(T!['[']) && p.nth(1) == SyntaxKind::IDENT && p.nth(2) == T![']'] && p.nth(3) == T![:] {
+		p.eat(T!['['])?;
+		let key = ident(p)?;
+		p.eat(T![']'])?;
+		let visibility = visibility(p)?;
+		let value = destruct(p)?;
+		p.eat(T![in])?;
+		let over = expr(p)?;
+		return Ok(CompSpec::ForObjSpec(jrsonnet_ir::ForObjSpecData {
+			key,
+			visibility,
+			value,
+			over,
+		}));
+	}
 	let d = destruct(p)?;
 	p.eat(T![in])?;
 	let over = expr(p)?;
-	Ok(ForSpecData { destruct: d, over })
+	Ok(CompSpec::ForSpec(ForSpecData { destruct: d, over }))
 }
 
 fn compspecs(p: &mut Parser<'_>) -> Result<Vec<CompSpec>> {
 	let mut specs = Vec::new();
-	specs.push(CompSpec::ForSpec(for_spec(p)?));
+	specs.push(for_spec(p)?);
 	loop {
 		if p.at(T![for]) {
-			specs.push(CompSpec::ForSpec(for_spec(p)?));
+			specs.push(for_spec(p)?);
 		} else if p.at(T![if]) {
 			let isd = if_spec_data(p)?;
 			specs.push(CompSpec::IfSpec(isd));

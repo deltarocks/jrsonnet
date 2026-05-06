@@ -314,10 +314,21 @@ pub struct ForSpecData {
 	pub over: Expr,
 }
 
+#[cfg(feature = "exp-object-iteration")]
+#[derive(Debug, PartialEq, Acyclic)]
+pub struct ForObjSpecData {
+	pub key: IStr,
+	pub visibility: Visibility,
+	pub value: Destruct,
+	pub over: Expr,
+}
+
 #[derive(Debug, PartialEq, Acyclic)]
 pub enum CompSpec {
 	IfSpec(IfSpecData),
 	ForSpec(ForSpecData),
+	#[cfg(feature = "exp-object-iteration")]
+	ForObjSpec(ForObjSpecData),
 }
 
 #[derive(Debug, PartialEq, Acyclic)]

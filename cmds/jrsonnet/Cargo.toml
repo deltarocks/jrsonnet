@@ -31,7 +31,7 @@ exp-preserve-order = [
 ]
 # Destructuring of locals
 exp-destruct = ["jrsonnet-evaluator/exp-destruct"]
-# Iteration over objects yields [key, value] elements
+# Iteration over objects using [key]: value syntax
 exp-object-iteration = ["jrsonnet-evaluator/exp-object-iteration"]
 # Bigint type
 exp-bigint = ["jrsonnet-evaluator/exp-bigint", "jrsonnet-cli/exp-bigint"]

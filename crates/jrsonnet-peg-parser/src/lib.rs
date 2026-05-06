@@ -241,11 +241,21 @@ parser! {
 			= i:spanned(<keyword("if")>, s) _ cond:expr(s) {IfSpecData { span: i.span, cond }}
 		pub rule forspec(s: &ParserSettings) -> ForSpecData
 			= keyword("for") _ destruct:destruct(s) _ keyword("in") _ over:expr(s) { ForSpecData { destruct, over } }
+		rule ensure_object_iteration()
+			= "" {?
+				#[cfg(not(feature = "exp-object-iteration"))] return Err("!!!experimental object iteration was not enabled");
+				#[cfg(feature = "exp-object-iteration")] Ok(())
+			}
+		pub rule forobjspec(s: &ParserSettings) -> CompSpec
+			= ensure_object_iteration() keyword("for") _ "[" _ key:id() _ "]" _ vis:visibility() _ value:destruct(s) _ keyword("in") _ over:expr(s) {
+				#[cfg(feature = "exp-object-iteration")] return CompSpec::ForObjSpec(jrsonnet_ir::ForObjSpecData { key, visibility: vis, value, over });
+				#[cfg(not(feature = "exp-object-iteration"))] unreachable!("ensure_object_iteration will fail if feature is not enabled")
+			}
 		rule compspec(s: &ParserSettings) -> CompSpec
-			= i:ifspec(s) { CompSpec::IfSpec(i) } / f:forspec(s) {CompSpec::ForSpec(f)}
+			= i:ifspec(s) { CompSpec::IfSpec(i) } / f:forobjspec(s) { f } / f:forspec(s) {CompSpec::ForSpec(f)}
 		pub rule compspecs(s: &ParserSettings) -> Vec<CompSpec>
 			= specs:compspec(s) ++ _ {?
-				if !matches!(specs[0], CompSpec::ForSpec(_)) {
+				if matches!(specs[0], CompSpec::IfSpec(_)) {
 					return Err("<first compspec should be for>")
 				}
 				Ok(specs)

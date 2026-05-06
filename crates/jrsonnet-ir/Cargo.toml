@@ -12,9 +12,10 @@ version.workspace = true
 
 [features]
 default = []
-experimental = ["exp-destruct", "exp-null-coaelse"]
+experimental = ["exp-destruct", "exp-null-coaelse", "exp-object-iteration"]
 exp-destruct = []
 exp-null-coaelse = []
+exp-object-iteration = []
 
 [dependencies]
 jrsonnet-interner.workspace = true
