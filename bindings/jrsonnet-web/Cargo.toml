@@ -10,17 +10,26 @@ repository.workspace = true
 version.workspace = true
 
 [features]
-experimental = ["exp-preserve-order", "exp-bigint"]
+experimental = [
+  "exp-preserve-order",
+  "exp-destruct",
+  "exp-null-coaelse",
+  "exp-object-iteration",
+  "exp-bigint",
+]
 exp-preserve-order = [
   "jrsonnet-evaluator/exp-preserve-order",
   "jrsonnet-stdlib/exp-preserve-order",
 ]
+exp-destruct = ["jrsonnet-evaluator/exp-destruct"]
+exp-object-iteration = ["jrsonnet-evaluator/exp-object-iteration"]
 exp-bigint = [
   "dep:num-bigint",
-  "jrsonnet-evaluator/exp-bigint",
   "jrsonnet-stdlib/exp-bigint",
   "jrsonnet-types/exp-bigint",
 ]
+exp-regex = ["jrsonnet-stdlib/exp-regex"]
+exp-null-coaelse = ["jrsonnet-stdlib/exp-null-coaelse"]
 
 [dependencies]
 console_error_panic_hook.workspace = true
