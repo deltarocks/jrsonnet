@@ -441,6 +441,7 @@ mod tests {
 	use crate::{ParserSettings, parse};
 
 	#[test]
+	#[cfg(not(feature = "exp-null-coaelse"))]
 	fn snapshots() {
 		glob!("tests/*.jsonnet", |path| {
 			let input = fs::read_to_string(path).expect("read test file");

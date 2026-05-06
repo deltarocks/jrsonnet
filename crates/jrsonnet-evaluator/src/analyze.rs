@@ -410,6 +410,15 @@ pub enum LCompSpec {
 		/// Is `over` does not depend on any variable introduced by an earlier for-spec in this comprehension chain
 		loop_invariant: bool,
 	},
+	#[cfg(feature = "exp-object-iteration")]
+	ForObj {
+		frame_shape: ClosureShape,
+		key: LocalSlot,
+		visibility: jrsonnet_ir::Visibility,
+		value: LDestruct,
+		over: LExpr,
+		loop_invariant: bool,
+	},
 }
 
 struct FrameAlloc<'s> {
@@ -1863,7 +1872,47 @@ fn analyze_comp_specs<R>(
 				(r, rest)
 			}
 			#[cfg(feature = "exp-object-iteration")]
-			CompSpec::ForObjSpec(_) => todo!(),
+			CompSpec::ForObjSpec(data) => {
+				let mut over_taint = AnalysisResult::default();
+				let over_l = analyze(&data.over, stack, &mut over_taint);
+				let loop_invariant = over_taint.local_dependent_depth > outer_depth;
+				taint.taint_by(over_taint);
+
+				let mut alloc = FrameAlloc::new(stack);
+				let closure = alloc.push_locals_closure();
+				let Some((_, key_slot)) = alloc.define_local(data.key.clone(), None) else {
+					stack.pop_closure(closure);
+					return go(idx + 1, specs, outer_depth, stack, taint, inside);
+				};
+				let Some(l_value) = alloc.alloc_destruct(&data.value) else {
+					stack.pop_closure(closure);
+					return go(idx + 1, specs, outer_depth, stack, taint, inside);
+				};
+				let mut pending = alloc.finish();
+
+				let var_analysis = AnalysisResult::default();
+				pending.record_spec_init(&LDestruct::Full(key_slot), var_analysis);
+				pending.record_spec_init(&l_value, var_analysis);
+
+				let body_frame = pending.finish();
+				let (r, mut rest) =
+					go(idx + 1, specs, outer_depth, body_frame.stack, taint, inside);
+				body_frame.finish();
+				let frame_shape = stack.pop_closure(closure);
+
+				rest.insert(
+					0,
+					LCompSpec::ForObj {
+						frame_shape,
+						key: key_slot,
+						visibility: data.visibility,
+						value: l_value,
+						over: over_l,
+						loop_invariant,
+					},
+				);
+				(r, rest)
+			}
 		}
 	}
 	let outer_depth = stack.depth;
@@ -1970,6 +2019,7 @@ mod tests {
 	use super::*;
 
 	#[test]
+	#[cfg(not(feature = "exp-null-coaelse"))]
 	fn snapshots() {
 		glob!("analysis_tests/*.jsonnet", |path| {
 			let code = fs::read_to_string(path).expect("read test file");

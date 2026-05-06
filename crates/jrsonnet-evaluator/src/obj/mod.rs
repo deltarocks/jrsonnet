@@ -909,6 +909,56 @@ impl ObjValue {
 
 		out
 	}
+	pub fn fields_with_visibility(
+		&self,
+		#[cfg(feature = "exp-preserve-order")] preserve_order: bool,
+	) -> Vec<(IStr, Visibility)> {
+		#[cfg(feature = "exp-preserve-order")]
+		if preserve_order {
+			let (mut fields, mut keys): (Vec<_>, Vec<_>) = self
+				.fields_visibility()
+				.into_iter()
+				.enumerate()
+				.map(|(idx, (k, d))| {
+					(
+						(
+							k,
+							d.exists_visible.expect("non-existing fields filtered out"),
+						),
+						(d.sort_key(), idx),
+					)
+				})
+				.unzip();
+			keys.sort_unstable_by_key(|v| v.0);
+			for i in 0..fields.len() {
+				let x = fields[i].clone();
+				let mut j = i;
+				loop {
+					let k = keys[j].1;
+					keys[j].1 = j;
+					if k == i {
+						break;
+					}
+					fields[j] = fields[k].clone();
+					j = k;
+				}
+				fields[j] = x;
+			}
+			return fields;
+		}
+		let mut fields: Vec<_> = self
+			.fields_visibility()
+			.into_iter()
+			.map(|(k, d)| {
+				(
+					k,
+					d.exists_visible.expect("non-existing fields filtered out"),
+				)
+			})
+			.collect();
+		fields.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+		fields
+	}
 	pub fn fields_ex(
 		&self,
 		include_hidden: bool,

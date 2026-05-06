@@ -6,6 +6,9 @@ use super::{
 	destructure::{destruct, evaluate_locals_unbound, fill_letrec_binds},
 	evaluate_field_member_static, evaluate_field_member_unbound,
 };
+#[cfg(feature = "exp-object-iteration")]
+use jrsonnet_interner::IStr;
+
 use crate::{
 	Context, ObjValue, ObjValueBuilder, Result, Thunk, Val,
 	analyze::{
@@ -17,6 +20,12 @@ use crate::{
 	error::ErrorKind::*,
 	evaluate::{evaluate, evaluate_trivial},
 };
+
+enum CachedOver {
+	Arr(ArrValue),
+	#[cfg(feature = "exp-object-iteration")]
+	Obj(ObjValue),
+}
 
 trait CompCollector {
 	fn reserve(&mut self, _guaranteed: usize) {}
@@ -215,7 +224,7 @@ pub fn evaluate_arr_comp(ctx: Context, comp: &LArrComp) -> Result<Val> {
 	Ok(Val::arr(items))
 }
 
-fn cache_overs(ctx: &Context, specs: &[LCompSpec]) -> Result<Vec<Option<ArrValue>>> {
+fn cache_overs(ctx: &Context, specs: &[LCompSpec]) -> Result<Vec<Option<CachedOver>>> {
 	specs
 		.iter()
 		.map(|spec| {
@@ -229,7 +238,23 @@ fn cache_overs(ctx: &Context, specs: &[LCompSpec]) -> Result<Vec<Option<ArrValue
 					let Val::Arr(arr) = val else {
 						bail!(InComprehensionCanOnlyIterateOverArray)
 					};
-					Some(arr)
+					Some(CachedOver::Arr(arr))
+				}
+				#[cfg(feature = "exp-object-iteration")]
+				LCompSpec::ForObj {
+					over,
+					loop_invariant: true,
+					..
+				} => {
+					let val = evaluate(ctx.clone(), over)?;
+					let Val::Obj(obj) = val else {
+						bail!(TypeMismatch(
+							"object iteration over",
+							vec![jrsonnet_types::ValType::Obj],
+							val.value_type(),
+						))
+					};
+					Some(CachedOver::Obj(obj))
 				}
 				_ => None,
 			})
@@ -240,7 +265,7 @@ fn cache_overs(ctx: &Context, specs: &[LCompSpec]) -> Result<Vec<Option<ArrValue
 fn evaluate_compspecs_eager(
 	ctx: Context,
 	specs: &[LCompSpec],
-	cached_overs: &[Option<ArrValue>],
+	cached_overs: &[Option<CachedOver>],
 	idx: usize,
 	guaranteed_reserve: usize,
 	collector: &mut dyn CompCollector,
@@ -269,7 +294,7 @@ fn evaluate_compspecs_eager(
 			over,
 			..
 		} => {
-			let arr = if let Some(cached) = &cached_overs[idx] {
+			let arr = if let Some(CachedOver::Arr(cached)) = &cached_overs[idx] {
 				cached.clone()
 			} else {
 				let arr_val = evaluate(ctx.clone(), over)?;
@@ -304,6 +329,10 @@ fn evaluate_compspecs_eager(
 				_ => unreachable!("eager compspecs are not possible with non-full patterns"),
 			}
 		}
+		#[cfg(feature = "exp-object-iteration")]
+		LCompSpec::ForObj { .. } => {
+			unreachable!("eager compspecs filter rejects ForObj");
+		}
 	}
 	Ok(())
 }
@@ -311,7 +340,7 @@ fn evaluate_compspecs_eager(
 fn evaluate_compspecs(
 	ctx: Context,
 	specs: &[LCompSpec],
-	cached_overs: &[Option<ArrValue>],
+	cached_overs: &[Option<CachedOver>],
 	idx: usize,
 	guaranteed_reserve: usize,
 	collector: &mut dyn CompCollector,
@@ -340,7 +369,7 @@ fn evaluate_compspecs(
 			over,
 			..
 		} => {
-			let arr = if let Some(cached) = &cached_overs[idx] {
+			let arr = if let Some(CachedOver::Arr(cached)) = &cached_overs[idx] {
 				cached.clone()
 			} else {
 				let arr_val = evaluate(ctx.clone(), over)?;
@@ -354,6 +383,61 @@ fn evaluate_compspecs(
 				let item = item?;
 				let inner_ctx = ctx.pack_captures_sup_this(frame_shape).enter(|fill, ctx| {
 					destruct(dst, fill, Thunk::evaluated(item), &ctx);
+				});
+				evaluate_compspecs(
+					inner_ctx,
+					specs,
+					cached_overs,
+					idx + 1,
+					if i == 0 { inner_reserve } else { 0 },
+					collector,
+				)?;
+			}
+		}
+		#[cfg(feature = "exp-object-iteration")]
+		LCompSpec::ForObj {
+			frame_shape,
+			key,
+			visibility,
+			value,
+			over,
+			..
+		} => {
+			use jrsonnet_ir::Visibility;
+			let obj = if let Some(CachedOver::Obj(cached)) = &cached_overs[idx] {
+				cached.clone()
+			} else {
+				let val = evaluate(ctx.clone(), over)?;
+				let Val::Obj(obj) = val else {
+					bail!(TypeMismatch(
+						"object iteration over",
+						vec![ValType::Obj],
+						val.value_type(),
+					))
+				};
+				obj
+			};
+			let fields = obj.fields_with_visibility(
+				#[cfg(feature = "exp-preserve-order")]
+				false,
+			);
+			let pairs: Vec<(IStr, Visibility)> = fields
+				.into_iter()
+				.filter(|(_, v)| match visibility {
+					Visibility::Normal => v.is_visible(),
+					Visibility::Hidden => !v.is_visible(),
+					Visibility::Unhide => true,
+				})
+				.collect();
+			let inner_reserve = guaranteed_reserve.max(1) * pairs.len();
+			for (i, (field_name, _)) in pairs.into_iter().enumerate() {
+				let key_val = Val::string(field_name.clone());
+				let value_thunk = obj
+					.get_lazy(field_name.clone())
+					.expect("field exists, just enumerated");
+				let inner_ctx = ctx.pack_captures_sup_this(frame_shape).enter(|fill, ctx| {
+					fill.set(*key, Thunk::evaluated(key_val));
+					destruct(value, fill, value_thunk, &ctx);
 				});
 				evaluate_compspecs(
 					inner_ctx,
