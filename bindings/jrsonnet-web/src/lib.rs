@@ -614,17 +614,25 @@ impl jrsonnet_evaluator::async_import::AsyncImportResolver for JsAsyncResolver {
 #[wasm_bindgen(js_name = FormatOptions)]
 pub struct WasmFormatOptions {
 	indent: u8,
+	use_tabs: bool,
+	max_width: u32,
 }
 #[wasm_bindgen(js_class = FormatOptions)]
 impl WasmFormatOptions {
 	#[wasm_bindgen(constructor)]
 	pub fn new() -> Self {
-		Self { indent: 0 }
+		Self {
+			indent: 4,
+			use_tabs: true,
+			max_width: 100,
+		}
 	}
 
 	fn build(&self) -> FormatOptions {
 		FormatOptions {
 			indent: self.indent,
+			use_tabs: self.use_tabs,
+			max_width: self.max_width,
 		}
 	}
 }

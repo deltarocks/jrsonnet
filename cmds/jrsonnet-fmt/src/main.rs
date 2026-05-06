@@ -25,11 +25,14 @@ struct Opts {
 	#[arg(long)]
 	test: bool,
 	/// Number of spaces to indent with
-	#[arg(long, default_value = "2")]
+	#[arg(long, default_value = "4")]
 	indent: u8,
 	/// Force hard tab for indentation
-	#[arg(long)]
-	hard_tabs: bool,
+	#[arg(long, default_value = "true")]
+	use_tabs: bool,
+	/// Max formatted source width
+	#[arg(long, default_value = "100")]
+	max_width: u32,
 
 	/// Debug option: how many times to call reformatting in case of unstable dprint output resolution.
 	///
@@ -51,13 +54,7 @@ enum Error {
 }
 
 fn main_result() -> Result<(), Error> {
-	eprintln!(
-		"jrsonnet-fmt is a prototype of a jsonnet code formatter, do not expect it to produce meaningful results right now."
-	);
-	eprintln!(
-		"It is not expected for its output to match other implementations, it will be completly separate implementation with maybe different name."
-	);
-	let mut opts = Opts::parse();
+	let opts = Opts::parse();
 	let input = if opts.exec {
 		if opts.in_place {
 			return Err(Error::InPlaceExec);
@@ -67,12 +64,6 @@ fn main_result() -> Result<(), Error> {
 		fs::read_to_string(&opts.input)?
 	};
 
-	if opts.indent == 0 {
-		// Sane default.
-		// TODO: Implement actual guessing.
-		opts.hard_tabs = true;
-	}
-
 	let mut iteration = 0;
 	let mut formatted = input.clone();
 	let mut convergence_tmp;
@@ -81,11 +72,9 @@ fn main_result() -> Result<(), Error> {
 		let reformatted = match format(
 			&formatted,
 			&FormatOptions {
-				indent: if opts.indent == 0 || opts.hard_tabs {
-					0
-				} else {
-					opts.indent
-				},
+				indent: opts.indent,
+				use_tabs: opts.use_tabs,
+				max_width: opts.max_width,
 			},
 		) {
 			Ok(v) => v,

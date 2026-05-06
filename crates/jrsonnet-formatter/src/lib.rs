@@ -901,14 +901,25 @@ impl Printable for SourceFile {
 	}
 }
 
-#[derive(Default)]
 pub struct FormatOptions {
-	// 0 for hard tabs, otherwise number of spaces
 	pub indent: u8,
+	pub use_tabs: bool,
+	pub max_width: u32,
 }
+
 impl FormatOptions {
 	pub fn new() -> Self {
-		Self::default()
+		Self {
+			indent: 4,
+			use_tabs: true,
+			max_width: 100,
+		}
+	}
+}
+
+impl Default for FormatOptions {
+	fn default() -> Self {
+		Self::new()
 	}
 }
 
@@ -947,14 +958,9 @@ pub fn format(input: &str, opts: &FormatOptions) -> Result<String, SnippetBuilde
 			out
 		},
 		PrintOptions {
-			indent_width: if opts.indent == 0 {
-				// Reasonable max length for both 2 and 4 space sized tabs.
-				3
-			} else {
-				opts.indent
-			},
-			max_width: 100,
-			use_tabs: opts.indent == 0,
+			indent_width: opts.indent,
+			max_width: opts.max_width,
+			use_tabs: opts.use_tabs,
 			new_line_text: "\n",
 		},
 	))
