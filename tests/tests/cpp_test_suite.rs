@@ -118,9 +118,6 @@ const SKIPPED: &[&str] = &[
 	// Parser fails with stack overflow. While is a bug, this is a too unusual
 	// thing to run untrusted jsonnet code? Will be fixed with nom/rowan.
 	"error.parse.deep_array_nesting.jsonnet",
-	// Runtime, not static error in jrsonnet
-	"error.parse.object_local_clash.jsonnet",
-	"error.function_duplicate_param.jsonnet",
 	// Too slow to throw due to how lazyness is implemented in jrsonnet
 	"error.recursive_object_non_term.jsonnet",
 	// In jrsonnet returns the one passed argument, works as Rust's dbg!()
@@ -135,7 +132,7 @@ const SKIPPED: &[&str] = &[
 
 	// Something is wrong, go-jsonnet skips safe integer range check here
 	"bitwise_or9.jsonnet",
-	// Jrsonnet does not use byte strings, all utf8 is converted to bytes first
+	// Bad check: https://github.com/databricks/sjsonnet/issues/793#issuecomment-4323153709
 	"builtinBase64_string_high_codepoint.jsonnet",
 	// Split by empty string is string characters, same as everywhere else
 	"builtinSplitLimitR6.jsonnet",
@@ -143,8 +140,6 @@ const SKIPPED: &[&str] = &[
 	"builtin_escapeStringJson.jsonnet",
 	// golang float formatting is inefficient and not portable
 	"builtin_manifestTomlEx.jsonnet",
-	"div3.jsonnet",
-	"pow6.jsonnet",
 	// golang escapes "e" yaml key, does it think it is float?
 	"builtin_manifestYamlDoc.jsonnet",
 	// multi output is a CLI part, not an interpreter.
@@ -157,8 +152,6 @@ const SKIPPED: &[&str] = &[
 	"native2.jsonnet",
 	"native3.jsonnet",
 	"native6.jsonnet",
-	// Since when parser should throw an error for that?..
-	"number_leading_zero.jsonnet",
 	// Golang fails with max stack frames exceeded error
 	"std.makeArray_recursive_evalutation_order_matters.jsonnet",
 	// Tailstrict semantics is partially unspecified

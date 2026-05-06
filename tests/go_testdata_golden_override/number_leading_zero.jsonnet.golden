@@ -1,0 +1,3 @@
+syntax error: expected end of file, got number "42"
+    number_leading_zero.jsonnet:1:2
+    number_leading_zero.jsonnet:1:2-3: parse imported
