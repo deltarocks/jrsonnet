@@ -433,16 +433,16 @@ pub fn string_to_expr(str: IStr, settings: &ParserSettings) -> Spanned<Expr> {
 
 #[cfg(test)]
 mod tests {
-	use std::fs;
-
-	use insta::{assert_snapshot, glob};
-	use jrsonnet_ir::{IStr, Source};
-
-	use crate::{ParserSettings, parse};
-
 	#[test]
 	#[cfg(not(feature = "exp-null-coaelse"))]
 	fn snapshots() {
+		use std::fs;
+
+		use insta::{assert_snapshot, glob};
+		use jrsonnet_ir::{IStr, Source};
+
+		use crate::{ParserSettings, parse};
+
 		glob!("tests/*.jsonnet", |path| {
 			let input = fs::read_to_string(path).expect("read test file");
 			let v = parse(

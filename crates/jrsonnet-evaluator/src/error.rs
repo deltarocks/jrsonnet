@@ -123,9 +123,9 @@ pub enum ErrorKind {
 	EagerCompspecCaptured,
 
 	#[error("array out of bounds: {0} is not within [0,{1})")]
-	ArrayBoundsError(isize, u32),
+	ArrayBoundsError(f64, u32),
 	#[error("string out of bounds: {0} is not within [0,{1})")]
-	StringBoundsError(usize, usize),
+	StringBoundsError(f64, u32),
 
 	#[error("assert failed: {}", format_empty_str(.0))]
 	AssertionFailed(IStr),

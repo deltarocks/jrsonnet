@@ -1959,48 +1959,6 @@ pub fn analyze_root(expr: &Expr, ctx: Vec<(IStr, LocalId)>) -> AnalysisReport {
 	}
 }
 
-#[cfg(test)]
-fn render_diagnostics(src: &str, diags: &[Diagnostic]) -> String {
-	use std::fmt::Write;
-
-	use hi_doc::{Formatting, SnippetBuilder, Text};
-
-	let mut out = String::new();
-	let mut unspanned = Vec::new();
-	let mut spanned: Vec<&Diagnostic> = Vec::new();
-	for d in diags {
-		if d.span.is_some() {
-			spanned.push(d);
-		} else {
-			unspanned.push(d);
-		}
-	}
-	if !spanned.is_empty() {
-		let mut builder = SnippetBuilder::new(src);
-		for d in spanned {
-			let span = d.span.as_ref().expect("spanned");
-			let ab = match d.level {
-				DiagLevel::Error => {
-					builder.error(Text::fragment(d.message.clone(), Formatting::default()))
-				}
-				DiagLevel::Warning => {
-					builder.warning(Text::fragment(d.message.clone(), Formatting::default()))
-				}
-			};
-			ab.range(span.range()).build();
-		}
-		out.push_str(&hi_doc::source_to_ansi(&builder.build()));
-	}
-	for d in unspanned {
-		let prefix = match d.level {
-			DiagLevel::Error => "error",
-			DiagLevel::Warning => "warning",
-		};
-		writeln!(out, "{prefix}: {}", d.message).expect("fmt");
-	}
-	out
-}
-
 pub struct AnalysisReport {
 	pub lir: LExpr,
 	pub root_shape: ClosureShape,
@@ -2011,16 +1969,63 @@ pub struct AnalysisReport {
 
 #[cfg(test)]
 mod tests {
-	use std::fs;
-
-	use insta::{assert_snapshot, glob};
-	use jrsonnet_ir::Source;
-
-	use super::*;
-
 	#[test]
 	#[cfg(not(feature = "exp-null-coaelse"))]
 	fn snapshots() {
+		use std::fs;
+
+		use insta::{assert_snapshot, glob};
+		use jrsonnet_ir::Source;
+
+		use super::*;
+
+		fn render_diagnostics(src: &str, diags: &[Diagnostic]) -> String {
+			use std::fmt::Write;
+
+			use hi_doc::{Formatting, SnippetBuilder, Text};
+
+			let mut out = String::new();
+			let mut unspanned = Vec::new();
+			let mut spanned: Vec<&Diagnostic> = Vec::new();
+			for d in diags {
+				if d.span.is_some() {
+					spanned.push(d);
+				} else {
+					unspanned.push(d);
+				}
+			}
+			if !spanned.is_empty() {
+				let mut builder = SnippetBuilder::new(src);
+				for d in spanned {
+					let span = d.span.as_ref().expect("spanned");
+					let ab = match d.level {
+						DiagLevel::Error => {
+							builder.error(Text::fragment(d.message.clone(), Formatting::default()))
+						}
+						DiagLevel::Warning => builder
+							.warning(Text::fragment(d.message.clone(), Formatting::default())),
+					};
+					ab.range(span.range()).build();
+				}
+				out.push_str(&hi_doc::source_to_ansi(&builder.build()));
+			}
+			for d in unspanned {
+				let prefix = match d.level {
+					DiagLevel::Error => "error",
+					DiagLevel::Warning => "warning",
+				};
+				writeln!(out, "{prefix}: {}", d.message).expect("fmt");
+			}
+			out
+		}
+		fn fmt_depth(d: u32) -> String {
+			if d == u32::MAX {
+				"none".into()
+			} else {
+				d.to_string()
+			}
+		}
+
 		glob!("analysis_tests/*.jsonnet", |path| {
 			let code = fs::read_to_string(path).expect("read test file");
 			let src = Source::new_virtual("<test>".into(), code.clone().into());
@@ -2041,13 +2046,5 @@ mod tests {
 			);
 			assert_snapshot!(rendered);
 		});
-	}
-
-	fn fmt_depth(d: u32) -> String {
-		if d == u32::MAX {
-			"none".into()
-		} else {
-			d.to_string()
-		}
 	}
 }

@@ -18,12 +18,12 @@ use crate::{
 		LIndexPart, LObjAsserts, LObjBody, LObjMembers, LSlot,
 	},
 	arr::ArrValue,
-	bail, error,
+	bail,
 	error::{ErrorKind::*, suggest_object_fields},
 	evaluate::{destructure::fill_letrec_binds, operator::evaluate_unary_op},
 	function::{CallLocation, FuncDesc, FuncVal, prepared::PreparedFuncVal},
 	in_frame,
-	typed::FromUntyped as _,
+	typed::{BoundedUsize, FromUntyped as _},
 	val::{CachedUnbound, Thunk},
 	with_state,
 };
@@ -193,7 +193,6 @@ pub fn evaluate(ctx: Context, expr: &LExpr) -> Result<Val> {
 		}
 		LExpr::ArrComp(comp) => evaluate_arr_comp(ctx, comp)?,
 		LExpr::Slice(slice) => {
-			use crate::typed::BoundedUsize;
 			let val = evaluate(ctx.clone(), &slice.value)?;
 			let indexable = val.into_indexable()?;
 			let start = slice
@@ -201,26 +200,14 @@ pub fn evaluate(ctx: Context, expr: &LExpr) -> Result<Val> {
 				.as_ref()
 				.map(|e| evaluate(ctx.clone(), e))
 				.transpose()?
-				.map(|v| -> Result<i32> {
-					v.as_num()
-						.ok_or_else(|| {
-							TypeMismatch("slice start", vec![ValType::Num], v.value_type()).into()
-						})
-						.map(|n| n as i32)
-				})
+				.map(|v| -> Result<i32> { i32::from_untyped(v).description("slice start value") })
 				.transpose()?;
 			let end = slice
 				.end
 				.as_ref()
 				.map(|e| evaluate(ctx.clone(), e))
 				.transpose()?
-				.map(|v| -> Result<i32> {
-					v.as_num()
-						.ok_or_else(|| {
-							TypeMismatch("slice end", vec![ValType::Num], v.value_type()).into()
-						})
-						.map(|n| n as i32)
-				})
+				.map(|v| -> Result<i32> { i32::from_untyped(v).description("slice end value") })
 				.transpose()?;
 			let step = slice
 				.step
@@ -228,10 +215,7 @@ pub fn evaluate(ctx: Context, expr: &LExpr) -> Result<Val> {
 				.map(|e| evaluate(ctx, e))
 				.transpose()?
 				.map(|v| -> Result<BoundedUsize<1, { i32::MAX as usize }>> {
-					let n = v.as_num().ok_or_else(|| -> crate::Error {
-						TypeMismatch("slice step", vec![ValType::Num], v.value_type()).into()
-					})?;
-					BoundedUsize::new(n as usize).ok_or_else(|| error!("slice step must be >= 1"))
+					BoundedUsize::from_untyped(v).description("slice step value")
 				})
 				.transpose()?;
 			Val::from(indexable.slice(start, end, step)?)
@@ -410,11 +394,9 @@ fn evaluate_index(ctx: Context, indexable: &LExpr, parts: &[LIndexPart]) -> Resu
 				if n.fract() > f64::EPSILON {
 					bail!(FractionalIndex)
 				}
-				if n < 0.0 {
-					bail!(ArrayBoundsError(
-						n as isize, // truncation is fine for error display
-						arr.len()
-					));
+				let len = arr.len();
+				if n < 0.0 || n > f64::from(len) {
+					bail!(ArrayBoundsError(n, len));
 				}
 				#[expect(
 					clippy::cast_possible_truncation,
@@ -424,19 +406,12 @@ fn evaluate_index(ctx: Context, indexable: &LExpr, parts: &[LIndexPart]) -> Resu
 				let i = n as u32;
 				arr.get(i)
 					.with_description_src(loc, || format!("element <{i}> access"))?
-					.ok_or_else(|| ArrayBoundsError(i as isize, arr.len()))?
+					.ok_or_else(|| ArrayBoundsError(n, len))?
 			}
 			(Val::Str(s), Val::Num(idx)) => {
 				let n = idx.get();
 				if n.fract() > f64::EPSILON {
 					bail!(FractionalIndex)
-				}
-				let flat = s.clone().into_flat();
-				if n < 0.0 {
-					bail!(ArrayBoundsError(
-						n as isize, // truncation is fine for error display
-						flat.chars().count() as u32
-					));
 				}
 				#[expect(
 					clippy::cast_possible_truncation,
@@ -444,10 +419,17 @@ fn evaluate_index(ctx: Context, indexable: &LExpr, parts: &[LIndexPart]) -> Resu
 					reason = "n is checked positive, overflow will truncate as expected"
 				)]
 				let i = n as usize;
-				let Some(char) = flat.chars().nth(i) else {
-					bail!(StringBoundsError(i, flat.chars().count()))
-				};
-				Val::string(char)
+				let flat = s.clone().into_flat();
+				#[allow(clippy::cast_possible_truncation, reason = "string is max 4g")]
+				if n >= 0.0
+					&& n <= f64::from(u32::MAX)
+					&& let Some(char) = flat.chars().nth(i)
+				{
+					Val::string(char)
+				} else {
+					let len = flat.chars().count();
+					bail!(StringBoundsError(n, len as u32))
+				}
 			}
 			#[cfg(feature = "exp-null-coaelse")]
 			(Val::Null, _) if part.null_coaelse => return Ok(Val::Null),
@@ -566,7 +548,7 @@ fn evaluate_obj_members(
 		let a_ctx = ctx
 			.pack_captures_sup_this(&members.frame_shape)
 			.enter(|fill, ctx| {
-				fill_letrec_binds(fill, &ctx, &members.locals);
+				fill_letrec_binds(fill, ctx, &members.locals);
 			});
 		for field in &members.fields {
 			evaluate_field_member_static(&mut builder, ctx.clone(), a_ctx.clone(), field)?;

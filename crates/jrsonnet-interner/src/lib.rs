@@ -53,6 +53,10 @@ impl IStr {
 	pub fn cast_bytes(self) -> IBytes {
 		IBytes(self.0.clone())
 	}
+
+	pub fn len32(&self) -> u32 {
+		self.0.len32()
+	}
 }
 
 impl Deref for IStr {

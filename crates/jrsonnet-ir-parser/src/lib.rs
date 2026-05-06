@@ -1038,7 +1038,7 @@ pub fn parse(str: &str, settings: &ParserSettings) -> Result<Expr> {
 	}
 	let e = expr(&mut p)?;
 	if !p.at_eof() {
-		return Err(p.error(format!("expected end of file, got {}", p.current_desc(),)));
+		return Err(p.error(format!("expected end of file, got {}", p.current_desc())));
 	}
 	Ok(e)
 }
@@ -1051,10 +1051,7 @@ pub fn string_to_expr(s: IStr, settings: &ParserSettings) -> Spanned<Expr> {
 
 #[cfg(test)]
 mod tests {
-	use std::fs;
-
-	use insta::{assert_snapshot, glob};
-	use jrsonnet_ir::{IStr, Source};
+	use insta::assert_snapshot;
 
 	use super::*;
 
@@ -1159,6 +1156,11 @@ mod tests {
 	#[test]
 	#[cfg(not(feature = "exp-null-coaelse"))]
 	fn peg_snapshots() {
+		use std::fs;
+
+		use insta::glob;
+		use jrsonnet_ir::{IStr, Source};
+
 		glob!("../../jrsonnet-peg-parser/src", "tests/*.jsonnet", |path| {
 			let input = fs::read_to_string(path).expect("read test file");
 			let source = Source::new_virtual("<test>".into(), IStr::empty());

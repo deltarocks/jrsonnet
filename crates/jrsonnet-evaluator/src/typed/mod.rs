@@ -157,9 +157,7 @@ impl CheckType for ComplexValType {
 			Self::BoundedNumber(from, to) => {
 				if let Val::Num(n) = value {
 					let n = n.get();
-					if from.map(|from| from > n).unwrap_or(false)
-						|| to.map(|to| to < n).unwrap_or(false)
-					{
+					if from.is_some_and(|from| from > n) || to.is_some_and(|to| to < n) {
 						return Err(TypeError::BoundsFailed(n, *from, *to).into());
 					}
 					Ok(())

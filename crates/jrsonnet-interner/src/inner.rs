@@ -161,6 +161,12 @@ impl Inner {
 		// SAFETY: header is initialized
 		unsafe { (*header).refcnt() }
 	}
+
+	pub fn len32(&self) -> u32 {
+		let header = Self::header(self);
+		// SAFETY: header is initialized
+		unsafe { (*header).size }
+	}
 }
 
 impl Clone for Inner {

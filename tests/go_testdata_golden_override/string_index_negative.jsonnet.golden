@@ -1,1 +1,1 @@
-array out of bounds: -1 is not within [0,4)
+string out of bounds: -1 is not within [0,4)
