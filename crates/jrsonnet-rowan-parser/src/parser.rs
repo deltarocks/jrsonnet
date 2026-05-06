@@ -364,6 +364,19 @@ const COMPSPEC: SyntaxKindSet = TS![for if];
 fn compspec(p: &mut Parser) -> CompletedMarker {
 	assert!(p.at_ts(COMPSPEC));
 	if p.at(T![for]) {
+		if p.nth_at(1, T!['[']) && p.nth_at(2, IDENT) && p.nth_at(3, T![']']) && p.nth_at(4, T![:])
+		{
+			let m = p.start();
+			p.bump_assert(T![for]);
+			p.bump_assert(T!['[']);
+			name(p);
+			p.expect(T![']']);
+			visibility(p);
+			destruct(p);
+			p.expect(T![in]);
+			expr(p);
+			return m.complete(p, FOR_OBJ_SPEC);
+		}
 		let m = p.start();
 		p.bump();
 		destruct(p);

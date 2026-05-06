@@ -246,11 +246,21 @@ ForSpec =
     bind:Destruct
     'in'
     Expr
+ForObjSpec =
+    'for'
+    '['
+    key:Name
+    ']'
+    Visibility
+    value:Destruct
+    'in'
+    Expr
 IfSpec =
     'if'
     Expr
 CompSpec =
     ForSpec
+|   ForObjSpec
 |   IfSpec
 
 BindDestruct =

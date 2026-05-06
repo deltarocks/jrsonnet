@@ -228,6 +228,19 @@ mk_test!(
 	local_in_binop_rhs => r#"
 		a + local x = 1; x
 	"#
+
+	for_obj_spec_visible => r#"
+		{ [k]: v for [k]: v in obj }
+	"#
+	for_obj_spec_hidden => r#"
+		{ [k]: v for [k]:: v in obj }
+	"#
+	for_obj_spec_force_visible => r#"
+		{ [k]: v for [k]::: v in obj }
+	"#
+	for_obj_spec_value_destruct => r#"
+		{ [k]: a + b for [k]: [a, b] in obj }
+	"#
 );
 
 #[test]

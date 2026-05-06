@@ -650,6 +650,37 @@ impl ForSpec {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ForObjSpec {
+	pub(crate) syntax: SyntaxNode,
+}
+impl ForObjSpec {
+	pub fn for_kw_token(&self) -> Option<SyntaxToken> {
+		support::token(&self.syntax, T![for])
+	}
+	pub fn l_brack_token(&self) -> Option<SyntaxToken> {
+		support::token(&self.syntax, T!['['])
+	}
+	pub fn key(&self) -> Option<Name> {
+		support::children(&self.syntax).next()
+	}
+	pub fn r_brack_token(&self) -> Option<SyntaxToken> {
+		support::token(&self.syntax, T![']'])
+	}
+	pub fn visibility(&self) -> Option<Visibility> {
+		support::children(&self.syntax).next()
+	}
+	pub fn value(&self) -> Option<Destruct> {
+		support::children(&self.syntax).next()
+	}
+	pub fn in_kw_token(&self) -> Option<SyntaxToken> {
+		support::token(&self.syntax, T![in])
+	}
+	pub fn expr(&self) -> Option<Expr> {
+		support::children(&self.syntax).next()
+	}
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct IfSpec {
 	pub(crate) syntax: SyntaxNode,
 }
@@ -845,6 +876,7 @@ pub enum ObjBody {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CompSpec {
 	ForSpec(ForSpec),
+	ForObjSpec(ForObjSpec),
 	IfSpec(IfSpec),
 }
 
@@ -1702,6 +1734,21 @@ impl AstNode for ForSpec {
 		&self.syntax
 	}
 }
+impl AstNode for ForObjSpec {
+	fn can_cast(kind: SyntaxKind) -> bool {
+		kind == FOR_OBJ_SPEC
+	}
+	fn cast(syntax: SyntaxNode) -> Option<Self> {
+		if Self::can_cast(syntax.kind()) {
+			Some(Self { syntax })
+		} else {
+			None
+		}
+	}
+	fn syntax(&self) -> &SyntaxNode {
+		&self.syntax
+	}
+}
 impl AstNode for IfSpec {
 	fn can_cast(kind: SyntaxKind) -> bool {
 		kind == IF_SPEC
@@ -2014,6 +2061,11 @@ impl From<ForSpec> for CompSpec {
 		CompSpec::ForSpec(node)
 	}
 }
+impl From<ForObjSpec> for CompSpec {
+	fn from(node: ForObjSpec) -> CompSpec {
+		CompSpec::ForObjSpec(node)
+	}
+}
 impl From<IfSpec> for CompSpec {
 	fn from(node: IfSpec) -> CompSpec {
 		CompSpec::IfSpec(node)
@@ -2022,13 +2074,14 @@ impl From<IfSpec> for CompSpec {
 impl AstNode for CompSpec {
 	fn can_cast(kind: SyntaxKind) -> bool {
 		match kind {
-			FOR_SPEC | IF_SPEC => true,
+			FOR_SPEC | FOR_OBJ_SPEC | IF_SPEC => true,
 			_ => false,
 		}
 	}
 	fn cast(syntax: SyntaxNode) -> Option<Self> {
 		let res = match syntax.kind() {
 			FOR_SPEC => CompSpec::ForSpec(ForSpec { syntax }),
+			FOR_OBJ_SPEC => CompSpec::ForObjSpec(ForObjSpec { syntax }),
 			IF_SPEC => CompSpec::IfSpec(IfSpec { syntax }),
 			_ => return None,
 		};
@@ -2037,6 +2090,7 @@ impl AstNode for CompSpec {
 	fn syntax(&self) -> &SyntaxNode {
 		match self {
 			CompSpec::ForSpec(it) => &it.syntax,
+			CompSpec::ForObjSpec(it) => &it.syntax,
 			CompSpec::IfSpec(it) => &it.syntax,
 		}
 	}
@@ -3012,6 +3066,11 @@ impl std::fmt::Display for FieldNameDynamic {
 	}
 }
 impl std::fmt::Display for ForSpec {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		std::fmt::Display::fmt(self.syntax(), f)
+	}
+}
+impl std::fmt::Display for ForObjSpec {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		std::fmt::Display::fmt(self.syntax(), f)
 	}

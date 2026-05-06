@@ -1,0 +1,49 @@
+---
+source: crates/jrsonnet-rowan-parser/src/tests.rs
+expression: "{ [k]: v for [k]: v in obj }\n"
+---
+SOURCE_FILE@0..29
+  EXPR@0..28
+    EXPR_OBJECT@0..28
+      OBJ_BODY_COMP@0..28
+        L_BRACE@0..1 "{"
+        WHITESPACE@1..2 " "
+        MEMBER_FIELD_NORMAL@2..8
+          FIELD_NAME_DYNAMIC@2..5
+            L_BRACK@2..3 "["
+            EXPR@3..4
+              EXPR_VAR@3..4
+                NAME@3..4
+                  IDENT@3..4 "k"
+            R_BRACK@4..5 "]"
+          VISIBILITY@5..6
+            COLON@5..6 ":"
+          WHITESPACE@6..7 " "
+          EXPR@7..8
+            EXPR_VAR@7..8
+              NAME@7..8
+                IDENT@7..8 "v"
+        WHITESPACE@8..9 " "
+        FOR_OBJ_SPEC@9..26
+          FOR_KW@9..12 "for"
+          WHITESPACE@12..13 " "
+          L_BRACK@13..14 "["
+          NAME@14..15
+            IDENT@14..15 "k"
+          R_BRACK@15..16 "]"
+          VISIBILITY@16..17
+            COLON@16..17 ":"
+          WHITESPACE@17..18 " "
+          DESTRUCT_FULL@18..19
+            NAME@18..19
+              IDENT@18..19 "v"
+          WHITESPACE@19..20 " "
+          IN_KW@20..22 "in"
+          WHITESPACE@22..23 " "
+          EXPR@23..26
+            EXPR_VAR@23..26
+              NAME@23..26
+                IDENT@23..26 "obj"
+        WHITESPACE@26..27 " "
+        R_BRACE@27..28 "}"
+  WHITESPACE@28..29 "\n"

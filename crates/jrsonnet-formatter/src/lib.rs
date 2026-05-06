@@ -13,9 +13,9 @@ use jrsonnet_rowan_parser::{
 	AstNode, AstToken as _, SyntaxToken,
 	nodes::{
 		Arg, ArgsDesc, Assertion, BinaryOperator, Bind, CompSpec, Destruct, DestructArrayPart,
-		DestructRest, Expr, ExprArray, ExprBase, FieldName, ForSpec, IfSpec, ImportKind, Literal,
-		Member, Name, Number, ObjBody, ObjLocal, ParamsDesc, SliceDesc, SourceFile, Stmt, Suffix,
-		Text, TextKind, UnaryOperator, Visibility,
+		DestructRest, Expr, ExprArray, ExprBase, FieldName, ForObjSpec, ForSpec, IfSpec,
+		ImportKind, Literal, Member, Name, Number, ObjBody, ObjLocal, ParamsDesc, SliceDesc,
+		SourceFile, Stmt, Suffix, Text, TextKind, UnaryOperator, Visibility,
 	},
 };
 
@@ -645,6 +645,11 @@ impl Printable for ForSpec {
 		p!(out, str("for ") {self.bind()} str(" in ") {self.expr()});
 	}
 }
+impl Printable for ForObjSpec {
+	fn print(&self, out: &mut PrintItems) {
+		p!(out, str("for [") {self.key()} str("]") {self.visibility()} str(" ") {self.value()} str(" in ") {self.expr()});
+	}
+}
 impl Printable for IfSpec {
 	fn print(&self, out: &mut PrintItems) {
 		p!(out, str("if ") {self.expr()});
@@ -654,6 +659,7 @@ impl Printable for CompSpec {
 	fn print(&self, out: &mut PrintItems) {
 		match self {
 			Self::ForSpec(f) => f.print(out),
+			Self::ForObjSpec(f) => f.print(out),
 			Self::IfSpec(i) => i.print(out),
 		}
 	}
