@@ -40,7 +40,6 @@ exp-regex = ["jrsonnet-cli/exp-regex"]
 # obj?.field, obj?.['field']
 exp-null-coaelse = [
   "jrsonnet-evaluator/exp-null-coaelse",
-  "jrsonnet-ir/exp-null-coaelse",
   "jrsonnet-cli/exp-null-coaelse",
 ]
 # --exp-apply
@@ -48,7 +47,6 @@ exp-apply = []
 
 [dependencies]
 jrsonnet-evaluator.workspace = true
-jrsonnet-ir.workspace = true
 jrsonnet-cli.workspace = true
 jrsonnet-gcmodule.workspace = true
 
