@@ -4,9 +4,7 @@ use jrsonnet_gcmodule::Trace;
 
 use crate::{
 	Context, LocalsFrame, PackedContext, Result, SupThis, Thunk, Unbound, Val,
-	analyze::{
-		ClosureShape, LBind, LDestruct, LDestructField, LDestructRest, LLocalExpr, LocalSlot,
-	},
+	analyze::{ClosureShape, LBind, LDestruct, LDestructField, LDestructRest, LocalSlot},
 	bail,
 	evaluate::evaluate,
 };
@@ -187,15 +185,6 @@ pub fn fill_letrec_binds(fill: &LocalsFrame, ctx: &Context, binds: &[LBind]) {
 			ctx,
 		);
 	}
-}
-
-pub fn evaluate_local_expr(parent: Context, l: &LLocalExpr) -> Result<Val> {
-	let ctx = parent
-		.pack_captures_sup_this(&l.frame_shape)
-		.enter(|fill, ctx| {
-			fill_letrec_binds(fill, ctx, &l.binds);
-		});
-	evaluate(ctx, &l.body)
 }
 
 pub trait CloneableUnbound<T>: Unbound<Bound = T> + Clone {}

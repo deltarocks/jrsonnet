@@ -7,7 +7,7 @@ use jrsonnet_types::ValType;
 
 use self::{
 	compspec::{evaluate_arr_comp, evaluate_obj_comp},
-	destructure::{evaluate_local_expr, evaluate_locals_unbound},
+	destructure::evaluate_locals_unbound,
 	operator::evaluate_binary_op_special,
 };
 use crate::{
@@ -116,129 +116,143 @@ mod names {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn evaluate(ctx: Context, expr: &LExpr) -> Result<Val> {
-	Ok(match expr {
-		LExpr::Null => Val::Null,
-		LExpr::Bool(b) => Val::Bool(*b),
-		LExpr::Str(s) => Val::string(s.clone()),
-		LExpr::Num(n) => Val::Num(*n),
-		LExpr::Slot(slot) => ctx.slot(*slot).evaluate()?,
-		LExpr::BadLocal(name) => panic!("unresolvable reference: {name}"),
-		LExpr::Arr { shape, items } => Val::Arr(ArrValue::expr(ctx, shape, items.clone())),
-		LExpr::UnaryOp(op, value) => {
-			let value = evaluate(ctx, value)?;
-			evaluate_unary_op(*op, &value)?
-		}
-		LExpr::BinaryOp { lhs, op, rhs } => evaluate_binary_op_special(ctx, lhs, *op, rhs)?,
-		LExpr::LocalExpr(local_expr) => evaluate_local_expr(ctx, local_expr)?,
-		LExpr::IfElse {
-			cond,
-			cond_then,
-			cond_else,
-		} => {
-			let cond_val = evaluate(ctx.clone(), cond)?;
-			let Val::Bool(b) = cond_val else {
-				bail!(TypeMismatch(
-					"if condition",
-					vec![ValType::Bool],
-					cond_val.value_type()
-				))
-			};
-			if b {
-				evaluate(ctx, cond_then)?
-			} else if let Some(e) = cond_else {
-				evaluate(ctx, e)?
-			} else {
+pub fn evaluate(mut ctx: Context, mut expr: &LExpr) -> Result<Val> {
+	loop {
+		return Ok(match expr {
+			LExpr::Null => Val::Null,
+			LExpr::Bool(b) => Val::Bool(*b),
+			LExpr::Str(s) => Val::string(s.clone()),
+			LExpr::Num(n) => Val::Num(*n),
+			LExpr::Slot(slot) => ctx.slot(*slot).evaluate()?,
+			LExpr::BadLocal(name) => panic!("unresolvable reference: {name}"),
+			LExpr::Arr { shape, items } => Val::Arr(ArrValue::expr(ctx, shape, items.clone())),
+			LExpr::UnaryOp(op, value) => {
+				let value = evaluate(ctx, value)?;
+				evaluate_unary_op(*op, &value)?
+			}
+			LExpr::BinaryOp { lhs, op, rhs } => evaluate_binary_op_special(ctx, lhs, *op, rhs)?,
+			LExpr::LocalExpr(l) => {
+				ctx = ctx
+					.pack_captures_sup_this(&l.frame_shape)
+					.enter(|fill, ctx| {
+						fill_letrec_binds(fill, ctx, &l.binds);
+					});
+				expr = &l.body;
+				continue;
+			}
+			LExpr::IfElse {
+				cond,
+				cond_then,
+				cond_else,
+			} => {
+				let cond_val = evaluate(ctx.clone(), cond)?;
+				let Val::Bool(b) = cond_val else {
+					bail!(TypeMismatch(
+						"if condition",
+						vec![ValType::Bool],
+						cond_val.value_type()
+					))
+				};
+				if b {
+					expr = cond_then;
+					continue;
+				} else if let Some(e) = cond_else {
+					expr = e;
+					continue;
+				}
 				Val::Null
 			}
-		}
-		LExpr::Error(s, e) => in_frame(
-			CallLocation::new(s),
-			|| "error statement".to_owned(),
-			|| bail!(RuntimeError(evaluate(ctx, e)?.to_string()?,)),
-		)?,
-		LExpr::AssertExpr { assert, rest } => {
-			evaluate_assert(ctx.clone(), assert)?;
-			evaluate(ctx, rest)?
-		}
+			LExpr::Error(s, e) => in_frame(
+				CallLocation::new(s),
+				|| "error statement".to_owned(),
+				|| bail!(RuntimeError(evaluate(ctx, e)?.to_string()?,)),
+			)?,
+			LExpr::AssertExpr { assert, rest } => {
+				evaluate_assert(ctx.clone(), assert)?;
+				expr = rest;
+				continue;
+			}
 
-		LExpr::Function(func) => evaluate_method(
-			ctx,
-			func.name.clone().unwrap_or_else(names::anonymous),
-			func,
-		),
-		LExpr::IdentityFunction => Val::Func(FuncVal::identity()),
-		LExpr::Apply {
-			applicable,
-			args,
-			tailstrict,
-		} => evaluate_apply(
-			ctx,
-			applicable,
-			args,
-			CallLocation::new(&args.span),
-			*tailstrict,
-		)?,
-		LExpr::Index { indexable, parts } => evaluate_index(ctx, indexable, parts)?,
-		LExpr::Obj(body) => evaluate_obj_body(None, ctx, body)?,
-		LExpr::ObjExtend(lhs, body) => {
-			let lhs_val = evaluate(ctx.clone(), lhs)?;
-			let Val::Obj(lhs_obj) = lhs_val else {
-				bail!(TypeMismatch(
-					"object extend lhs",
-					vec![ValType::Obj],
-					lhs_val.value_type(),
-				))
-			};
-			evaluate_obj_body(Some(lhs_obj), ctx, body)?
-		}
-		LExpr::ArrComp(comp) => evaluate_arr_comp(ctx, comp)?,
-		LExpr::Slice(slice) => {
-			let val = evaluate(ctx.clone(), &slice.value)?;
-			let indexable = val.into_indexable()?;
-			let start = slice
-				.start
-				.as_ref()
-				.map(|e| evaluate(ctx.clone(), e))
-				.transpose()?
-				.map(|v| -> Result<i32> { i32::from_untyped(v).description("slice start value") })
-				.transpose()?;
-			let end = slice
-				.end
-				.as_ref()
-				.map(|e| evaluate(ctx.clone(), e))
-				.transpose()?
-				.map(|v| -> Result<i32> { i32::from_untyped(v).description("slice end value") })
-				.transpose()?;
-			let step = slice
-				.step
-				.as_ref()
-				.map(|e| evaluate(ctx, e))
-				.transpose()?
-				.map(|v| -> Result<BoundedUsize<1, { i32::MAX as usize }>> {
-					BoundedUsize::from_untyped(v).description("slice step value")
+			LExpr::Function(func) => evaluate_method(
+				ctx,
+				func.name.clone().unwrap_or_else(names::anonymous),
+				func,
+			),
+			LExpr::IdentityFunction => Val::Func(FuncVal::identity()),
+			LExpr::Apply {
+				applicable,
+				args,
+				tailstrict,
+			} => evaluate_apply(
+				ctx,
+				applicable,
+				args,
+				CallLocation::new(&args.span),
+				*tailstrict,
+			)?,
+			LExpr::Index { indexable, parts } => evaluate_index(ctx, indexable, parts)?,
+			LExpr::Obj(body) => evaluate_obj_body(None, ctx, body)?,
+			LExpr::ObjExtend(lhs, body) => {
+				let lhs_val = evaluate(ctx.clone(), lhs)?;
+				let Val::Obj(lhs_obj) = lhs_val else {
+					bail!(TypeMismatch(
+						"object extend lhs",
+						vec![ValType::Obj],
+						lhs_val.value_type(),
+					))
+				};
+				evaluate_obj_body(Some(lhs_obj), ctx, body)?
+			}
+			LExpr::ArrComp(comp) => evaluate_arr_comp(ctx, comp)?,
+			LExpr::Slice(slice) => {
+				let val = evaluate(ctx.clone(), &slice.value)?;
+				let indexable = val.into_indexable()?;
+				let start = slice
+					.start
+					.as_ref()
+					.map(|e| evaluate(ctx.clone(), e))
+					.transpose()?
+					.map(|v| -> Result<i32> {
+						i32::from_untyped(v).description("slice start value")
+					})
+					.transpose()?;
+				let end = slice
+					.end
+					.as_ref()
+					.map(|e| evaluate(ctx.clone(), e))
+					.transpose()?
+					.map(|v| -> Result<i32> { i32::from_untyped(v).description("slice end value") })
+					.transpose()?;
+				let step = slice
+					.step
+					.as_ref()
+					.map(|e| evaluate(ctx, e))
+					.transpose()?
+					.map(|v| -> Result<BoundedUsize<1, { i32::MAX as usize }>> {
+						BoundedUsize::from_untyped(v).description("slice step value")
+					})
+					.transpose()?;
+				Val::from(indexable.slice32(start, end, step)?)
+			}
+			LExpr::Super => Val::Obj(ctx.try_sup_this()?.standalone_super().ok_or(NoSuperFound)?),
+			LExpr::Import {
+				kind,
+				kind_span,
+				path,
+			} => with_state(|state| {
+				let resolved = state.resolve_from(kind_span.0.source_path(), &path.clone())?;
+				Ok::<_, Error>(match kind.value {
+					ImportKind::Normal => in_frame(
+						CallLocation::new(&kind.span),
+						|| "import".to_string(),
+						|| state.import_resolved(resolved),
+					)?,
+					ImportKind::Str => Val::string(state.import_resolved_str(resolved)?),
+					ImportKind::Bin => Val::arr(state.import_resolved_bin(resolved)?),
 				})
-				.transpose()?;
-			Val::from(indexable.slice32(start, end, step)?)
-		}
-		LExpr::Super => Val::Obj(ctx.try_sup_this()?.standalone_super().ok_or(NoSuperFound)?),
-		LExpr::Import {
-			kind,
-			kind_span,
-			path,
-		} => with_state(|state| {
-			let resolved = state.resolve_from(kind_span.0.source_path(), &path.clone())?;
-			Ok::<_, Error>(match kind.value {
-				ImportKind::Normal => in_frame(
-					CallLocation::new(&kind.span),
-					|| "import".to_string(),
-					|| state.import_resolved(resolved),
-				)?,
-				ImportKind::Str => Val::string(state.import_resolved_str(resolved)?),
-				ImportKind::Bin => Val::arr(state.import_resolved_bin(resolved)?),
-			})
-		})?,
-	})
+			})?,
+		});
+	}
 }
 
 fn evaluate_apply(

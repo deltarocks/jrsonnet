@@ -14,7 +14,8 @@ use crate::{
 	Context, PackedContextSupThis, Result, Thunk, Val,
 	analyze::LFunction,
 	arr::arridx,
-	evaluate::{destructure::destruct, ensure_sufficient_stack, evaluate, evaluate_trivial},
+	ensure_sufficient_stack,
+	evaluate::{destructure::destruct, evaluate, evaluate_trivial},
 	function::builtin::BuiltinFunc,
 };
 
@@ -68,7 +69,7 @@ impl FuncDesc {
 		self.func.signature.clone()
 	}
 
-	pub fn call(
+	fn call(
 		&self,
 		unnamed: &[Thunk<Val>],
 		named: &[Thunk<Val>],
