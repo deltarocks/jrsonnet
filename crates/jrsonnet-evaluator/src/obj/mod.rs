@@ -23,7 +23,7 @@ pub use oop::ObjValueBuilder;
 
 use crate::{
 	CcUnbound, MaybeUnbound, Result, Thunk, Unbound, Val,
-	arr::{PickObjectKeyValues, PickObjectValues},
+	arr::{PickObjectKeyValues, PickObjectValues, arridx},
 	bail,
 	error::{ErrorKind::*, suggest_object_fields},
 	evaluate::operator::evaluate_add_op,
@@ -510,11 +510,14 @@ impl ObjValue {
 	// }
 	/// Returns amount of visible object fields
 	/// If object only contains hidden fields - may return zero.
-	pub fn len(&self) -> u32 {
+	pub fn len(&self) -> usize {
 		self.fields_visibility()
 			.values()
 			.filter(|d| d.visible())
-			.count() as u32
+			.count()
+	}
+	pub fn len32(&self) -> u32 {
+		arridx(self.len())
 	}
 	/// For each field, calls callback.
 	/// If callback returns false - ends iteration prematurely.
@@ -625,7 +628,7 @@ impl ObjValue {
 				Entry::Vacant(v) => {
 					v.insert(CacheValue::Pending);
 				}
-			};
+			}
 		}
 		let result = self.get_idx_uncached(key, core);
 		{

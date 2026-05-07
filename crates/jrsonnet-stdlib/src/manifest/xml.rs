@@ -44,15 +44,15 @@ impl FromUntyped for JSONMLValue {
 			bail!("JSONML value should have tag (array length should be >=1)");
 		}
 		let tag = String::from_untyped(
-			arr.get(0)
+			arr.get32(0)
 				.description("getting JSONML tag")?
 				.expect("length checked"),
 		)
 		.description("parsing JSONML tag")?;
 
-		let (has_attrs, attrs) = if arr.len() >= 2 {
+		let (has_attrs, attrs) = if arr.len32() >= 2 {
 			let maybe_attrs = arr
-				.get(1)
+				.get32(1)
 				.with_description(|| "getting JSONML attrs")?
 				.expect("length checked");
 			if let Val::Obj(attrs) = maybe_attrs {
@@ -68,13 +68,7 @@ impl FromUntyped for JSONMLValue {
 			attrs,
 			children: in_description_frame(
 				|| "parsing children".to_owned(),
-				|| {
-					FromUntyped::from_untyped(Val::Arr(arr.slice(
-						Some(if has_attrs { 2 } else { 1 }),
-						None,
-						None,
-					)))
-				},
+				|| FromUntyped::from_untyped(Val::Arr(arr.slice(if has_attrs { 2 } else { 1 }..))),
 			)?,
 		})
 	}

@@ -637,7 +637,7 @@ impl FromUntyped for IBytes {
 		}
 		<Self as Typed>::TYPE.check(&value)?;
 		// Any::downcast_ref::<ByteArray>(&a);
-		let mut out = Vec::with_capacity(a.len() as usize);
+		let mut out = Vec::with_capacity(a.len());
 		for e in a.iter() {
 			let r = e?;
 			out.push(u8::from_untyped(r)?);

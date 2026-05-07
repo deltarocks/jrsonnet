@@ -91,6 +91,10 @@ fn run_once(program: &OsString, args: &[OsString], silent: bool) -> Result<Sampl
 
 	let start = Instant::now();
 	let child = cmd.spawn()?;
+	#[allow(
+		clippy::cast_possible_wrap,
+		reason = "it is signed, but libc didn't set unsigned for it"
+	)]
 	let pid = child.id() as libc::pid_t;
 	// We'll reap via wait4 ourselves; don't let std touch this handle again.
 	mem::forget(child);
@@ -133,10 +137,10 @@ pub fn bench_cmd(args: &[String], runs: u32, warmup: u32, output: bool) -> Resul
 	);
 	eprintln!(
 		"           max_rss: {} ± {} KiB  [{}..{}]",
-		r.max_rss_kib.mean as i64,
-		r.max_rss_kib.stddev as i64,
-		r.max_rss_kib.min as i64,
-		r.max_rss_kib.max as i64,
+		r.max_rss_kib.mean.trunc(),
+		r.max_rss_kib.stddev.trunc(),
+		r.max_rss_kib.min.trunc(),
+		r.max_rss_kib.max.trunc(),
 	);
 	Ok(())
 }

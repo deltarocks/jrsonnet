@@ -52,7 +52,7 @@ pub fn builtin_slice(
 	step: Option<Option<BoundedUsize<1, { i32::MAX as usize }>>>,
 ) -> Result<Val> {
 	indexable
-		.slice(index.flatten(), end.flatten(), step.flatten())
+		.slice32(index.flatten(), end.flatten(), step.flatten())
 		.map(Val::from)
 }
 
@@ -204,14 +204,14 @@ pub fn builtin_join(sep: IndexableVal, arr: ArrValue) -> Result<IndexableVal> {
 				let item = item?.clone();
 				if let Val::Arr(items) = item {
 					if !first {
-						out.reserve(joiner_items.len() as usize);
+						out.reserve(joiner_items.len());
 						// TODO: extend
 						for item in joiner_items.iter() {
 							out.push(item?);
 						}
 					}
 					first = false;
-					out.reserve(items.len() as usize);
+					out.reserve(items.len());
 					for item in items.iter() {
 						out.push(item?);
 					}
@@ -372,10 +372,10 @@ pub fn builtin_avg(arr: Vec<f64>, onEmpty: Option<Thunk<Val>>) -> Result<Val> {
 
 #[builtin]
 pub fn builtin_remove_at(arr: ArrValue, at: i32) -> Result<ArrValue> {
-	let newArrLeft = arr.clone().slice(None, Some(at), None);
-	let newArrRight = arr.slice(Some(at + 1), None, None);
+	let newArrLeft = arr.clone().slice32(None, Some(at), None);
+	let newArrRight = arr.slice32(Some(at + 1), None, None);
 
-	Ok(ArrValue::extended(newArrLeft, newArrRight).ok_or_else(|| error!("array is too large"))?)
+	ArrValue::extended(newArrLeft, newArrRight).ok_or_else(|| error!("array is too large"))
 }
 
 #[builtin]

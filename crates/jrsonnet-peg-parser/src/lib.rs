@@ -273,19 +273,15 @@ parser! {
 				Expr::ArrComp(Box::new(expr), specs)
 			}
 		pub rule number_expr(s: &ParserSettings) -> Expr
-			= n:number() {? if let Some(n) = NumValue::new(n) {
-				Ok(Expr::Num(n))
-			} else {
-				Err("!!!numbers are finite")
-			}}
+			= n:number() {? NumValue::new(n).map_or_else(|| Err("!!!numbers are finite"), |n| Ok(Expr::Num(n)))}
 
 		rule spanned<T: Acyclic>(x: rule<T>, s: &ParserSettings) -> Spanned<T>
-			= a:position!() n:x() b:position!() { Spanned::new(n, Span(s.source.clone(), a as u32, b as u32)) }
+			= a:position!() n:x() b:position!() { Spanned::new(n, Span(s.source.clone(), codeidx(a), codeidx(b))) }
 
 		pub rule var_expr(s: &ParserSettings) -> Expr
 			= n:spanned(<id()>, s) { Expr::Var(n) }
 		pub rule id_loc(s: &ParserSettings) -> Spanned<Expr>
-			= a:position!() n:id() b:position!() { Spanned::new(Expr::Str(n), Span(s.source.clone(), a as u32,b as u32)) }
+			= a:position!() n:id() b:position!() { Spanned::new(Expr::Str(n), Span(s.source.clone(), codeidx(a), codeidx(b))) }
 		pub rule if_then_else_expr(s: &ParserSettings) -> Expr
 			= cond:ifspec(s) _ keyword("then") _ cond_then:expr(s) cond_else:(_ keyword("else") _ e:expr(s) {e})? {Expr::IfElse(Box::new(IfElse{
 				cond,
@@ -421,6 +417,10 @@ parser! {
 	}
 }
 
+fn codeidx(i: usize) -> u32 {
+	u32::try_from(i).expect("code has 4g hard limit")
+}
+
 pub type ParseError = peg::error::ParseError<peg::str::LineCol>;
 pub fn parse(str: &str, settings: &ParserSettings) -> Result<Expr, ParseError> {
 	jsonnet_parser::jsonnet(str, settings)
@@ -428,7 +428,10 @@ pub fn parse(str: &str, settings: &ParserSettings) -> Result<Expr, ParseError> {
 /// Used for importstr values
 pub fn string_to_expr(str: IStr, settings: &ParserSettings) -> Spanned<Expr> {
 	let len = str.len();
-	Spanned::new(Expr::Str(str), Span(settings.source.clone(), 0, len as u32))
+	Spanned::new(
+		Expr::Str(str),
+		Span(settings.source.clone(), 0, codeidx(len)),
+	)
 }
 
 #[cfg(test)]

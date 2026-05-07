@@ -28,7 +28,10 @@ use jrsonnet_ir::{
 use rustc_hash::FxHashMap;
 use smallvec::SmallVec;
 
-use crate::error::{format_found, suggest_names};
+use crate::{
+	arr::arridx,
+	error::{format_found, suggest_names},
+};
 
 #[derive(Debug, Clone, Copy)]
 #[must_use]
@@ -658,7 +661,7 @@ struct PendingBody<'s> {
 	stack: &'s mut AnalysisStack,
 	bomb: DropBomb,
 }
-impl<'s> PendingBody<'s> {
+impl PendingBody<'_> {
 	/// After the body is processed, drop the frame's locals and emit any
 	/// "unused local" warnings.
 	fn finish(self) {
@@ -704,7 +707,7 @@ impl<'s> PendingBody<'s> {
 			.drain(closures.first_in_frame.idx()..)
 			.collect();
 		for (i, def) in drained.iter().enumerate().rev() {
-			let id = LocalId(closures.first_in_frame.0 + i as u32);
+			let id = LocalId(closures.first_in_frame.0 + arridx(i));
 			let stack_locals = stack
 				.local_by_name
 				.get_mut(&def.name)
@@ -819,7 +822,7 @@ impl Closures {
 			let (this_refs, rest) = refs.split_at(*refs_len);
 			refs = rest;
 			let start = next_id;
-			next_id += *dest_count as u32;
+			next_id += arridx(*dest_count);
 			Closure {
 				references: this_refs,
 				ids: start..next_id,
@@ -1043,7 +1046,7 @@ impl AnalysisStack {
 	}
 
 	fn next_local_id(&self) -> LocalId {
-		LocalId(self.local_defs.len() as u32)
+		LocalId(arridx(self.local_defs.len()))
 	}
 
 	fn report_error(&mut self, msg: impl Into<String>, span: Option<Span>) {
@@ -1565,7 +1568,7 @@ fn process_local_frame<R>(
 	let mut pending = alloc.finish();
 
 	let mut l_binds: Vec<LBind> = Vec::with_capacity(binds.len());
-	for (bind, destruct) in binds.iter().zip(destructs.into_iter()) {
+	for (bind, destruct) in binds.iter().zip(destructs) {
 		let mut value_taint = AnalysisResult::default();
 		let (value_shape, value) = pending
 			.stack
@@ -1608,7 +1611,7 @@ fn analyze_function(
 	let mut pending = alloc.finish();
 
 	let mut l_params: Vec<LParam> = Vec::with_capacity(params.exprs.len());
-	for (p, destruct) in params.exprs.iter().zip(param_destructs.into_iter()) {
+	for (p, destruct) in params.exprs.iter().zip(param_destructs) {
 		let mut value_taint = AnalysisResult::default();
 		let default = p.default.as_ref().map_or_else(
 			|| None,

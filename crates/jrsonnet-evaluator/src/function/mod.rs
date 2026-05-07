@@ -11,12 +11,10 @@ use self::{
 	prepared::{PreparedCall, parse_prepared_builtin_call},
 };
 use crate::{
-	PackedContextSupThis, Result, Thunk, Val,
+	Context, PackedContextSupThis, Result, Thunk, Val,
 	analyze::LFunction,
-	evaluate::{
-		destructure::{build_b_thunk, destruct},
-		ensure_sufficient_stack, evaluate, evaluate_trivial,
-	},
+	arr::arridx,
+	evaluate::{destructure::destruct, ensure_sufficient_stack, evaluate, evaluate_trivial},
 	function::builtin::BuiltinFunc,
 };
 
@@ -83,7 +81,7 @@ impl FuncDesc {
 					&self.func.params[param_idx].destruct,
 					fill,
 					thunk.clone(),
-					&ctx,
+					ctx,
 				);
 			}
 			for &(param_idx, arg_idx) in prepared.named() {
@@ -91,15 +89,22 @@ impl FuncDesc {
 					&self.func.params[param_idx].destruct,
 					fill,
 					named[arg_idx].clone(),
-					&ctx,
+					ctx,
 				);
 			}
 
 			for &param_idx in prepared.defaults() {
 				let param = &self.func.params[param_idx];
 				let (shape, expr) = param.default.as_ref().expect("default exists");
-				let thunk = build_b_thunk(&ctx, shape, expr.clone());
-				destruct(&param.destruct, fill, thunk, &ctx);
+				let expr = expr.clone();
+				let env = Context::enter_using(ctx, shape);
+
+				destruct(
+					&param.destruct,
+					fill,
+					Thunk!(move || evaluate(env, &expr)),
+					ctx,
+				);
 			}
 		});
 
@@ -152,8 +157,8 @@ impl FuncVal {
 		}
 	}
 	/// Amount of non-default required arguments
-	pub fn params_len(&self) -> u32 {
-		self.params().iter().filter(|p| !p.has_default()).count() as u32
+	pub fn params_len32(&self) -> u32 {
+		arridx(self.params().iter().filter(|p| !p.has_default()).count())
 	}
 	/// Function name, as defined in code.
 	pub fn name(&self) -> IStr {

@@ -97,7 +97,7 @@ impl CompCollector for ObjCompCollectorStatic<'_> {
 		let value_ctx = inner_ctx
 			.pack_captures_sup_this(self.frame_shape)
 			.enter(|fill, ctx| {
-				fill_letrec_binds(fill, &ctx, self.locals);
+				fill_letrec_binds(fill, ctx, self.locals);
 			});
 		evaluate_field_member_static(self.builder, inner_ctx, value_ctx, self.field)
 	}
@@ -336,6 +336,7 @@ fn evaluate_compspecs_eager(
 	Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 fn evaluate_compspecs(
 	ctx: Context,
 	specs: &[LCompSpec],
@@ -381,7 +382,7 @@ fn evaluate_compspecs(
 			for (i, item) in arr.iter().enumerate() {
 				let item = item?;
 				let inner_ctx = ctx.pack_captures_sup_this(frame_shape).enter(|fill, ctx| {
-					destruct(dst, fill, Thunk::evaluated(item), &ctx);
+					destruct(dst, fill, Thunk::evaluated(item), ctx);
 				});
 				evaluate_compspecs(
 					inner_ctx,

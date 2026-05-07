@@ -66,14 +66,12 @@ unsafe fn unparse_path(input: &Path) -> CString {
 	#[cfg(target_family = "unix")]
 	{
 		use std::os::unix::ffi::OsStrExt;
-		let str = CString::new(input.as_os_str().as_bytes()).expect("input has zero byte in it");
-		str
+		CString::new(input.as_os_str().as_bytes()).expect("input has zero byte in it")
 	}
 	#[cfg(not(target_family = "unix"))]
 	{
 		let str = input.as_os_str().to_str().expect("bad utf-8");
-		let cstr = CString::new(str).expect("input has NUL inside");
-		cstr
+		CString::new(str).expect("input has NUL inside")
 	}
 }
 

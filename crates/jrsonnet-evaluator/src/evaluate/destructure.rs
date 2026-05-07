@@ -5,7 +5,7 @@ use jrsonnet_gcmodule::Trace;
 use crate::{
 	Context, LocalsFrame, PackedContext, Result, SupThis, Thunk, Unbound, Val,
 	analyze::{
-		ClosureShape, LBind, LDestruct, LDestructField, LDestructRest, LExpr, LLocalExpr, LocalSlot,
+		ClosureShape, LBind, LDestruct, LDestructField, LDestructRest, LLocalExpr, LocalSlot,
 	},
 	bail,
 	evaluate::evaluate,
@@ -19,7 +19,7 @@ fn destruct_array(
 
 	fill: &LocalsFrame,
 	value: Thunk<Val>,
-	a_ctx: &Context,
+	ctx: &Context,
 ) {
 	let min_len = start.len() + end.len();
 	let has_rest = rest.is_some();
@@ -29,14 +29,14 @@ fn destruct_array(
 			bail!("expected array");
 		};
 		if !has_rest {
-			if arr.len() as usize != min_len {
-				bail!("expected {} elements, got {}", min_len, arr.len())
+			if arr.len() != min_len {
+				bail!("expected {} elements, got {}", min_len, arr.len32())
 			}
-		} else if (arr.len() as usize) < min_len {
+		} else if arr.len() < min_len {
 			bail!(
 				"expected at least {} elements, but array was only {}",
 				min_len,
-				arr.len()
+				arr.len32()
 			)
 		}
 		Ok(arr)
@@ -47,13 +47,13 @@ fn destruct_array(
 		destruct(
 			d,
 			fill,
-			Thunk!(move || Ok(full.evaluate()?.get(i as u32)?.expect("length is checked"))),
-			a_ctx,
+			Thunk!(move || Ok(full.evaluate()?.get(i)?.expect("length is checked"))),
+			ctx,
 		);
 	}
 
-	let start_len = start.len() as u32;
-	let end_len = end.len() as u32;
+	let start_len = start.len();
+	let end_len = end.len();
 
 	if let Some(LDestructRest::Keep(slot)) = rest {
 		let full = full.clone();
@@ -62,11 +62,7 @@ fn destruct_array(
 			Thunk!(move || {
 				let full = full.evaluate()?;
 				let to = full.len() - end_len;
-				Ok(Val::Arr(full.slice(
-					Some(start_len as i32),
-					Some(to as i32),
-					None,
-				)))
+				Ok(Val::Arr(full.slice(start_len..to)))
 			}),
 		);
 	}
@@ -79,10 +75,10 @@ fn destruct_array(
 			Thunk!(move || {
 				let full = full.evaluate()?;
 				Ok(full
-					.get(full.len() - end_len + i as u32)?
+					.get(full.len() - end_len + i)?
 					.expect("length is checked"))
 			}),
-			a_ctx,
+			ctx,
 		);
 	}
 }
@@ -94,7 +90,7 @@ fn destruct_object(
 
 	fill: &LocalsFrame,
 	value: Thunk<Val>,
-	a_ctx: &Context,
+	ctx: &Context,
 ) {
 	use jrsonnet_interner::IStr;
 	use rustc_hash::FxHashSet;
@@ -118,7 +114,7 @@ fn destruct_object(
 			}
 		}
 		if !has_rest {
-			let len = obj.len();
+			let len = obj.len32();
 			if len as usize > field_names.len() {
 				bail!("too many fields, and rest not found");
 			}
@@ -142,10 +138,11 @@ fn destruct_object(
 
 	for field in fields {
 		let field_name = field.name.clone();
-		let default_thunk: Option<Thunk<Val>> = field
-			.default
-			.as_ref()
-			.map(|(shape, expr)| build_b_thunk(a_ctx, shape, expr.clone()));
+		let default_thunk: Option<Thunk<Val>> = field.default.as_ref().map(|(shape, expr)| {
+			let expr = expr.clone();
+			let env = Context::enter_using(ctx, shape);
+			Thunk!(move || evaluate(env, &expr))
+		});
 
 		let field_full = full.clone();
 		let value_thunk = Thunk!(move || {
@@ -157,7 +154,7 @@ fn destruct_object(
 		});
 
 		if let Some(into) = &field.into {
-			destruct(into, fill, value_thunk, a_ctx);
+			destruct(into, fill, value_thunk, ctx);
 		} else {
 			unreachable!("analyzer lowers object-destruct shorthands into `into`");
 		}
@@ -179,19 +176,16 @@ pub fn destruct(d: &LDestruct, fill: &LocalsFrame, value: Thunk<Val>, a_ctx: &Co
 	}
 }
 
-pub fn build_b_thunk(a_ctx: &Context, shape: &ClosureShape, expr: Rc<LExpr>) -> Thunk<Val> {
-	let env = Context::enter_using(a_ctx, shape);
-	Thunk!(move || evaluate(env, &expr))
-}
-pub fn build_b_thunk_uno(a_ctx: &Context, shape: Rc<(ClosureShape, LExpr)>) -> Thunk<Val> {
-	let env = Context::enter_using(a_ctx, &shape.0);
-	Thunk!(move || evaluate(env, &shape.1))
-}
-
 pub fn fill_letrec_binds(fill: &LocalsFrame, ctx: &Context, binds: &[LBind]) {
 	for bind in binds {
-		let value_thunk = build_b_thunk(ctx, &bind.value_shape, bind.value.clone());
-		destruct(&bind.destruct, fill, value_thunk, ctx);
+		let expr = bind.value.clone();
+		let env = Context::enter_using(ctx, &bind.value_shape);
+		destruct(
+			&bind.destruct,
+			fill,
+			Thunk!(move || evaluate(env, &expr)),
+			ctx,
+		);
 	}
 }
 

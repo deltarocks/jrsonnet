@@ -113,6 +113,7 @@ pub fn generate_ungrammar() -> Result<()> {
 	Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 fn generate_syntax_kinds(kinds: &KindsSrc, grammar: &AstSrc, lexer: bool) -> Result<String> {
 	let t_macros = kinds.tokens().filter_map(TokenKind::expand_t_macros);
 	let token_kinds = kinds.tokens().map(|t| t.expand_kind(lexer));

@@ -103,10 +103,8 @@ impl Display for ComplexValType {
 			Self::BoundedNumber(a, b) => write!(
 				f,
 				"BoundedNumber<{}, {}>",
-				a.map(|e| e.to_string())
-					.unwrap_or_else(|| "open".to_owned()),
-				b.map(|e| e.to_string())
-					.unwrap_or_else(|| "open".to_owned())
+				a.map_or_else(|| "open".to_owned(), |e| e.to_string()),
+				b.map_or_else(|| "open".to_owned(), |e| e.to_string())
 			)?,
 			Self::ArrayRef(a) => print_array(a, f)?,
 			Self::Array(a) => print_array(a, f)?,

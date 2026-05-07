@@ -104,6 +104,7 @@ fn do_install(
 	}
 }
 
+#[allow(clippy::too_many_lines)]
 fn main() {
 	tracing_subscriber::fmt().init();
 

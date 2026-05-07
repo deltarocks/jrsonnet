@@ -65,6 +65,11 @@ fn js_error_message(e: &JsValue) -> String {
 }
 
 fn unwrap_val_ref(value: &JsValue) -> Result<<WasmVal as RefFromWasmAbi>::Anchor, JsValue> {
+	#[allow(
+		clippy::cast_sign_loss,
+		clippy::cast_possible_truncation,
+		reason = "defined to be u32"
+	)]
 	let ptr = get(value, &JsValue::from_str("__wbg_ptr"))
 		.ok()
 		.and_then(|v| v.as_f64())
@@ -371,14 +376,14 @@ pub struct WasmArrValue {
 impl WasmArrValue {
 	#[wasm_bindgen(getter)]
 	pub fn length(&self) -> u32 {
-		self.arr.len()
+		self.arr.len32()
 	}
 	pub fn at(&self, index: u32) -> Result<Option<WasmVal>, JsValue> {
 		let result = self.state.as_ref().map_or_else(
-			|| self.arr.get(index),
+			|| self.arr.get32(index),
 			|state| {
 				let _guard = state.try_enter();
-				self.arr.get(index)
+				self.arr.get32(index)
 			},
 		);
 		result

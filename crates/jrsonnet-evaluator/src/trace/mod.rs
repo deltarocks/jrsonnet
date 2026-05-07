@@ -197,7 +197,7 @@ impl TraceFormat for CompactFormat {
 					w = align
 				)?;
 			} else {
-				write!(out, "{:<p$}{}", "", el.desc, p = self.padding,)?;
+				write!(out, "{:<p$}{}", "", el.desc, p = self.padding)?;
 			}
 		}
 		Ok(())
@@ -258,6 +258,7 @@ pub struct HiDocFormat {
 }
 #[cfg(feature = "explaining-traces")]
 impl TraceFormat for HiDocFormat {
+	#[allow(clippy::too_many_lines)]
 	fn write_trace(&self, out: &mut dyn fmt::Write, error: &Error) -> Result<(), fmt::Error> {
 		struct ResetData {
 			loc: Span,

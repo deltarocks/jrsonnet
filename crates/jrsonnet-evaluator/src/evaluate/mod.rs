@@ -7,7 +7,7 @@ use jrsonnet_types::ValType;
 
 use self::{
 	compspec::{evaluate_arr_comp, evaluate_obj_comp},
-	destructure::{build_b_thunk_uno, evaluate_local_expr, evaluate_locals_unbound},
+	destructure::{evaluate_local_expr, evaluate_locals_unbound},
 	operator::evaluate_binary_op_special,
 };
 use crate::{
@@ -115,6 +115,7 @@ mod names {
 	}
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn evaluate(ctx: Context, expr: &LExpr) -> Result<Val> {
 	Ok(match expr {
 		LExpr::Null => Val::Null,
@@ -218,7 +219,7 @@ pub fn evaluate(ctx: Context, expr: &LExpr) -> Result<Val> {
 					BoundedUsize::from_untyped(v).description("slice step value")
 				})
 				.transpose()?;
-			Val::from(indexable.slice(start, end, step)?)
+			Val::from(indexable.slice32(start, end, step)?)
 		}
 		LExpr::Super => Val::Obj(ctx.try_sup_this()?.standalone_super().ok_or(NoSuperFound)?),
 		LExpr::Import {
@@ -320,6 +321,7 @@ fn evaluate_apply(
 	)
 }
 
+#[allow(clippy::too_many_lines)]
 fn evaluate_index(ctx: Context, indexable: &LExpr, parts: &[LIndexPart]) -> Result<Val> {
 	let mut parts = parts.iter();
 	let mut indexable = if matches!(indexable, LExpr::Super) {
@@ -394,17 +396,17 @@ fn evaluate_index(ctx: Context, indexable: &LExpr, parts: &[LIndexPart]) -> Resu
 				if n.fract() > f64::EPSILON {
 					bail!(FractionalIndex)
 				}
-				let len = arr.len();
+				let len = arr.len32();
 				if n < 0.0 || n > f64::from(len) {
 					bail!(ArrayBoundsError(n, len));
 				}
 				#[expect(
 					clippy::cast_possible_truncation,
 					clippy::cast_sign_loss,
-					reason = "n is checked positive"
+					reason = "n is checked range"
 				)]
 				let i = n as u32;
-				arr.get(i)
+				arr.get32(i)
 					.with_description_src(loc, || format!("element <{i}> access"))?
 					.ok_or_else(|| ArrayBoundsError(n, len))?
 			}
@@ -507,12 +509,13 @@ pub fn evaluate_field_member_static(
 		return Ok(());
 	};
 
-	let thunk = build_b_thunk_uno(&value_ctx, value.clone());
+	let env = Context::enter_using(&value_ctx, &value.0);
+	let value = value.clone();
 	builder
 		.field(name)
 		.with_add(*plus)
 		.with_visibility(*visibility)
-		.try_thunk(thunk)?;
+		.try_thunk(Thunk!(move || evaluate(env, &value.1)))?;
 	Ok(())
 }
 

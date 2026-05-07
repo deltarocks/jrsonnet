@@ -182,7 +182,7 @@ impl Serialize for Val {
 			#[cfg(feature = "exp-bigint")]
 			Self::BigInt(b) => b.serialize(serializer),
 			Self::Arr(arr) => {
-				let mut seq = serializer.serialize_seq(Some(arr.len() as usize))?;
+				let mut seq = serializer.serialize_seq(Some(arr.len()))?;
 				for (i, element) in arr.iter().enumerate() {
 					let mut serde_error = None;
 					in_description_frame(
@@ -203,7 +203,7 @@ impl Serialize for Val {
 				seq.end()
 			}
 			Self::Obj(obj) => {
-				let mut map = serializer.serialize_map(Some(obj.len() as usize))?;
+				let mut map = serializer.serialize_map(Some(obj.len32() as usize))?;
 				for (field, value) in obj.iter(
 					#[cfg(feature = "exp-preserve-order")]
 					true,

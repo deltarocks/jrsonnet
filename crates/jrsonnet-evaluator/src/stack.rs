@@ -11,7 +11,7 @@ struct StackLimit {
 struct NightlyLocalKey<T>(pub T);
 #[cfg(nightly)]
 impl<T> NightlyLocalKey<T> {
-	#[inline(always)]
+	#[inline]
 	fn with<U>(&self, v: impl FnOnce(&T) -> U) -> U {
 		v(&self.0)
 	}

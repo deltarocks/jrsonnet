@@ -66,6 +66,10 @@ impl ZipFileAccessor {
 		Ok(Some(out))
 	}
 	#[allow(clippy::significant_drop_tightening, reason = "false-positive")]
+	#[allow(
+		clippy::iter_not_returning_iterator,
+		reason = "idk for a better name, it is still inner iteration"
+	)]
 	pub fn iter<E>(
 		&self,
 		subdir: &SubDir,

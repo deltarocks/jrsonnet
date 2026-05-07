@@ -2,6 +2,7 @@ use std::{
 	any::Any,
 	fmt::{self},
 	num::NonZeroU32,
+	ops::{Bound, RangeBounds},
 	rc::Rc,
 };
 
@@ -104,20 +105,37 @@ impl ArrValue {
 		Self::new(RangeArray::new_inclusive(a, b))
 	}
 
+	#[inline]
 	#[must_use]
-	pub fn slice(self, index: Option<i32>, end: Option<i32>, step: Option<NonZeroU32>) -> Self {
+	pub fn slice(self, range: impl RangeBounds<usize>) -> Self {
+		fn map_bound(start: bool, bound: Bound<&usize>) -> Option<i32> {
+			match bound {
+				Bound::Included(&v) => Some(i32::try_from(v).unwrap_or(i32::MAX)),
+				Bound::Excluded(&v) => Some(
+					i32::try_from(v)
+						.unwrap_or(i32::MAX)
+						.saturating_add(if start { 1 } else { -1 }),
+				),
+				Bound::Unbounded => None,
+			}
+		}
+		self.slice32(
+			map_bound(true, range.start_bound()),
+			map_bound(false, range.end_bound()),
+			None,
+		)
+	}
+
+	#[must_use]
+	pub fn slice32(self, index: Option<i32>, end: Option<i32>, step: Option<NonZeroU32>) -> Self {
 		let get_idx = |pos: Option<i32>, len: u32, default| match pos {
-			#[expect(
-				clippy::cast_sign_loss,
-				reason = "abs value is used, len is limited to u31"
-			)]
 			Some(v) if v < 0 => len.saturating_add_signed(v),
 			#[expect(clippy::cast_sign_loss, reason = "abs value is used")]
 			Some(v) => (v as u32).min(len),
 			None => default,
 		};
-		let index = get_idx(index, self.len(), 0);
-		let end = get_idx(end, self.len(), self.len());
+		let index = get_idx(index, self.len32(), 0);
+		let end = get_idx(end, self.len32(), self.len32());
 		let step = step.unwrap_or_else(|| NonZeroU32::new(1).expect("1 != 0"));
 
 		if index >= end {
@@ -126,24 +144,29 @@ impl ArrValue {
 
 		Self::new(SliceArray {
 			inner: self,
-			#[expect(clippy::cast_possible_truncation, reason = "len is limited to u31")]
-			from: index as u32,
-			#[expect(clippy::cast_possible_truncation, reason = "len is limited to u31")]
-			to: end as u32,
+			from: index,
+			to: end,
 			step: step.get(),
 		})
 	}
 
 	/// Array length.
-	pub fn len(&self) -> u32 {
-		self.0.len()
+	#[inline]
+	pub fn len32(&self) -> u32 {
+		self.0.len32()
+	}
+
+	pub fn len(&self) -> usize {
+		self.len32() as usize
 	}
 
 	/// Is array contains no elements?
+	#[inline]
 	pub fn is_empty(&self) -> bool {
 		self.0.is_empty()
 	}
 
+	#[inline]
 	pub fn is_cheap(&self) -> bool {
 		self.0.is_cheap()
 	}
@@ -151,24 +174,37 @@ impl ArrValue {
 	/// Get array element by index, evaluating it, if it is lazy.
 	///
 	/// Returns `None` on out-of-bounds condition.
-	pub fn get(&self, index: u32) -> Result<Option<Val>> {
-		self.0.get(index)
+	#[inline]
+	pub fn get32(&self, index: u32) -> Result<Option<Val>> {
+		self.0.get32(index)
+	}
+
+	pub fn get(&self, index: usize) -> Result<Option<Val>> {
+		let Ok(i) = u32::try_from(index) else {
+			return Ok(None);
+		};
+		self.get32(i)
 	}
 
 	/// Get array element by index, without evaluation.
 	///
 	/// Returns `None` on out-of-bounds condition.
-	pub fn get_lazy(&self, index: u32) -> Option<Thunk<Val>> {
-		self.0.get_lazy(index)
+	#[inline]
+	pub fn get_lazy32(&self, index: u32) -> Option<Thunk<Val>> {
+		self.0.get_lazy32(index)
+	}
+
+	pub fn get_lazy(&self, index: usize) -> Option<Thunk<Val>> {
+		u32::try_from(index).ok().and_then(|i| self.get_lazy32(i))
 	}
 
 	pub fn iter(&self) -> impl ArrayLikeIter<Result<Val>> + '_ {
-		(0..self.len()).map(|i| self.get(i).transpose().expect("length checked"))
+		(0..self.len32()).map(|i| self.get32(i).transpose().expect("length checked"))
 	}
 
 	/// Iterate over elements, returning lazy values.
 	pub fn iter_lazy(&self) -> impl ArrayLikeIter<Thunk<Val>> + '_ {
-		(0..self.len()).map(|i| self.get_lazy(i).expect("length checked"))
+		(0..self.len32()).map(|i| self.get_lazy32(i).expect("length checked"))
 	}
 
 	/// Return a reversed view on current array.
@@ -199,5 +235,20 @@ where
 {
 	fn from_iter<T: IntoIterator<Item = I>>(iter: T) -> Self {
 		Self::new(iter.into_iter().collect::<Vec<_>>())
+	}
+}
+
+/// Checks that the usize does not exceed 4g with debug assertions enabled
+/// Should only be used on values that can't reasonably exceed this value
+#[inline]
+pub(crate) fn arridx(i: usize) -> u32 {
+	#[allow(
+		clippy::cast_possible_truncation,
+		reason = "array indexes never exceed 4g"
+	)]
+	if cfg!(debug_assertions) {
+		u32::try_from(i).expect("4g hard limit")
+	} else {
+		i as u32
 	}
 }

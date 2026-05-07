@@ -69,7 +69,7 @@ fn sort_identity(mut values: Vec<Val>) -> Result<Vec<Val>> {
 
 fn sort_keyf(values: ArrValue, keyf: KeyF) -> Result<Vec<Thunk<Val>>> {
 	// Slow path, user provided key getter
-	let mut vk = Vec::with_capacity(values.len() as usize);
+	let mut vk = Vec::with_capacity(values.len());
 	for value in values.iter_lazy() {
 		vk.push((value.clone(), keyf.eval(value)?));
 	}
@@ -137,7 +137,7 @@ fn uniq_identity(arr: Vec<Val>) -> Result<Vec<Val>> {
 
 fn uniq_keyf(arr: ArrValue, keyf: KeyF) -> Result<Vec<Thunk<Val>>> {
 	let mut out = Vec::new();
-	let last_value = arr.get_lazy(0).unwrap();
+	let last_value = arr.get_lazy32(0).unwrap();
 	let mut last_key = keyf.eval(last_value.clone())?;
 	out.push(last_value);
 

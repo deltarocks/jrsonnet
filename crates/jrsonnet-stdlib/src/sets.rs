@@ -8,13 +8,13 @@ use crate::keyf::KeyF;
 #[allow(non_snake_case)]
 pub fn builtin_set_member(x: Thunk<Val>, arr: ArrValue, #[default] keyF: KeyF) -> Result<bool> {
 	let mut low = 0;
-	let mut high = arr.len();
+	let mut high = arr.len32();
 
 	let x = keyF.eval(x)?;
 
 	while low < high {
 		let middle = u32::midpoint(high, low);
-		let comp = keyF.eval(arr.get_lazy(middle).expect("in bounds"))?;
+		let comp = keyF.eval(arr.get_lazy32(middle).expect("in bounds"))?;
 		match Val::try_cmp(&comp, &x)? {
 			Ordering::Less => low = middle + 1,
 			Ordering::Equal => return Ok(true),

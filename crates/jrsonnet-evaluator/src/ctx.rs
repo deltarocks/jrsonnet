@@ -122,7 +122,7 @@ impl PackedContext {
 	pub fn enter(self, sup_this: SupThis, build: impl FnOnce(&LocalsFrame, &Context)) -> Context {
 		let locals = LocalsFrame::new_once(self.n_locals);
 		let val = Context(Cc::new(ContextInternal {
-			captures: self.captures.clone(),
+			captures: self.captures,
 			locals,
 			sup_this: Some(sup_this),
 		}));

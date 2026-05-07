@@ -226,12 +226,12 @@ impl Parser {
 		self.nth_at(0, kind)
 	}
 	pub fn nth_at(&self, n: usize, kind: SyntaxKind) -> bool {
-		if n == 0 {
-			if let ExpectedSyntax::Unnamed(kinds) = self.expected_syntax_tracking_state.get() {
-				let kinds = kinds.with(kind);
-				self.expected_syntax_tracking_state
-					.set(ExpectedSyntax::Unnamed(kinds));
-			}
+		if n == 0
+			&& let ExpectedSyntax::Unnamed(kinds) = self.expected_syntax_tracking_state.get()
+		{
+			let kinds = kinds.with(kind);
+			self.expected_syntax_tracking_state
+				.set(ExpectedSyntax::Unnamed(kinds));
 		}
 		self.nth(n) == kind
 	}

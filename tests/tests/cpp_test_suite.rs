@@ -60,7 +60,7 @@ fn run(file: &Path, root: &Path) -> String {
 	let _entered = s.enter();
 
 	let trace_format = CompactFormat {
-		resolver: resolver.clone(),
+		resolver,
 		max_trace: 20,
 		padding: 4,
 	};

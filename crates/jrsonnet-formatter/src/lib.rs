@@ -477,8 +477,7 @@ impl Printable for ObjBody {
 						&mut out,
 					);
 
-					let mut compspecs = compspecs.into_iter().peekable();
-					while let Some(mem) = compspecs.next() {
+					for mem in compspecs {
 						if mem.should_start_with_newline {
 							p!(out, nl);
 						}
