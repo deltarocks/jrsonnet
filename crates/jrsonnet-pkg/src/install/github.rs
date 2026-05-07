@@ -14,6 +14,7 @@ use tracing::{debug, info, warn};
 use super::{
 	Error, LocalExtraction, ResolveResult, Result, VendorSource,
 	accessor::{AccessorEntry, ZipFileAccessor},
+	make_symlink,
 };
 use crate::{
 	install::{PKG_USER_AGENT, cache_dir},
@@ -84,24 +85,6 @@ fn open_cached_zip(zip_path: &Path) -> Result<ZipFileAccessor> {
 	Ok(ZipFileAccessor::new_prefixed(
 		File::open(zip_path).map_err(|e| Error::Io(zip_path.to_owned(), e))?,
 	)?)
-}
-
-#[cfg(unix)]
-fn make_symlink(target: &str, link: &Path) -> std::io::Result<()> {
-	std::os::unix::fs::symlink(target, link)
-}
-
-#[cfg(windows)]
-fn make_symlink(target: &str, link: &Path) -> std::io::Result<()> {
-	std::os::windows::fs::symlink_file(target, link)
-}
-
-#[cfg(not(any(unix, windows)))]
-fn make_symlink(_target: &str, _link: &Path) -> std::io::Result<()> {
-	Err(std::io::Error::new(
-		std::io::ErrorKind::Unsupported,
-		"symlinks are not supported on this platform",
-	))
 }
 
 fn extract_subdir(archive: &ZipFileAccessor, subdir: &SubDir, dest: &Path) -> Result<()> {

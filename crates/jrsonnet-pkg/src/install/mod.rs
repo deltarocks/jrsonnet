@@ -120,6 +120,24 @@ pub fn resolve(manifest: &JsonnetFile, lock: Option<&JsonnetFile>) -> Result<Ins
 	Ok(plan)
 }
 
+#[cfg(unix)]
+fn make_symlink(target: &str, link: &Path) -> std::io::Result<()> {
+	std::os::unix::fs::symlink(target, link)
+}
+
+#[cfg(windows)]
+fn make_symlink(target: &str, link: &Path) -> std::io::Result<()> {
+	std::os::windows::fs::symlink_dir(target, link)
+}
+
+#[cfg(not(any(unix, windows)))]
+fn make_symlink(_target: &str, _link: &Path) -> std::io::Result<()> {
+	Err(std::io::Error::new(
+		std::io::ErrorKind::Unsupported,
+		"symlinks are not supported on this platform",
+	))
+}
+
 fn is_up_to_date(dest: &Path, version: &str) -> bool {
 	fs::read_to_string(dest.join(VERSION_FILE)).is_ok_and(|v| v.trim() == version)
 }
@@ -182,8 +200,7 @@ pub fn execute(plan: &InstallPlan, vendor_dir: &Path, dry_run: bool) -> Result<(
 					fs::remove_file(&dest).map_err(|e| Error::Io(dest.clone(), e))?;
 				}
 				info!("symlink {path} -> {target}");
-				std::os::unix::fs::symlink(target.as_std_path(), &dest)
-					.map_err(|e| Error::Io(dest.clone(), e))?;
+				make_symlink(target.as_str(), &dest).map_err(|e| Error::Io(dest.clone(), e))?;
 			}
 		}
 	}

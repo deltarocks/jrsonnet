@@ -20,11 +20,21 @@ tracing.workspace = true
 peg.workspace = true
 
 # Gix for git repos, reqwest + zip for github
-gix.workspace = true
-reqwest.workspace = true
 zip.workspace = true
 url.workspace = true
 camino.workspace = true
 
 # Global cache dir
 directories.workspace = true
+
+[target.'cfg(not(any(all(target_os = "windows", target_env = "gnu"), target_vendor = "apple")))'.dependencies]
+gix = { workspace = true, features = [
+  "blocking-http-transport-reqwest-rust-tls",
+] }
+reqwest = { workspace = true, features = ["rustls"] }
+
+[target.'cfg(any(all(target_os = "windows", target_env = "gnu"), target_vendor = "apple"))'.dependencies]
+gix = { workspace = true, features = [
+  "blocking-http-transport-reqwest-native-tls",
+] }
+reqwest = { workspace = true, features = ["native-tls"] }

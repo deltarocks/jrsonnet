@@ -125,16 +125,12 @@ getrandom = "0.3.4"
 # Bundler
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
-reqwest = { version = "0.13", features = [
+reqwest = { version = "0.13", default-features = false, features = [
   "blocking",
-  "rustls",
-], default-features = false }
+] }
 zip = { version = "8", default-features = false, features = ["deflate"] }
 directories = "6.0.0"
-gix = { version = "0.83.0", features = [
-  "blocking-network-client",
-  "blocking-http-transport-reqwest-rust-tls",
-] }
+gix = { version = "0.83.0", features = ["blocking-network-client"] }
 camino = { version = "1.2.2", features = ["serde1"] }
 
 [workspace.lints.rust]
