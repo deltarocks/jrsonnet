@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "dependencies": [
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/prometheus-operator/kube-prometheus"
+        }
+      }
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/oracle/graal"
+        }
+      }
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/grafana/loki",
+          "subdir": "production/ksonnet/loki"
+        }
+      }
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/grafana/mimir",
+          "subdir": "operations/mimir"
+        }
+      }
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/grafana/tempo",
+          "subdir": "operations/jsonnet/microservices"
+        }
+      }
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://gitlab.com/gitlab-com/runbooks"
+        }
+      },
+      "version": "c4082c94065b1b6a521eed59ed624478131cd9c0"
+    }
+  ],
+  "legacyImports": true
+}

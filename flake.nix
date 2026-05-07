@@ -218,6 +218,9 @@
         in
         {
           legacyPackages = {
+            fetchJrq = pkgs.callPackage ./nix/fetch-jrq.nix {
+              inherit (self'.packages) jrsonnet;
+            };
             release = optionalAttrs pkgs.stdenv.hostPlatform.isLinux (
               {
                 jrsonnet-linux-glibc = self'.packages.jrsonnet;
@@ -254,6 +257,7 @@
             );
             benchmarks = optionalAttrs (system == "x86_64-linux" || system == "aarch64-linux") {
               default = pkgs.callPackage ./nix/benchmarks.nix {
+                inherit (config.legacyPackages) fetchJrq;
                 inherit (config.legacyPackages.jsonnetImpls)
                   go-jsonnet
                   sjsonnet
@@ -268,6 +272,7 @@
                 ];
               };
               quick = pkgs.callPackage ./nix/benchmarks.nix {
+                inherit (config.legacyPackages) fetchJrq;
                 inherit (config.legacyPackages.jsonnetImpls)
                   go-jsonnet
                   sjsonnet
@@ -283,6 +288,7 @@
                 ];
               };
               against-release = pkgs.callPackage ./nix/benchmarks.nix {
+                inherit (config.legacyPackages) fetchJrq;
                 inherit (config.legacyPackages.jsonnetImpls)
                   go-jsonnet
                   sjsonnet
@@ -305,6 +311,7 @@
                 ];
               };
               quick-against-release = pkgs.callPackage ./nix/benchmarks.nix {
+                inherit (config.legacyPackages) fetchJrq;
                 inherit (config.legacyPackages.jsonnetImpls)
                   go-jsonnet
                   sjsonnet
