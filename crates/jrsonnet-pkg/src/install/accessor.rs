@@ -113,7 +113,9 @@ impl ZipFileAccessor {
 						continue;
 					};
 					let Ok(target) = LocalSource::from_str(target_str) else {
-						warn!("symlink target {target_str:?} at {name:?} escapes sandbox; skipping");
+						warn!(
+							"symlink target {target_str:?} at {name:?} escapes sandbox; skipping"
+						);
 						continue;
 					};
 					AccessorEntry::Symlink(target)

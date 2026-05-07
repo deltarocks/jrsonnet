@@ -118,26 +118,22 @@ stdenv.mkDerivation {
               )
             } \
             ${
-              optionalString (skipRustAlternative == "")
-                "\"rsjsonnet $path${jpathArgs}\" -n \"Rust (alternative, rsjsonnet)\""
+              optionalString (
+                skipRustAlternative == ""
+              ) "\"rsjsonnet $path${jpathArgs}\" -n \"Rust (alternative, rsjsonnet)\""
             } \
+            ${optionalString (skipGo == "") "\"go-jsonnet $path${jpathArgs}\" -n \"Go\""} \
             ${
-              optionalString (skipGo == "")
-                "\"go-jsonnet $path${jpathArgs}\" -n \"Go\""
-            } \
-            ${
-              optionalString (skipScala == "")
-                "\"sjsonnet-native $path${jpathArgs}\" -n \"Scala (native)\""
+              optionalString (skipScala == "") "\"sjsonnet-native $path${jpathArgs}\" -n \"Scala (native)\""
             } \
             ${
               # My aarch64-linux machine can't run graalvm image:
               # The current machine does not support all of the following CPU features that are required by the image: [FP, ASIMD, CRC32, LSE].
-              optionalString (skipScala == "" && stdenv.hostPlatform.system != "aarch64-linux")
-                "\"sjsonnet-graalvm $path${jpathArgs}\" -n \"Scala (GraalVM)\""
+              optionalString (
+                skipScala == "" && stdenv.hostPlatform.system != "aarch64-linux"
+              ) "\"sjsonnet-graalvm $path${jpathArgs}\" -n \"Scala (GraalVM)\""
             } \
-            ${optionalString (skipCpp == "")
-              "\"jsonnet $path${jpathArgs}\" -n \"C++\""
-            }
+            ${optionalString (skipCpp == "") "\"jsonnet $path${jpathArgs}\" -n \"C++\""}
           cat result.adoc >> $out
         '';
     in
