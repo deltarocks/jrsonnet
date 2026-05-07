@@ -9,7 +9,7 @@ use std::{
 use tracing::warn;
 use zip::{ZipArchive, result::ZipError};
 
-use crate::jsonnet_bundler::{SubDir, SubDirEscapeError};
+use crate::jsonnet_bundler::{LocalSource, SubDir, SubDirEscapeError};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -105,13 +105,25 @@ impl ZipFileAccessor {
 				name.clone(),
 				if entry.is_dir() {
 					AccessorEntry::Dir
+				} else if entry.is_symlink() {
+					let mut target = Vec::new();
+					entry.read_to_end(&mut target).map_err(Error::ZipIo)?;
+					let Ok(target_str) = std::str::from_utf8(&target) else {
+						warn!("non-utf8 symlink target in zip entry: {name:?}");
+						continue;
+					};
+					let Ok(target) = LocalSource::from_str(target_str) else {
+						warn!("symlink target {target_str:?} at {name:?} escapes sandbox; skipping");
+						continue;
+					};
+					AccessorEntry::Symlink(target)
 				} else if entry.is_file() {
 					let mut data = Vec::new();
 					entry.read_to_end(&mut data).map_err(Error::ZipIo)?;
 					AccessorEntry::File(data)
 				} else {
-					// TODO: Symlinks?
-					panic!("unknown accessor entry type: {name:?}")
+					warn!("unknown accessor entry type: {name:?}");
+					continue;
 				},
 			)?;
 		}
@@ -133,4 +145,5 @@ impl ZipFileAccessor {
 pub enum AccessorEntry {
 	Dir,
 	File(Vec<u8>),
+	Symlink(LocalSource),
 }

@@ -7,8 +7,9 @@ use std::{
 	path::{Path, PathBuf},
 };
 
+use camino::Utf8PathBuf;
 use reqwest::{blocking::Response, header};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use super::{
 	Error, LocalExtraction, ResolveResult, Result, VendorSource,
@@ -85,9 +86,27 @@ fn open_cached_zip(zip_path: &Path) -> Result<ZipFileAccessor> {
 	)?)
 }
 
+#[cfg(unix)]
+fn make_symlink(target: &str, link: &Path) -> std::io::Result<()> {
+	std::os::unix::fs::symlink(target, link)
+}
+
+#[cfg(windows)]
+fn make_symlink(target: &str, link: &Path) -> std::io::Result<()> {
+	std::os::windows::fs::symlink_file(target, link)
+}
+
+#[cfg(not(any(unix, windows)))]
+fn make_symlink(_target: &str, _link: &Path) -> std::io::Result<()> {
+	Err(std::io::Error::new(
+		std::io::ErrorKind::Unsupported,
+		"symlinks are not supported on this platform",
+	))
+}
+
 fn extract_subdir(archive: &ZipFileAccessor, subdir: &SubDir, dest: &Path) -> Result<()> {
 	archive.iter(subdir, &mut |name, entry| {
-		let target = dest.join(name);
+		let target = dest.join(&name);
 		match entry {
 			AccessorEntry::Dir => {
 				fs::create_dir_all(&target).map_err(|e| Error::Io(target, e))?;
@@ -97,6 +116,24 @@ fn extract_subdir(archive: &ZipFileAccessor, subdir: &SubDir, dest: &Path) -> Re
 					fs::create_dir_all(parent).map_err(|e| Error::Io(parent.to_owned(), e))?;
 				}
 				fs::write(&target, &data).map_err(|e| Error::Io(target, e))?;
+			}
+			AccessorEntry::Symlink(link_target) => {
+				let symlink_parent = name
+					.as_path()
+					.parent()
+					.map(|p| SubDir::try_from(Utf8PathBuf::from(p)))
+					.transpose()
+					.expect("parent of a SubDir is a SubDir")
+					.unwrap_or_else(SubDir::empty);
+				if link_target.resolve_under(&symlink_parent).is_err() {
+					warn!("symlink {name} -> {link_target} escapes extraction; skipping");
+					return Ok(());
+				}
+				if let Some(parent) = target.parent() {
+					fs::create_dir_all(parent).map_err(|e| Error::Io(parent.to_owned(), e))?;
+				}
+				make_symlink(&link_target.to_string(), &target)
+					.map_err(|e| Error::Io(target, e))?;
 			}
 		}
 		Ok(())
