@@ -6,7 +6,7 @@ input_file: crates/jrsonnet-peg-parser/src/tests/default_nondefault.jsonnet
 LocalExpr(
     [
         Function {
-            name: "x",
+            name: "x" from virtual:<test>:6-7,
             params: ExprParams {
                 exprs: [
                     ExprParam {

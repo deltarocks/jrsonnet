@@ -1,7 +1,7 @@
 ---
 source: crates/jrsonnet-evaluator/src/analyze.rs
 expression: rendered
-input_file: crates/jrsonnet-evaluator/src/analyze_tests/super_outside_object.jsonnet
+input_file: crates/jrsonnet-evaluator/src/analysis_tests/super_outside_object.jsonnet
 ---
 --- source ---
 super.a
@@ -10,7 +10,9 @@ object_dependent_depth: none
 local_dependent_depth: none
 errored: true
 --- diagnostics ---
-error: `super` used outside of object
+   · ╭────── `super` used outside of object
+1  │ super.a 
+2  │  
 --- lir ---
 Index {
     indexable: BadLocal(

@@ -5,7 +5,7 @@ expression: "format!(\"{v:#?}\")"
 LocalExpr(
     [
         Function {
-            name: "f",
+            name: "f" from virtual:<test>:6-7,
             params: ExprParams {
                 exprs: [
                     ExprParam {
