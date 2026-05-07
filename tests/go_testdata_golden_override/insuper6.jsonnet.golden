@@ -1,1 +1,2 @@
-static analysis errors: undefined local: undeclared
+static analysis errors
+    insuper6.jsonnet:1:10-19 error: undefined local: undeclared

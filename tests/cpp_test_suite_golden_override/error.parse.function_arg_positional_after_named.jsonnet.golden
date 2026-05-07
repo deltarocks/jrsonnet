@@ -1,3 +1,3 @@
 syntax error: positional argument after named argument
     error.parse.function_arg_positional_after_named.jsonnet:19:10
-    error.parse.function_arg_positional_after_named.jsonnet:19:10-10: parse imported
+    error.parse.function_arg_positional_after_named.jsonnet:19:10: parse imported

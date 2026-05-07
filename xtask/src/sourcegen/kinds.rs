@@ -294,7 +294,7 @@ pub fn jsonnet_kinds() -> KindsSrc {
 		lit("WHITESPACE") => r"[ \t\n\r]+";
 		lit("SINGLE_LINE_SLASH_COMMENT") => r"//[^\r\n]*?(\r\n|\n)?";
 		lit("SINGLE_LINE_HASH_COMMENT") => r"#[^\r\n]*?(\r\n|\n)?";
-		lit("MULTI_LINE_COMMENT") => r"/\*([^*]|\*[^/])*\*/";
+		lit("MULTI_LINE_COMMENT") => r"/\*([^*]|\*+[^*/])*\*+/";
 		error("COMMENT_TOO_SHORT", "comment too short") => r"/\*/";
 		error("COMMENT_UNTERMINATED", "unterminated multi-line comment") =>  r"/\*([^*/]|\*[^/])+";
 		error("NO_OPERATOR", "expected operator");

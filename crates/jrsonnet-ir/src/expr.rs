@@ -288,7 +288,7 @@ pub enum BindSpec {
 		value: Expr,
 	},
 	Function {
-		name: IStr,
+		name: Spanned<IStr>,
 		params: ExprParams,
 		value: Expr,
 	},
@@ -404,7 +404,7 @@ pub struct Slice {
 /// Syntax base
 #[derive(Debug, PartialEq, Acyclic)]
 pub enum Expr {
-	Literal(LiteralType),
+	Literal(Span, LiteralType),
 
 	/// String value: "hello"
 	Str(IStr),
@@ -454,7 +454,7 @@ pub enum Expr {
 		parts: Vec<IndexPart>,
 	},
 	/// function(x) x
-	Function(ExprParams, Box<Expr>),
+	Function(Span, ExprParams, Box<Expr>),
 	/// if true == false then 1 else 2
 	IfElse(Box<IfElse>),
 	Slice(Box<Slice>),

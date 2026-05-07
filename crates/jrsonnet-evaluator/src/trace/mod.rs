@@ -7,11 +7,9 @@ use std::{
 };
 
 use jrsonnet_gcmodule::Trace;
-use jrsonnet_ir::CodeLocation;
-#[cfg(feature = "explaining-traces")]
-use jrsonnet_ir::Span;
+use jrsonnet_ir::{CodeLocation, Span};
 
-use crate::{Error, ResolvePathOwned, error::ErrorKind};
+use crate::{Error, ResolvePathOwned, analyze::DiagLevel, error::ErrorKind};
 
 /// The way paths should be displayed
 #[derive(Clone, Trace)]
@@ -72,31 +70,64 @@ pub trait TraceFormat: Trace {
 	fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
+fn span_label(resolver: &PathResolver, span: &Span) -> String {
+	use std::fmt::Write;
+	let mut path = span
+		.0
+		.source_path()
+		.path()
+		.map_or_else(|| span.0.source_path().to_string(), |p| resolver.resolve(p));
+	#[expect(clippy::cast_possible_truncation, reason = "code is limited by 4gb")]
+	let len = span.0.code().len() as u32;
+	let start = span.1.min(len);
+	let end = span.2.min(len);
+	let (start_loc, end_loc) = if start == end {
+		let [loc] = span.0.map_source_locations(&[start]);
+		(loc, loc)
+	} else {
+		let [s, e] = span.0.map_source_locations(&[start, end]);
+		(s, e)
+	};
+	write!(path, ":").unwrap();
+	print_code_location(&mut path, &start_loc, &end_loc).unwrap();
+	path
+}
+
+#[cfg(feature = "explaining-traces")]
+fn span_render_range(span: &Span) -> Option<std::ops::RangeInclusive<usize>> {
+	let len = span.0.code().len();
+	if len == 0 {
+		return None;
+	}
+	let max = len - 1;
+	let r = span.range();
+	Some((*r.start()).min(max)..=(*r.end()).min(max))
+}
+
+fn diag_level_label(level: DiagLevel) -> &'static str {
+	match level {
+		DiagLevel::Error => "error",
+		DiagLevel::Warning => "warning",
+	}
+}
+
 fn print_code_location(
 	out: &mut impl fmt::Write,
 	start: &CodeLocation,
 	end: &CodeLocation,
 ) -> Result<(), fmt::Error> {
+	let end_col = end.column.saturating_sub(1).max(start.column);
 	if start.line == end.line {
-		if start.column == end.column {
+		if start.column == end_col {
 			write!(out, "{}:{}", start.line, start.column)?;
 		} else {
-			write!(
-				out,
-				"{}:{}-{}",
-				start.line,
-				start.column,
-				end.column.saturating_sub(1)
-			)?;
+			write!(out, "{}:{}-{}", start.line, start.column, end_col)?;
 		}
 	} else {
 		write!(
 			out,
 			"{}:{}-{}:{}",
-			start.line,
-			start.column,
-			end.line,
-			end.column.saturating_sub(1)
+			start.line, start.column, end.line, end_col
 		)?;
 	}
 	Ok(())
@@ -121,61 +152,63 @@ impl Default for CompactFormat {
 
 impl TraceFormat for CompactFormat {
 	fn write_trace(&self, out: &mut dyn fmt::Write, error: &Error) -> Result<(), fmt::Error> {
-		if let ErrorKind::ImportFileNotFound(from, import) = error.error() {
-			let from = from
-				.path()
-				.map_or_else(|| from.to_string(), |path| self.resolver.resolve(path));
-			let import = match import {
-				ResolvePathOwned::Str(s) => s.clone(),
-				ResolvePathOwned::Path(path_buf) => self.resolver.resolve(path_buf),
-			};
-			write!(out, "import file not found {import} from {from}")?;
-		} else {
-			write!(out, "{}", error.error())?;
+		match error.error() {
+			ErrorKind::ImportFileNotFound(from, import) => {
+				let from = from
+					.path()
+					.map_or_else(|| from.to_string(), |path| self.resolver.resolve(path));
+				let import = match import {
+					ResolvePathOwned::Str(s) => s.clone(),
+					ResolvePathOwned::Path(path_buf) => self.resolver.resolve(path_buf),
+				};
+				write!(out, "import file not found {import} from {from}")?;
+			}
+			ErrorKind::StaticAnalysisError(_) => {
+				write!(out, "static analysis errors")?;
+			}
+			_ => {
+				write!(out, "{}", error.error())?;
+			}
 		}
 
-		if let ErrorKind::ImportSyntaxError { path, error } = error.error() {
-			use std::fmt::Write;
+		if let ErrorKind::StaticAnalysisError(diagnostics) = error.error() {
+			let labels: Vec<Option<String>> = diagnostics
+				.iter()
+				.map(|d| d.span.as_ref().map(|s| span_label(&self.resolver, s)))
+				.collect();
+			let align = labels.iter().flatten().map(String::len).max().unwrap_or(0);
+			let cont_indent = " ".repeat(self.padding + align + 1);
+			for (diag, label) in diagnostics.iter().zip(labels.iter()) {
+				writeln!(out)?;
+				let level = diag_level_label(diag.level);
+				let message = diag.message.replace('\n', &format!("\n{cont_indent}"));
+				let label = label.as_deref().unwrap_or("");
+				write!(
+					out,
+					"{:<p$}{label:<w$} {level}: {message}",
+					"",
+					p = self.padding,
+					w = align,
+				)?;
+			}
+		}
 
+		if let ErrorKind::ImportSyntaxError { error, .. } = error.error() {
 			writeln!(out)?;
-			let mut n = path.source_path().path().map_or_else(
-				|| path.source_path().to_string(),
-				|r| self.resolver.resolve(r),
-			);
-			let offset = (error.location.1 as usize).min(path.code().len());
-			#[expect(clippy::cast_possible_truncation, reason = "code is limited by 4gb")]
-			let location = path
-				.map_source_locations(&[offset as u32])
-				.into_iter()
-				.next()
-				.unwrap();
-
-			write!(n, ":").unwrap();
-			print_code_location(&mut n, &location, &location).unwrap();
-			write!(out, "{:<p$}{n}", "", p = self.padding)?;
+			let label = span_label(&self.resolver, &error.location);
+			write!(out, "{:<p$}{label}", "", p = self.padding)?;
 		}
 		let file_names = error
 			.trace()
 			.0
 			.iter()
-			.map(|el| &el.location)
-			.map(|location| {
-				use std::fmt::Write;
-				#[allow(clippy::option_if_let_else)]
-				if let Some(location) = location {
-					let mut resolved_path = match location.0.source_path().path() {
-						Some(r) => self.resolver.resolve(r),
-						None => location.0.source_path().to_string(),
-					};
-					// TODO: Process all trace elements first
-					let location = location.0.map_source_locations(&[location.1, location.2]);
-					write!(resolved_path, ":").unwrap();
-					print_code_location(&mut resolved_path, &location[0], &location[1]).unwrap();
-					write!(resolved_path, ":").unwrap();
-					Some(resolved_path)
-				} else {
-					None
-				}
+			.map(|el| {
+				el.location.as_ref().map(|loc| {
+					use std::fmt::Write;
+					let mut s = span_label(&self.resolver, loc);
+					write!(s, ":").unwrap();
+					s
+				})
 			})
 			.collect::<Vec<_>>();
 		let align = file_names
@@ -265,40 +298,45 @@ impl TraceFormat for HiDocFormat {
 		}
 		use hi_doc::{Formatting, SnippetBuilder, Text, source_to_ansi};
 
-		write!(out, "{}", error.error())?;
+		match error.error() {
+			ErrorKind::StaticAnalysisError(_) => write!(out, "static analysis errors")?,
+			_ => write!(out, "{}", error.error())?,
+		}
 		if let ErrorKind::ImportSyntaxError { path, error } = error.error() {
-			writeln!(out)?;
-			let mut builder = SnippetBuilder::new(path.code());
-			builder
-				.error(Text::fragment("syntax error", Formatting::default()))
-				.range(error.location.range())
-				.build();
-			let source = builder.build();
-			let ansi = source_to_ansi(&source);
-			write!(out, "{ansi}")?;
+			writeln!(out, "\n...at {}", path.source_path())?;
+			if let Some(range) = span_render_range(&error.location) {
+				let mut builder = SnippetBuilder::new(path.code());
+				builder
+					.error(Text::fragment("syntax error", Formatting::default()))
+					.range(range)
+					.build();
+				let ansi = source_to_ansi(&builder.build());
+				write!(out, "{}", ansi.trim_end())?;
+			}
 		}
 		if let ErrorKind::StaticAnalysisError(diagnostics) = error.error() {
-			use crate::analyze::DiagLevel;
-			let mut builder: Option<SnippetBuilder> = None;
-			let mut current_src: Option<&str> = None;
-			let flush = |builder: Option<SnippetBuilder>,
+			let mut builder: Option<(SnippetBuilder, Span)> = None;
+			let flush = |slot: Option<(SnippetBuilder, Span)>,
 			             out: &mut dyn fmt::Write|
 			 -> Result<(), fmt::Error> {
-				if let Some(b) = builder {
+				if let Some((b, anchor)) = slot {
+					writeln!(out, "\n...at {}", anchor.0.source_path())?;
 					let ansi = source_to_ansi(&b.build());
-					write!(out, "\n{}", ansi.trim_end())?;
+					write!(out, "{}", ansi.trim_end())?;
 				}
 				Ok(())
 			};
 			for diag in diagnostics {
 				if let Some(span) = &diag.span {
-					let src = span.0.code();
-					if current_src != Some(src) {
+					let Some(range) = span_render_range(span) else {
+						continue;
+					};
+					let same_src = builder.as_ref().is_some_and(|(_, a)| a.0 == span.0);
+					if !same_src {
 						flush(builder.take(), out)?;
-						builder = Some(SnippetBuilder::new(src));
-						current_src = Some(src);
+						builder = Some((SnippetBuilder::new(span.0.code()), span.clone()));
 					}
-					let b = builder.as_mut().unwrap();
+					let b = &mut builder.as_mut().unwrap().0;
 					let ab = match diag.level {
 						DiagLevel::Error => {
 							b.error(Text::fragment(diag.message.clone(), Formatting::default()))
@@ -307,14 +345,10 @@ impl TraceFormat for HiDocFormat {
 							b.warning(Text::fragment(diag.message.clone(), Formatting::default()))
 						}
 					};
-					ab.range(span.range()).build();
+					ab.range(range).build();
 				} else {
 					flush(builder.take(), out)?;
-					current_src = None;
-					let prefix = match diag.level {
-						DiagLevel::Error => "error",
-						DiagLevel::Warning => "warning",
-					};
+					let prefix = diag_level_label(diag.level);
 					write!(out, "\n{prefix}: {}", diag.message)?;
 				}
 			}

@@ -77,6 +77,13 @@ impl<'a> Parser<'a> {
 		self.offset += 1;
 	}
 
+	fn eat_any_spanned(&mut self) -> Span {
+		let start = self.span_start();
+		self.eat_any();
+		let end = self.span_end();
+		Span(self.source.clone(), start, end)
+	}
+
 	fn at_eof(&self) -> bool {
 		self.offset >= self.lexemes.len()
 	}
@@ -113,6 +120,12 @@ impl<'a> Parser<'a> {
 		}
 		self.eat_any();
 		Ok(())
+	}
+	fn eat_spanned(&mut self, t: SyntaxKind) -> Result<Span> {
+		let start = self.span_start();
+		self.eat(t)?;
+		let end = self.span_end();
+		Ok(Span(self.source.clone(), start, end))
 	}
 
 	fn span_start(&self) -> u32 {
@@ -234,7 +247,7 @@ fn ident(p: &mut Parser<'_>) -> Result<IStr> {
 	Ok(IStr::from(text))
 }
 
-fn literal(p: &mut Parser<'_>) -> Option<LiteralType> {
+fn literal(p: &mut Parser<'_>) -> Option<(Span, LiteralType)> {
 	let t = match p.peek() {
 		T![self] => LiteralType::This,
 		T![super] => LiteralType::Super,
@@ -244,8 +257,7 @@ fn literal(p: &mut Parser<'_>) -> Option<LiteralType> {
 		T![false] => LiteralType::False,
 		_ => return None,
 	};
-	p.eat_any();
-	Some(t)
+	Some((p.eat_any_spanned(), t))
 }
 
 fn assert_stmt(p: &mut Parser<'_>) -> Result<AssertStmt> {
@@ -482,20 +494,20 @@ fn bind(p: &mut Parser<'_>) -> Result<BindSpec> {
 			});
 		}
 	}
-	let name_spanned = spanned(p, ident)?;
+	let name = spanned(p, ident)?;
 	if p.try_eat(T!['(']) {
 		let ps = params(p)?;
 		p.eat(T![')'])?;
 		p.eat(T![=])?;
 		Ok(BindSpec::Function {
-			name: name_spanned.value,
+			name,
 			params: ps,
 			value: expr(p)?,
 		})
 	} else {
 		p.eat(T![=])?;
 		Ok(BindSpec::Field {
-			into: Destruct::Full(name_spanned),
+			into: Destruct::Full(name),
 			value: expr(p)?,
 		})
 	}
@@ -676,8 +688,8 @@ fn objinside(p: &mut Parser<'_>) -> Result<ObjBody> {
 
 #[allow(clippy::too_many_lines)]
 fn expr_basic(p: &mut Parser<'_>) -> Result<Expr> {
-	if let Some(lit) = literal(p) {
-		return Ok(Expr::Literal(lit));
+	if let Some((span, lit)) = literal(p) {
+		return Ok(Expr::Literal(span, lit));
 	}
 
 	match p.peek() {
@@ -755,12 +767,12 @@ fn expr_basic(p: &mut Parser<'_>) -> Result<Expr> {
 		T![if] => Ok(Expr::IfElse(Box::new(if_else(p)?))),
 
 		T![function] => {
-			p.eat(T![function])?;
+			let span = p.eat_spanned(T![function])?;
 			p.eat(T!['('])?;
 			let ps = params(p)?;
 			p.eat(T![')'])?;
 			let body = expr(p)?;
-			Ok(Expr::Function(ps, Box::new(body)))
+			Ok(Expr::Function(span, ps, Box::new(body)))
 		}
 
 		T![assert] => {
@@ -820,7 +832,7 @@ fn flush_index_parts(e: &mut Expr, parts: &mut Vec<IndexPart>) {
 	if parts.is_empty() {
 		return;
 	}
-	let old = std::mem::replace(e, Expr::Literal(LiteralType::Null));
+	let old = std::mem::replace(e, Expr::Str(IStr::empty()));
 	*e = Expr::Index {
 		indexable: Box::new(old),
 		parts: std::mem::take(parts),

@@ -1,1 +1,3 @@
-static analysis errors: local is already defined in the current frame: x; unused local: x
+static analysis errors
+    error.parse.object_local_clash.jsonnet:17:21 error: local is already defined in the current frame: x
+    error.parse.object_local_clash.jsonnet:17:9  warning: unused local: x

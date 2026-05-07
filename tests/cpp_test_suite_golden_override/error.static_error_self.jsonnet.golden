@@ -1,1 +1,2 @@
-static analysis errors: `self` used outside of object
+static analysis errors
+    error.static_error_self.jsonnet:17:2-5 error: `self` used outside of object

@@ -472,7 +472,7 @@ impl<'s> FrameAlloc<'s> {
 		match bind {
 			BindSpec::Field { into, .. } => self.alloc_destruct(into),
 			BindSpec::Function { name, .. } => {
-				let (_, id) = self.define_local(name.clone(), None)?;
+				let (_, id) = self.define_local(name.value.clone(), Some(name.span.clone()))?;
 				Some(LDestruct::Full(id))
 			}
 		}
@@ -1337,18 +1337,18 @@ pub fn analyze_named(
 	stack: &mut AnalysisStack,
 	taint: &mut AnalysisResult,
 ) -> LExpr {
-	if let Expr::Function(params, body) = expr {
-		return analyze_function(Some(name), params, body, stack, taint);
+	if let Expr::Function(span, params, body) = expr {
+		return analyze_function(Some(name), &span, &params, body, stack, taint);
 	}
 	analyze(expr, stack, taint)
 }
 #[allow(clippy::too_many_lines)]
 pub fn analyze(expr: &Expr, stack: &mut AnalysisStack, taint: &mut AnalysisResult) -> LExpr {
 	match expr {
-		Expr::Literal(l) => match l {
+		Expr::Literal(span, l) => match l {
 			LiteralType::This => stack.use_this(taint).map_or_else(
 				|| {
-					stack.report_error("`self` used outside of object", None);
+					stack.report_error("`self` used outside of object", Some(span.clone()));
 					LExpr::BadLocal("self")
 				},
 				LExpr::Slot,
@@ -1357,13 +1357,13 @@ pub fn analyze(expr: &Expr, stack: &mut AnalysisStack, taint: &mut AnalysisResul
 				if stack.use_super(taint).is_some() {
 					LExpr::Super
 				} else {
-					stack.report_error("`super` used outside of object", None);
+					stack.report_error("`super` used outside of object", Some(span.clone()));
 					LExpr::BadLocal("super")
 				}
 			}
 			LiteralType::Dollar => stack.use_dollar(taint).map_or_else(
 				|| {
-					stack.report_error("`$` used outside of object", None);
+					stack.report_error("`$` used outside of object", Some(span.clone()));
 					LExpr::BadLocal("$")
 				},
 				LExpr::Slot,
@@ -1475,7 +1475,9 @@ pub fn analyze(expr: &Expr, stack: &mut AnalysisStack, taint: &mut AnalysisResul
 				parts: parts_l,
 			}
 		}
-		Expr::Function(params, body) => analyze_function(None, params, body, stack, taint),
+		Expr::Function(span, params, body) => {
+			analyze_function(None, span, params, body, stack, taint)
+		}
 		Expr::IfElse(ifelse) => {
 			let IfElse {
 				cond,
@@ -1541,15 +1543,22 @@ fn analyze_bind_value(
 ) -> LExpr {
 	match bind {
 		BindSpec::Field {
-			value: Expr::Function(params, value),
+			value: Expr::Function(span, params, value),
 			into: Destruct::Full(name),
-		} => analyze_function(Some(name.value.clone()), params, value, stack, taint),
+		} => analyze_function(Some(name.value.clone()), &span, params, value, stack, taint),
 		BindSpec::Field { value, .. } => analyze(value, stack, taint),
 		BindSpec::Function {
 			params,
 			value,
 			name,
-		} => analyze_function(Some(name.clone()), params, value, stack, taint),
+		} => analyze_function(
+			Some(name.value.clone()),
+			&name.span,
+			params,
+			value,
+			stack,
+			taint,
+		),
 	}
 }
 
@@ -1595,6 +1604,7 @@ fn process_local_frame<R>(
 
 fn analyze_function(
 	name: Option<IStr>,
+	span: &Span,
 	params: &ExprParams,
 	body: &Expr,
 	stack: &mut AnalysisStack,
@@ -1648,15 +1658,15 @@ fn analyze_function(
 
 	// function(x) x is an identity function
 	if l_params.len() == 1 && l_params[0].default.is_none() {
-		stack.report_warning(
-			"do not define identity functions manually, use std.id instead",
-			None,
-		);
 		#[allow(irrefutable_let_patterns, reason = "refutable with exp-destruct")]
 		if let LDestruct::Full(param_slot) = &l_params[0].destruct
 			&& let LExpr::Slot(LSlot::Local(s)) = &body_expr
 			&& s == param_slot
 		{
+			stack.report_warning(
+				"do not define identity functions manually, use std.id instead",
+				Some(span.clone()),
+			);
 			return LExpr::IdentityFunction {};
 		}
 	}
@@ -1727,7 +1737,14 @@ fn analyze_obj_members(
 				for (f, name) in fields.iter().zip(field_names) {
 					let value = stack.in_using_closure(|stack| {
 						if let Some(params) = &f.params {
-							analyze_function(name.function_name(), params, &f.value, stack, taint)
+							analyze_function(
+								name.function_name(),
+								&f.name.span,
+								params,
+								&f.value,
+								stack,
+								taint,
+							)
 						} else {
 							analyze(&f.value, stack, taint)
 						}
@@ -1771,7 +1788,14 @@ fn analyze_obj_comp(
 			process_local_frame(&comp.locals, stack, taint, |stack, taint| {
 				let value = stack.in_using_closure(|stack| {
 					if let Some(params) = &comp.field.params {
-						analyze_function(None, params, &comp.field.value, stack, taint)
+						analyze_function(
+							None,
+							&comp.field.name.span,
+							params,
+							&comp.field.value,
+							stack,
+							taint,
+						)
 					} else {
 						analyze(&comp.field.value, stack, taint)
 					}

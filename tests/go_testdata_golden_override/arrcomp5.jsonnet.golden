@@ -1,1 +1,3 @@
-static analysis errors: undefined local: x; unused local: x
+static analysis errors
+    arrcomp5.jsonnet:1:14 error: undefined local: x
+    arrcomp5.jsonnet:1:25 warning: unused local: x

@@ -1,1 +1,2 @@
-static analysis errors: import path must be a string literal
+static analysis errors
+    importbin_computed.jsonnet:1:1-9 error: import path must be a string literal

@@ -1,3 +1,3 @@
 syntax error: asserts are unsupported in object comprehension
     object_comp_assert.jsonnet:1:46
-    object_comp_assert.jsonnet:1:46-46: parse imported
+    object_comp_assert.jsonnet:1:46: parse imported

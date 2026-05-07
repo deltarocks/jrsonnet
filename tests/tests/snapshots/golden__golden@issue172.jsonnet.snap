@@ -3,4 +3,5 @@ source: tests/tests/golden.rs
 expression: result
 input_file: tests/golden/issue172.jsonnet
 ---
-static analysis errors: undefined local: b
+static analysis errors
+    issue172.jsonnet:1:45 error: undefined local: b

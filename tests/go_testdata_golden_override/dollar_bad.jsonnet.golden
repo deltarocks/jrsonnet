@@ -1,1 +1,2 @@
-static analysis errors: `$` used outside of object
+static analysis errors
+    dollar_bad.jsonnet:1:1 error: `$` used outside of object

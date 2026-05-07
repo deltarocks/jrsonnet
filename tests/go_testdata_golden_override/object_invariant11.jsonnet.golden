@@ -1,3 +1,3 @@
 assert failed: null
     object_invariant11.jsonnet:1:10-14: assertion failure
-    object_invariant11.jsonnet:1:18-18: field <x> access
+    object_invariant11.jsonnet:1:18:    field <x> access

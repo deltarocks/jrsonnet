@@ -131,7 +131,7 @@ parser! {
 
 		pub rule bind(s: &ParserSettings) -> BindSpec
 			= into:destruct(s) _ "=" _ value:expr(s) {BindSpec::Field{into, value}}
-			/ name:id() _ "(" _ params:params(s) _ ")" _ "=" _ value:expr(s) {BindSpec::Function{name, params, value}}
+			/ name:spanned(<id()>, s) _ "(" _ params:params(s) _ ")" _ "=" _ value:expr(s) {BindSpec::Function{name, params, value}}
 
 		pub rule assertion(s: &ParserSettings) -> AssertStmt
 			= keyword("assert") _ assertion:spanned(<expr(s)>, s) message:(_ ":" _ e:expr(s) {e})? { AssertStmt{assertion, message} }
@@ -290,14 +290,14 @@ parser! {
 			}))}
 
 		pub rule literal(s: &ParserSettings) -> Expr
-			= v:(
+			= a:position!() v:(
 				keyword("null") {LiteralType::Null}
 				/ keyword("true") {LiteralType::True}
 				/ keyword("false") {LiteralType::False}
 				/ keyword("self") {LiteralType::This}
 				/ keyword("$") {LiteralType::Dollar}
 				/ keyword("super") {LiteralType::Super}
-			) {Expr::Literal(v)}
+			) b:position!() {Expr::Literal(Span(s.source.clone(), codeidx(a), codeidx(b)), v)}
 
 		rule import_kind() -> ImportKind
 			= keyword("importstr") { ImportKind::Str }
@@ -319,7 +319,7 @@ parser! {
 			/ local_expr(s)
 			/ if_then_else_expr(s)
 
-			/ keyword("function") _ "(" _ params:params(s) _ ")" _ expr:expr(s) {Expr::Function(params, Box::new(expr))}
+			/ kw:spanned(<keyword("function")>, s) _ "(" _ params:params(s) _ ")" _ expr:expr(s) {Expr::Function(kw.span, params, Box::new(expr))}
 			/ assert:assertion(s) _ ";" _ rest:expr(s) { Expr::AssertExpr(Box::new(AssertExpr{
 				assert, rest
 			})) }

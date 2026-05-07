@@ -178,7 +178,7 @@ pub fn visit_assert_stmt<V: Visitor>(v: &mut V, ass: &AssertStmt) {
 }
 pub fn visit_expr<V: Visitor>(v: &mut V, e: &Expr) {
 	match e {
-		Expr::Literal(_literal_type) => {}
+		Expr::Literal(_span, _literal_type) => {}
 		Expr::Str(_istr) => {}
 		Expr::Num(_num) => {}
 		Expr::Var(_spanned) => {}
@@ -254,7 +254,7 @@ pub fn visit_expr<V: Visitor>(v: &mut V, e: &Expr) {
 				v.visit_expr(value);
 			}
 		}
-		Expr::Function(expr_params, expr) => {
+		Expr::Function(_span, expr_params, expr) => {
 			visit_params(v, expr_params);
 			v.visit_expr(expr);
 		}

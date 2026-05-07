@@ -1,1 +1,3 @@
-static analysis errors: undefined local: x; unused local: x
+static analysis errors
+    error.computed_field_scope.jsonnet:17:21 error: undefined local: x
+    error.computed_field_scope.jsonnet:17:9  warning: unused local: x

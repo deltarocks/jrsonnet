@@ -1,2 +1,4 @@
-static analysis errors: undefined local: tmp2
-There is a local with similar name present: tmp; unused local: tmp
+static analysis errors
+    error.static_error_var_not_exist.jsonnet:17:16-19 error: undefined local: tmp2
+                                                      There is a local with similar name present: tmp
+    error.static_error_var_not_exist.jsonnet:17:7-9   warning: unused local: tmp

@@ -1,2 +1,2 @@
 no such field: y
-    error.field_not_exist.jsonnet:17:10-10: field <y> access
+    error.field_not_exist.jsonnet:17:10: field <y> access

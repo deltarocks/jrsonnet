@@ -1,1 +1,2 @@
-static analysis errors: `super` used outside of object
+static analysis errors
+    insuper4.jsonnet:1:8-12 error: `super` used outside of object

@@ -1,3 +1,3 @@
 syntax error: unexpected end of file
     error.parse.index_unterminated.jsonnet:17:3
-    error.parse.index_unterminated.jsonnet:17:3-0:0: parse imported
+    error.parse.index_unterminated.jsonnet:17:3: parse imported

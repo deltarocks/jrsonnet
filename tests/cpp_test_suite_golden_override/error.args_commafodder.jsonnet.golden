@@ -1,1 +1,4 @@
-static analysis errors: undefined local: foo; undefined local: bar; undefined local: qux
+static analysis errors
+    error.args_commafodder.jsonnet:1:1-3 error: undefined local: foo
+    error.args_commafodder.jsonnet:2:3-5 error: undefined local: bar
+    error.args_commafodder.jsonnet:4:7-9 error: undefined local: qux
