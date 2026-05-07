@@ -167,7 +167,7 @@ pub(super) fn resolve(
 		Some(v) => resolve_version(&repo, v)?,
 		None => repo.head_id()?,
 	};
-	let commit = repo.find_object(id)?.into_commit();
+	let commit = repo.find_object(id)?.peel_to_commit()?;
 	let tree = commit.tree()?;
 
 	let mut transitive_git_deps = Vec::new();
@@ -183,7 +183,7 @@ pub(super) fn resolve(
 	);
 
 	let repo_path = repo_cache_path(git_source)?;
-	let sha = id.to_string();
+	let sha = commit.id.to_string();
 
 	Ok(ResolveResult {
 		version: sha.clone(),
@@ -206,7 +206,7 @@ pub(super) fn extract(
 	let repo = gix::open(repo_path)?;
 	let spec: &bstr::BStr = commit_sha.into();
 	let id = repo.rev_parse_single(spec)?;
-	let commit = repo.find_object(id)?.into_commit();
+	let commit = repo.find_object(id)?.peel_to_commit()?;
 	let tree = commit.tree()?;
 	extract_tree(&repo, &tree, subdir, dest)
 }

@@ -391,6 +391,8 @@ pub enum Error {
 	#[error(transparent)]
 	GitPeel(#[from] gix::reference::peel::Error),
 	#[error(transparent)]
+	GitPeelToKind(#[from] gix::object::peel::to_kind::Error),
+	#[error(transparent)]
 	GitOpen(#[from] gix::open::Error),
 	#[error("http error: {0}")]
 	Http(#[from] reqwest::Error),
