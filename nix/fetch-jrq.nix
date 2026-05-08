@@ -10,7 +10,7 @@
   name ? "jrq-vendor",
 }:
 stdenvNoCC.mkDerivation (finalAttrs: {
-  inherit name;
+  name = "${name}-${builtins.substring 0 8 (builtins.hashFile "sha256" lockfile)}";
 
   outputHashMode = "recursive";
   outputHashAlgo = "sha256";

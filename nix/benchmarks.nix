@@ -2,7 +2,6 @@
   lib,
   runCommand,
   stdenv,
-  fetchFromGitHub,
   fetchJrq,
   go-jsonnet,
   sjsonnet,
@@ -16,16 +15,10 @@ with lib;
 let
   inherit (cpp-jsonnet) jsonnetBench;
   inherit (go-jsonnet) goJsonnetBench;
-  graalvmBench = fetchFromGitHub {
-    owner = "oracle";
-    repo = "graal";
-    rev = "bc305df3fe587960f7635f0185571500e5988475";
-    hash = "sha256-4EKB1b2o4/qtYQ+nqbbs621OJrtjApsAWEBcw5EjrYc=";
-  };
   realworldVendor = fetchJrq {
     name = "realworld-vendor";
     lockfile = ../tests/realworld/jsonnetfile.lock.json;
-    vendorHash = "sha256-6tXi6bRw77YKB17PhSpJnVYQcsGOvB8sgjKIrFtrwfc=";
+    vendorHash = "sha256-oEUzM6Bhu8ZT8vCtYDbBEjG5BFHYpID+1/2pgXvIAgo=";
   };
   realworldBench = runCommand "realworld-bench" { } ''
     mkdir -p $out
@@ -172,34 +165,6 @@ stdenv.mkDerivation {
       ''}
       echo "== Real world" >> $out
       ${mkBench {
-        name = "Graalvm CI";
-        path = "${graalvmBench}/ci.jsonnet";
-        omitSource = true;
-        skipCpp = "takes longer than a hour";
-        skipGo = skipSlow;
-      }}
-      ${mkBench {
-        name = "Loki manifests";
-        path = "${realworldBench}/entry-loki.jsonnet";
-        jpaths = [ "${realworldBench}/vendor" ];
-        skipCpp = "too slow, takes hours, skews results";
-        skipGo = skipSlow;
-      }}
-      ${mkBench {
-        name = "Mimir manifests";
-        path = "${realworldBench}/entry-mimir.jsonnet";
-        jpaths = [ "${realworldBench}/vendor" ];
-        skipCpp = "too slow, takes hours, skews results";
-        skipGo = skipSlow;
-      }}
-      ${mkBench {
-        name = "Tempo manifests";
-        path = "${realworldBench}/entry-tempo.jsonnet";
-        jpaths = [ "${realworldBench}/vendor" ];
-        skipCpp = "too slow, takes hours, skews results";
-        skipGo = skipSlow;
-      }}
-      ${mkBench {
         name = "GitLab runbooks dashboards";
         path = "${realworldBench}/entry-gitlab-runbooks.jsonnet";
         jpaths = [
@@ -208,6 +173,55 @@ stdenv.mkDerivation {
           "${realworldBench}/vendor/runbooks/dashboards"
           "${realworldBench}/vendor/runbooks/services"
           "${realworldBench}/vendor/runbooks/metrics-catalog"
+        ];
+        skipCpp = "too slow, takes hours, skews results";
+        skipGo = skipSlow;
+      }}
+      ${mkBench {
+        name = "GraalVM CI";
+        path = "${realworldBench}/entry-graalvm.jsonnet";
+        jpaths = [
+          "${realworldBench}/vendor/graal"
+        ];
+        skipCpp = "too slow, takes hours, skews results";
+        skipGo = skipSlow;
+      }}
+      ${mkBench {
+        name = "Kube-prometheus";
+        path = "${realworldBench}/entry-kube-prometheus.jsonnet";
+        jpaths = [
+          "${realworldBench}/vendor"
+        ];
+        skipCpp = "too slow, takes hours, skews results";
+        skipGo = skipSlow;
+      }}
+      ${mkBench {
+        name = "Loki manifests";
+        path = "${realworldBench}/entry-loki.jsonnet";
+        jpaths = [
+          "${realworldBench}/vendor"
+          "${realworldBench}"
+        ];
+        skipCpp = "too slow, takes hours, skews results";
+        skipGo = skipSlow;
+      }}
+      ${mkBench {
+        name = "Mimir manifests";
+        path = "${realworldBench}/entry-mimir.jsonnet";
+        jpaths = [
+          "${realworldBench}/vendor"
+          "${realworldBench}"
+        ];
+        skipCpp = "too slow, takes hours, skews results";
+        skipGo = skipSlow;
+        skipScala = "https://github.com/databricks/sjsonnet/issues/829";
+      }}
+      ${mkBench {
+        name = "Tempo manifests";
+        path = "${realworldBench}/entry-tempo.jsonnet";
+        jpaths = [
+          "${realworldBench}/vendor"
+          "${realworldBench}"
         ];
         skipCpp = "too slow, takes hours, skews results";
         skipGo = skipSlow;
