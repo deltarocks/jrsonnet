@@ -20,21 +20,15 @@ tracing.workspace = true
 peg.workspace = true
 
 # Gix for git repos, reqwest + zip for github
+gix = { workspace = true, features = ["blocking-http-transport-reqwest"] }
+reqwest = { workspace = true, features = ["rustls-no-provider"] }
 zip.workspace = true
 url.workspace = true
 camino.workspace = true
 
+# ring is not ideal and not recommended by rustls authors... But is easiest to build,
+# and there should be little risk for bundling use case
+rustls = { workspace = true, features = ["ring"] }
+
 # Global cache dir
 directories.workspace = true
-
-[target.'cfg(not(any(all(target_os = "windows", target_env = "gnu"), target_vendor = "apple")))'.dependencies]
-gix = { workspace = true, features = [
-  "blocking-http-transport-reqwest-rust-tls",
-] }
-reqwest = { workspace = true, features = ["rustls"] }
-
-[target.'cfg(any(all(target_os = "windows", target_env = "gnu"), target_vendor = "apple"))'.dependencies]
-gix = { workspace = true, features = [
-  "blocking-http-transport-reqwest-native-tls",
-] }
-reqwest = { workspace = true, features = ["native-tls"] }

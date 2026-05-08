@@ -132,6 +132,7 @@ zip = { version = "8", default-features = false, features = ["deflate"] }
 directories = "6.0.0"
 gix = { version = "0.83.0", features = ["blocking-network-client"] }
 camino = { version = "1.2.2", features = ["serde1"] }
+rustls = { version = "0.23", default-features = false }
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
