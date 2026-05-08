@@ -940,7 +940,8 @@ pub fn format(input: &str, opts: &FormatOptions) -> Result<String, SnippetBuilde
 				))
 				.range(
 					error.range.start().into()
-						..=(usize::from(error.range.end()) - 1).max(error.range.start().into()),
+						..=(usize::from(error.range.end()).saturating_sub(1))
+							.max(error.range.start().into()),
 				)
 				.build();
 		}
