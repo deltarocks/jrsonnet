@@ -1,24 +1,35 @@
 ---
 source: crates/jrsonnet-peg-parser/src/lib.rs
+assertion_line: 459
 expression: v
 input_file: crates/jrsonnet-peg-parser/src/tests/string_escaping.jsonnet
 ---
 Arr(
     [
-        Str(
-            "Hello, \"world\"!",
+        Trivial(
+            Str(
+                "Hello, \"world\"!",
+            ),
         ),
-        Str(
-            "Hello 'world'!",
+        Trivial(
+            Str(
+                "Hello 'world'!",
+            ),
         ),
-        Str(
-            "\\\\",
+        Trivial(
+            Str(
+                "\\\\",
+            ),
         ),
-        Str(
-            "Hello\nWorld",
+        Trivial(
+            Str(
+                "Hello\nWorld",
+            ),
         ),
-        Str(
-            "Hello\\n\"World\"",
+        Trivial(
+            Str(
+                "Hello\\n\"World\"",
+            ),
         ),
     ],
 )

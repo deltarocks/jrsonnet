@@ -1,9 +1,9 @@
 use jrsonnet_gcmodule::Acyclic;
 use jrsonnet_ir::{
 	ArgsDesc, AssertExpr, AssertStmt, BinaryOp, BindSpec, CompSpec, Destruct, DestructRest, Expr,
-	ExprParam, ExprParams, FieldMember, FieldName, ForSpecData, IStr, IfElse, IfSpecData,
-	ImportKind, IndexPart, LiteralType, Member, NumValue, ObjBody, ObjComp, ObjMembers, Slice,
-	SliceDesc, Source, Span, Spanned, Visibility, unescape,
+	ExprParam, ExprParams, FieldMember, FieldName, ForSpecData, IStr, IdentityKind, IfElse,
+	IfSpecData, ImportKind, IndexPart, Member, NumValue, ObjBody, ObjComp, ObjMembers, Slice,
+	SliceDesc, Source, Span, Spanned, TrivialVal, Visibility, unescape,
 };
 use peg::parser;
 
@@ -263,7 +263,7 @@ parser! {
 		pub rule local_expr(s: &ParserSettings) -> Expr
 			= keyword("local") _ binds:bind(s) ** comma() (_ ",")? _ ";" _ expr:expr(s) { Expr::LocalExpr(binds, Box::new(expr)) }
 		pub rule string_expr(s: &ParserSettings) -> Expr
-			= s:string() {Expr::Str(s.into())}
+			= s:string() {Expr::Trivial(TrivialVal::Str(s.into()))}
 		pub rule obj_expr(s: &ParserSettings) -> Expr
 			= "{" _ body:objinside(s) _ "}" {Expr::Obj(body)}
 		pub rule array_expr(s: &ParserSettings) -> Expr
@@ -273,7 +273,7 @@ parser! {
 				Expr::ArrComp(Box::new(expr), specs)
 			}
 		pub rule number_expr(s: &ParserSettings) -> Expr
-			= n:number() {? NumValue::new(n).map_or_else(|| Err("!!!numbers are finite"), |n| Ok(Expr::Num(n)))}
+			= n:number() {? NumValue::new(n).map_or_else(|| Err("!!!numbers are finite"), |n| Ok(Expr::Trivial(TrivialVal::Num(n))))}
 
 		rule spanned<T: Acyclic>(x: rule<T>, s: &ParserSettings) -> Spanned<T>
 			= a:position!() n:x() b:position!() { Spanned::new(n, Span(s.source.clone(), codeidx(a), codeidx(b))) }
@@ -281,7 +281,7 @@ parser! {
 		pub rule var_expr(s: &ParserSettings) -> Expr
 			= n:spanned(<id()>, s) { Expr::Var(n) }
 		pub rule id_loc(s: &ParserSettings) -> Spanned<Expr>
-			= a:position!() n:id() b:position!() { Spanned::new(Expr::Str(n), Span(s.source.clone(), codeidx(a), codeidx(b))) }
+			= a:position!() n:id() b:position!() { Spanned::new(Expr::Trivial(TrivialVal::Str(n)), Span(s.source.clone(), codeidx(a), codeidx(b))) }
 		pub rule if_then_else_expr(s: &ParserSettings) -> Expr
 			= cond:ifspec(s) _ keyword("then") _ cond_then:expr(s) cond_else:(_ keyword("else") _ e:expr(s) {e})? {Expr::IfElse(Box::new(IfElse{
 				cond,
@@ -290,14 +290,14 @@ parser! {
 			}))}
 
 		pub rule literal(s: &ParserSettings) -> Expr
-			= a:position!() v:(
-				keyword("null") {LiteralType::Null}
-				/ keyword("true") {LiteralType::True}
-				/ keyword("false") {LiteralType::False}
-				/ keyword("self") {LiteralType::This}
-				/ keyword("$") {LiteralType::Dollar}
-				/ keyword("super") {LiteralType::Super}
-			) b:position!() {Expr::Literal(Span(s.source.clone(), codeidx(a), codeidx(b)), v)}
+			= keyword("null") { Expr::Trivial(TrivialVal::Null) }
+			/ keyword("true") { Expr::Trivial(TrivialVal::Bool(true)) }
+			/ keyword("false") { Expr::Trivial(TrivialVal::Bool(false)) }
+			/ a:position!() v:(
+				keyword("self") {IdentityKind::This}
+				/ keyword("$") {IdentityKind::Dollar}
+				/ keyword("super") {IdentityKind::Super}
+			) b:position!() { Expr::Identity(Span(s.source.clone(), codeidx(a), codeidx(b)), v) }
 
 		rule import_kind() -> ImportKind
 			= keyword("importstr") { ImportKind::Str }
@@ -429,7 +429,7 @@ pub fn parse(str: &str, settings: &ParserSettings) -> Result<Expr, ParseError> {
 pub fn string_to_expr(str: IStr, settings: &ParserSettings) -> Spanned<Expr> {
 	let len = str.len();
 	Spanned::new(
-		Expr::Str(str),
+		Expr::Trivial(TrivialVal::Str(str)),
 		Span(settings.source.clone(), 0, codeidx(len)),
 	)
 }

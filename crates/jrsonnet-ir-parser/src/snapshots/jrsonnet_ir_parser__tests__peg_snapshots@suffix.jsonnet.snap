@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-ir-parser/src/lib.rs
+assertion_line: 1184
 expression: v
 input_file: crates/jrsonnet-peg-parser/src/tests/suffix.jsonnet
 ---
@@ -12,8 +13,10 @@ Arr(
             parts: [
                 IndexPart {
                     span: virtual:<test>:6-10,
-                    value: Str(
-                        "test",
+                    value: Trivial(
+                        Str(
+                            "test",
+                        ),
                     ),
                 },
             ],
@@ -24,8 +27,10 @@ Arr(
             ),
             ArgsDesc {
                 unnamed: [
-                    Num(
-                        2.0,
+                    Trivial(
+                        Num(
+                            2.0,
+                        ),
                     ),
                 ],
                 names: [],
@@ -41,16 +46,20 @@ Arr(
                 parts: [
                     IndexPart {
                         span: virtual:<test>:24-28,
-                        value: Str(
-                            "test",
+                        value: Trivial(
+                            Str(
+                                "test",
+                            ),
                         ),
                     },
                 ],
             },
             ArgsDesc {
                 unnamed: [
-                    Num(
-                        2.0,
+                    Trivial(
+                        Num(
+                            2.0,
+                        ),
                     ),
                 ],
                 names: [],

@@ -1,22 +1,28 @@
 ---
 source: crates/jrsonnet-ir-parser/src/lib.rs
+assertion_line: 1124
 expression: "format!(\"{v:#?}\")"
 ---
 IfElse(
     IfElse {
         cond: IfSpecData {
             span: virtual:<test>:0-2,
-            cond: Literal(
-                virtual:<test>:3-7,
-                True,
+            cond: Trivial(
+                Bool(
+                    true,
+                ),
             ),
         },
-        cond_then: Num(
-            1.0,
+        cond_then: Trivial(
+            Num(
+                1.0,
+            ),
         ),
         cond_else: Some(
-            Num(
-                2.0,
+            Trivial(
+                Num(
+                    2.0,
+                ),
             ),
         ),
     },

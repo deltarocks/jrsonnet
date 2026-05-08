@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-ir-parser/src/lib.rs
+assertion_line: 1184
 expression: v
 input_file: crates/jrsonnet-peg-parser/src/tests/subexp.jsonnet
 ---
@@ -22,8 +23,10 @@ BinaryOp(
                             into: Full(
                                 "x" from virtual:<test>:11-12,
                             ),
-                            value: Num(
-                                1.0,
+                            value: Trivial(
+                                Num(
+                                    1.0,
+                                ),
                             ),
                         },
                     ],

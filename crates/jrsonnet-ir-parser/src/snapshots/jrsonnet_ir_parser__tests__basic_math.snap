@@ -1,21 +1,28 @@
 ---
 source: crates/jrsonnet-ir-parser/src/lib.rs
+assertion_line: 1094
 expression: "format!(\"{v:#?}\")"
 ---
 BinaryOp(
     BinaryOp {
-        lhs: Num(
-            2.0,
+        lhs: Trivial(
+            Num(
+                2.0,
+            ),
         ),
         op: Add,
         rhs: BinaryOp(
             BinaryOp {
-                lhs: Num(
-                    2.0,
+                lhs: Trivial(
+                    Num(
+                        2.0,
+                    ),
                 ),
                 op: Mul,
-                rhs: Num(
-                    2.0,
+                rhs: Trivial(
+                    Num(
+                        2.0,
+                    ),
                 ),
             },
         ),

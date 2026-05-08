@@ -1,17 +1,24 @@
 ---
 source: crates/jrsonnet-ir-parser/src/lib.rs
+assertion_line: 1100
 expression: "format!(\"{v:#?}\")"
 ---
 Arr(
     [
-        Num(
-            1000.0,
+        Trivial(
+            Num(
+                1000.0,
+            ),
         ),
-        Num(
-            1000.0001,
+        Trivial(
+            Num(
+                1000.0001,
+            ),
         ),
-        Num(
-            100000000000.0,
+        Trivial(
+            Num(
+                100000000000.0,
+            ),
         ),
     ],
 )

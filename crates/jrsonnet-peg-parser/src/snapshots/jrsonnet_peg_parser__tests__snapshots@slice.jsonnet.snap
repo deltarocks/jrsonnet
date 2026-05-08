@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-peg-parser/src/lib.rs
+assertion_line: 459
 expression: v
 input_file: crates/jrsonnet-peg-parser/src/tests/slice.jsonnet
 ---
@@ -12,8 +13,10 @@ Arr(
                 ),
                 slice: SliceDesc {
                     start: Some(
-                        Num(
-                            1.0,
+                        Trivial(
+                            Num(
+                                1.0,
+                            ),
                         ) from virtual:<test>:4-5,
                     ),
                     end: None,
@@ -28,8 +31,10 @@ Arr(
                 ),
                 slice: SliceDesc {
                     start: Some(
-                        Num(
-                            1.0,
+                        Trivial(
+                            Num(
+                                1.0,
+                            ),
                         ) from virtual:<test>:11-12,
                     ),
                     end: None,
@@ -45,8 +50,10 @@ Arr(
                 slice: SliceDesc {
                     start: None,
                     end: Some(
-                        Num(
-                            1.0,
+                        Trivial(
+                            Num(
+                                1.0,
+                            ),
                         ) from virtual:<test>:20-21,
                     ),
                     step: None,
@@ -62,8 +69,10 @@ Arr(
                     start: None,
                     end: None,
                     step: Some(
-                        Num(
-                            1.0,
+                        Trivial(
+                            Num(
+                                1.0,
+                            ),
                         ) from virtual:<test>:29-30,
                     ),
                 },
@@ -83,8 +92,10 @@ Arr(
                                     "len" from virtual:<test>:38-41,
                                 ),
                                 op: Sub,
-                                rhs: Num(
-                                    1.0,
+                                rhs: Trivial(
+                                    Num(
+                                        1.0,
+                                    ),
                                 ),
                             },
                         ) from virtual:<test>:38-45,

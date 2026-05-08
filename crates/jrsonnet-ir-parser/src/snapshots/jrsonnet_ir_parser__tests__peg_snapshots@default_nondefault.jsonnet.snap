@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-ir-parser/src/lib.rs
+assertion_line: 1184
 expression: v
 input_file: crates/jrsonnet-peg-parser/src/tests/default_nondefault.jsonnet
 ---
@@ -14,8 +15,10 @@ LocalExpr(
                             "foo" from virtual:<test>:8-11,
                         ),
                         default: Some(
-                            Str(
-                                "foo",
+                            Trivial(
+                                Str(
+                                    "foo",
+                                ),
                             ),
                         ),
                     },
@@ -44,14 +47,12 @@ LocalExpr(
                 ),
                 binds_len: 2,
             },
-            value: Literal(
-                virtual:<test>:28-32,
+            value: Trivial(
                 Null,
             ),
         },
     ],
-    Literal(
-        virtual:<test>:34-38,
+    Trivial(
         Null,
     ),
 )

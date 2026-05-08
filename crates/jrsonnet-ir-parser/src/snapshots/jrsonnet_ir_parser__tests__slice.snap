@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-ir-parser/src/lib.rs
+assertion_line: 1167
 expression: "format!(\"{v:#?}\")"
 ---
 Arr(
@@ -11,8 +12,10 @@ Arr(
                 ),
                 slice: SliceDesc {
                     start: Some(
-                        Num(
-                            1.0,
+                        Trivial(
+                            Num(
+                                1.0,
+                            ),
                         ) from virtual:<test>:3-4,
                     ),
                     end: None,
@@ -27,8 +30,10 @@ Arr(
                 ),
                 slice: SliceDesc {
                     start: Some(
-                        Num(
-                            1.0,
+                        Trivial(
+                            Num(
+                                1.0,
+                            ),
                         ) from virtual:<test>:10-11,
                     ),
                     end: None,
@@ -44,8 +49,10 @@ Arr(
                 slice: SliceDesc {
                     start: None,
                     end: Some(
-                        Num(
-                            1.0,
+                        Trivial(
+                            Num(
+                                1.0,
+                            ),
                         ) from virtual:<test>:19-20,
                     ),
                     step: None,
@@ -61,8 +68,10 @@ Arr(
                     start: None,
                     end: None,
                     step: Some(
-                        Num(
-                            1.0,
+                        Trivial(
+                            Num(
+                                1.0,
+                            ),
                         ) from virtual:<test>:28-29,
                     ),
                 },

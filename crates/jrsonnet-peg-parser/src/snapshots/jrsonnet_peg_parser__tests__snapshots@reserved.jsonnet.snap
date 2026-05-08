@@ -1,12 +1,12 @@
 ---
 source: crates/jrsonnet-peg-parser/src/lib.rs
+assertion_line: 459
 expression: v
 input_file: crates/jrsonnet-peg-parser/src/tests/reserved.jsonnet
 ---
 Arr(
     [
-        Literal(
-            virtual:<test>:2-6,
+        Trivial(
             Null,
         ),
         Var(

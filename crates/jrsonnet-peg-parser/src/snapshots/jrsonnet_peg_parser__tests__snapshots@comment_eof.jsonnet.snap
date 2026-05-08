@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-peg-parser/src/lib.rs
+assertion_line: 459
 expression: v
 input_file: crates/jrsonnet-peg-parser/src/tests/comment_eof.jsonnet
 ---
@@ -16,8 +17,10 @@ Obj(
                     plus: false,
                     params: None,
                     visibility: Normal,
-                    value: Num(
-                        1.0,
+                    value: Trivial(
+                        Num(
+                            1.0,
+                        ),
                     ),
                 },
             ],

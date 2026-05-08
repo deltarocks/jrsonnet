@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-ir-parser/src/lib.rs
+assertion_line: 1118
 expression: "format!(\"{v:#?}\")"
 ---
 LocalExpr(
@@ -19,8 +20,10 @@ LocalExpr(
                             "y" from virtual:<test>:11-12,
                         ),
                         default: Some(
-                            Num(
-                                1.0,
+                            Trivial(
+                                Num(
+                                    1.0,
+                                ),
                             ),
                         ),
                     },
@@ -62,16 +65,20 @@ LocalExpr(
         ),
         ArgsDesc {
             unnamed: [
-                Num(
-                    2.0,
+                Trivial(
+                    Num(
+                        2.0,
+                    ),
                 ),
             ],
             names: [
                 "y",
             ],
             values: [
-                Num(
-                    3.0,
+                Trivial(
+                    Num(
+                        3.0,
+                    ),
                 ),
             ],
         } from virtual:<test>:26-34,

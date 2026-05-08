@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-ir-parser/src/lib.rs
+assertion_line: 1149
 expression: "format!(\"{v:#?}\")"
 ---
 ObjExtend(
@@ -24,8 +25,10 @@ ObjExtend(
                     plus: false,
                     params: None,
                     visibility: Normal,
-                    value: Num(
-                        1.0,
+                    value: Trivial(
+                        Num(
+                            1.0,
+                        ),
                     ),
                 },
             ],

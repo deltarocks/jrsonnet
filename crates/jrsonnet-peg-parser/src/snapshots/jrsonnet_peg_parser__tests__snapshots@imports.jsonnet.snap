@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-peg-parser/src/lib.rs
+assertion_line: 459
 expression: v
 input_file: crates/jrsonnet-peg-parser/src/tests/imports.jsonnet
 ---
@@ -7,20 +8,26 @@ Arr(
     [
         Import(
             Normal from virtual:<test>:2-8,
-            Str(
-                "hello",
+            Trivial(
+                Str(
+                    "hello",
+                ),
             ),
         ),
         Import(
             Str from virtual:<test>:18-27,
-            Str(
-                "garnish.txt",
+            Trivial(
+                Str(
+                    "garnish.txt",
+                ),
             ),
         ),
         Import(
             Bin from virtual:<test>:43-52,
-            Str(
-                "garnish.bin",
+            Trivial(
+                Str(
+                    "garnish.bin",
+                ),
             ),
         ),
     ],

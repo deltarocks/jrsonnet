@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-ir-parser/src/lib.rs
+assertion_line: 1143
 expression: "format!(\"{v:#?}\")"
 ---
 Index {
@@ -11,16 +12,20 @@ Index {
             parts: [
                 IndexPart {
                     span: virtual:<test>:4-8,
-                    value: Str(
-                        "test",
+                    value: Trivial(
+                        Str(
+                            "test",
+                        ),
                     ),
                 },
             ],
         },
         ArgsDesc {
             unnamed: [
-                Num(
-                    2.0,
+                Trivial(
+                    Num(
+                        2.0,
+                    ),
                 ),
             ],
             names: [],
@@ -31,14 +36,18 @@ Index {
     parts: [
         IndexPart {
             span: virtual:<test>:12-17,
-            value: Str(
-                "field",
+            value: Trivial(
+                Str(
+                    "field",
+                ),
             ),
         },
         IndexPart {
             span: virtual:<test>:18-19,
-            value: Num(
-                0.0,
+            value: Trivial(
+                Num(
+                    0.0,
+                ),
             ),
         },
     ],

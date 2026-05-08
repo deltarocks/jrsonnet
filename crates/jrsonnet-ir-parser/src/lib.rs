@@ -1,9 +1,9 @@
 use jrsonnet_gcmodule::Acyclic;
 use jrsonnet_ir::{
 	ArgsDesc, AssertExpr, AssertStmt, BinaryOp, BinaryOpType, BindSpec, CompSpec, Destruct, Expr,
-	ExprParam, ExprParams, FieldMember, FieldName, ForSpecData, IStr, IfElse, IfSpecData,
-	ImportKind, IndexPart, LiteralType, Member, NumValue, ObjBody, ObjComp, ObjMembers, Slice,
-	SliceDesc, Source, Span, Spanned, UnaryOpType, Visibility, unescape,
+	ExprParam, ExprParams, FieldMember, FieldName, ForSpecData, IStr, IdentityKind, IfElse,
+	IfSpecData, ImportKind, IndexPart, Member, NumValue, ObjBody, ObjComp, ObjMembers, Slice,
+	SliceDesc, Source, Span, Spanned, TrivialVal, UnaryOpType, Visibility, unescape,
 };
 use jrsonnet_lexer::{Lexeme, Lexer, Span as LexSpan, SyntaxKind, T, collect_lexed_str_block};
 
@@ -245,19 +245,6 @@ fn ident(p: &mut Parser<'_>) -> Result<IStr> {
 	let text = p.text();
 	p.eat_any();
 	Ok(IStr::from(text))
-}
-
-fn literal(p: &mut Parser<'_>) -> Option<(Span, LiteralType)> {
-	let t = match p.peek() {
-		T![self] => LiteralType::This,
-		T![super] => LiteralType::Super,
-		T!['$'] => LiteralType::Dollar,
-		T![null] => LiteralType::Null,
-		T![true] => LiteralType::True,
-		T![false] => LiteralType::False,
-		_ => return None,
-	};
-	Some((p.eat_any_spanned(), t))
 }
 
 fn assert_stmt(p: &mut Parser<'_>) -> Result<AssertStmt> {
@@ -688,18 +675,30 @@ fn objinside(p: &mut Parser<'_>) -> Result<ObjBody> {
 
 #[allow(clippy::too_many_lines)]
 fn expr_basic(p: &mut Parser<'_>) -> Result<Expr> {
-	if let Some((span, lit)) = literal(p) {
-		return Ok(Expr::Literal(span, lit));
-	}
-
 	match p.peek() {
+		T![self] => Ok(Expr::Identity(p.eat_any_spanned(), IdentityKind::This)),
+		T![super] => Ok(Expr::Identity(p.eat_any_spanned(), IdentityKind::Super)),
+		T!['$'] => Ok(Expr::Identity(p.eat_any_spanned(), IdentityKind::Dollar)),
+		T![null] => {
+			p.eat_any();
+			Ok(Expr::Trivial(TrivialVal::Null))
+		}
+		T![true] => {
+			p.eat_any();
+			Ok(Expr::Trivial(TrivialVal::Bool(true)))
+		}
+		T![false] => {
+			p.eat_any();
+			Ok(Expr::Trivial(TrivialVal::Bool(false)))
+		}
+
 		SyntaxKind::STRING_DOUBLE
 		| SyntaxKind::STRING_SINGLE
 		| SyntaxKind::STRING_DOUBLE_VERBATIM
 		| SyntaxKind::STRING_SINGLE_VERBATIM
-		| SyntaxKind::STRING_BLOCK => Ok(Expr::Str(parse_string_content(p)?)),
+		| SyntaxKind::STRING_BLOCK => Ok(Expr::Trivial(TrivialVal::Str(parse_string_content(p)?))),
 
-		SyntaxKind::FLOAT => Ok(Expr::Num(parse_number(p)?)),
+		SyntaxKind::FLOAT => Ok(Expr::Trivial(TrivialVal::Num(parse_number(p)?))),
 
 		T!['('] => {
 			p.eat(T!['('])?;
@@ -832,7 +831,7 @@ fn flush_index_parts(e: &mut Expr, parts: &mut Vec<IndexPart>) {
 	if parts.is_empty() {
 		return;
 	}
-	let old = std::mem::replace(e, Expr::Str(IStr::empty()));
+	let old = std::mem::replace(e, Expr::Trivial(TrivialVal::Null));
 	*e = Expr::Index {
 		indexable: Box::new(old),
 		parts: std::mem::take(parts),
@@ -863,7 +862,7 @@ fn expr_suffix(p: &mut Parser<'_>) -> Result<Expr> {
 					});
 				} else {
 					// ?.field
-					let id_spanned = spanned(p, |p| Ok(Expr::Str(ident(p)?)))?;
+					let id_spanned = spanned(p, |p| Ok(Expr::Trivial(TrivialVal::Str(ident(p)?))))?;
 					parts.push(IndexPart {
 						span: id_spanned.span,
 						value: id_spanned.value,
@@ -878,7 +877,7 @@ fn expr_suffix(p: &mut Parser<'_>) -> Result<Expr> {
 
 		if p.at(T![.]) {
 			p.eat(T![.])?;
-			let id_spanned = spanned(p, |p| Ok(Expr::Str(ident(p)?)))?;
+			let id_spanned = spanned(p, |p| Ok(Expr::Trivial(TrivialVal::Str(ident(p)?))))?;
 			parts.push(IndexPart {
 				span: id_spanned.span,
 				value: id_spanned.value,
@@ -1058,7 +1057,10 @@ pub fn parse(str: &str, settings: &ParserSettings) -> Result<Expr> {
 pub fn string_to_expr(s: IStr, settings: &ParserSettings) -> Spanned<Expr> {
 	let len = u32::try_from(s.len()).expect("code size is limited by 4gb");
 
-	Spanned::new(Expr::Str(s), Span(settings.source.clone(), 0, len))
+	Spanned::new(
+		Expr::Trivial(TrivialVal::Str(s)),
+		Span(settings.source.clone(), 0, len),
+	)
 }
 
 #[cfg(test)]

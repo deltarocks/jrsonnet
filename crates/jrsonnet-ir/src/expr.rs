@@ -31,6 +31,14 @@ pub enum Visibility {
 	Unhide,
 }
 
+#[derive(Debug, Clone, PartialEq, Acyclic)]
+pub enum TrivialVal {
+	Null,
+	Bool(bool),
+	Num(NumValue),
+	Str(IStr),
+}
+
 impl Visibility {
 	pub fn is_visible(&self) -> bool {
 		matches!(self, Self::Normal | Self::Unhide)
@@ -351,14 +359,12 @@ pub enum ObjBody {
 	ObjComp(ObjComp),
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Acyclic)]
-pub enum LiteralType {
+/// Object identity reference: `self`, `super`, or `$`.#[derive(Debug, PartialEq, Eq, Clone, Copy, Acyclic)]
+#[derive(Debug, PartialEq, Acyclic)]
+pub enum IdentityKind {
 	This,
 	Super,
 	Dollar,
-	Null,
-	True,
-	False,
 }
 
 #[derive(Debug, PartialEq, Acyclic)]
@@ -404,12 +410,12 @@ pub struct Slice {
 /// Syntax base
 #[derive(Debug, PartialEq, Acyclic)]
 pub enum Expr {
-	Literal(Span, LiteralType),
+	/// Object-identity reference: `self`, `super`, `$`.
+	Identity(Span, IdentityKind),
 
-	/// String value: "hello"
-	Str(IStr),
-	/// Number: 1, 2.0, 2e+20
-	Num(NumValue),
+	/// Trivial value literal
+	Trivial(TrivialVal),
+
 	/// Variable name: test
 	Var(Spanned<IStr>),
 
