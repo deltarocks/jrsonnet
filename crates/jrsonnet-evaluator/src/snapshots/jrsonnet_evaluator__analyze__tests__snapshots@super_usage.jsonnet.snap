@@ -13,8 +13,8 @@ errored: false
 --- lir ---
 BinaryOp {
     lhs: Obj(
-        MemberList(
-            LObjMembers {
+        StaticMembers(
+            LObjStaticMembers {
                 frame_shape: ClosureShape {
                     captures: [],
                     n_locals: 1,
@@ -24,47 +24,63 @@ BinaryOp {
                 uses_super: false,
                 locals: [],
                 asserts: None,
-                fields: [
-                    LFieldMember {
-                        name: Fixed(
-                            "a",
-                        ),
-                        plus: false,
-                        visibility: Normal,
-                        value: (
-                            ClosureShape {
-                                captures: [],
-                                n_locals: 0,
+                shape: ObjShape {
+                    fields: [
+                        ShapeField {
+                            name: "a",
+                            flags: ObjFieldFlags {
+                                add: false,
+                                visibility: Normal,
                             },
+                            location: None,
+                            index: FieldIndex(
+                                (),
+                            ),
+                        },
+                        ShapeField {
+                            name: "b",
+                            flags: ObjFieldFlags {
+                                add: false,
+                                visibility: Normal,
+                            },
+                            location: None,
+                            index: FieldIndex(
+                                (),
+                            ),
+                        },
+                    ],
+                },
+                bindings: [
+                    (
+                        ClosureShape {
+                            captures: [],
+                            n_locals: 0,
+                        },
+                        Trivial(
                             Num(
                                 1.0,
                             ),
                         ),
-                    },
-                    LFieldMember {
-                        name: Fixed(
-                            "b",
-                        ),
-                        plus: false,
-                        visibility: Normal,
-                        value: (
-                            ClosureShape {
-                                captures: [],
-                                n_locals: 0,
-                            },
+                    ),
+                    (
+                        ClosureShape {
+                            captures: [],
+                            n_locals: 0,
+                        },
+                        Trivial(
                             Num(
                                 2.0,
                             ),
                         ),
-                    },
+                    ),
                 ],
             },
         ),
     ),
     op: Add,
     rhs: Obj(
-        MemberList(
-            LObjMembers {
+        StaticMembers(
+            LObjStaticMembers {
                 frame_shape: ClosureShape {
                     captures: [],
                     n_locals: 1,
@@ -78,67 +94,85 @@ BinaryOp {
                 uses_super: true,
                 locals: [],
                 asserts: None,
-                fields: [
-                    LFieldMember {
-                        name: Fixed(
-                            "a",
-                        ),
-                        plus: false,
-                        visibility: Normal,
-                        value: (
-                            ClosureShape {
-                                captures: [],
-                                n_locals: 0,
+                shape: ObjShape {
+                    fields: [
+                        ShapeField {
+                            name: "a",
+                            flags: ObjFieldFlags {
+                                add: false,
+                                visibility: Normal,
                             },
-                            BinaryOp {
-                                lhs: Index {
-                                    indexable: Super,
-                                    parts: [
-                                        LIndexPart {
-                                            span: virtual:<test>:28-29,
-                                            value: Str(
-                                                "a",
-                                            ),
-                                        },
-                                    ],
-                                },
-                                op: Add,
-                                rhs: Num(
-                                    10.0,
-                                ),
+                            location: None,
+                            index: FieldIndex(
+                                (),
+                            ),
+                        },
+                        ShapeField {
+                            name: "c",
+                            flags: ObjFieldFlags {
+                                add: false,
+                                visibility: Normal,
                             },
-                        ),
-                    },
-                    LFieldMember {
-                        name: Fixed(
-                            "c",
-                        ),
-                        plus: false,
-                        visibility: Normal,
-                        value: (
-                            ClosureShape {
-                                captures: [],
-                                n_locals: 0,
-                            },
-                            Index {
-                                indexable: Slot(
-                                    Local(
-                                        LocalSlot(
-                                            0,
-                                        ),
-                                    ),
-                                ),
+                            location: None,
+                            index: FieldIndex(
+                                (),
+                            ),
+                        },
+                    ],
+                },
+                bindings: [
+                    (
+                        ClosureShape {
+                            captures: [],
+                            n_locals: 0,
+                        },
+                        BinaryOp {
+                            lhs: Index {
+                                indexable: Super,
                                 parts: [
                                     LIndexPart {
-                                        span: virtual:<test>:44-45,
-                                        value: Str(
-                                            "b",
+                                        span: virtual:<test>:28-29,
+                                        value: Trivial(
+                                            Str(
+                                                "a",
+                                            ),
                                         ),
                                     },
                                 ],
                             },
-                        ),
-                    },
+                            op: Add,
+                            rhs: Trivial(
+                                Num(
+                                    10.0,
+                                ),
+                            ),
+                        },
+                    ),
+                    (
+                        ClosureShape {
+                            captures: [],
+                            n_locals: 0,
+                        },
+                        Index {
+                            indexable: Slot(
+                                Local(
+                                    LocalSlot(
+                                        0,
+                                    ),
+                                ),
+                            ),
+                            parts: [
+                                LIndexPart {
+                                    span: virtual:<test>:44-45,
+                                    value: Trivial(
+                                        Str(
+                                            "b",
+                                        ),
+                                    ),
+                                },
+                            ],
+                        },
+                    ),
                 ],
             },
         ),

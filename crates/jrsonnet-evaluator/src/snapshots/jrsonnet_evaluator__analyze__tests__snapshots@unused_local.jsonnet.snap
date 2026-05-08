@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-evaluator/src/analyze.rs
+assertion_line: 2175
 expression: rendered
 input_file: crates/jrsonnet-evaluator/src/analysis_tests/unused_local.jsonnet
 ---
@@ -31,13 +32,17 @@ LocalExpr(
                     captures: [],
                     n_locals: 0,
                 },
-                value: Num(
-                    1.0,
+                value: Trivial(
+                    Num(
+                        1.0,
+                    ),
                 ),
             },
         ],
-        body: Num(
-            2.0,
+        body: Trivial(
+            Num(
+                2.0,
+            ),
         ),
     },
 )

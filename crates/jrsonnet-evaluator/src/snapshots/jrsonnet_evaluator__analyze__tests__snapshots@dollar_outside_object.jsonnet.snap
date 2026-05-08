@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-evaluator/src/analyze.rs
+assertion_line: 2175
 expression: rendered
 input_file: crates/jrsonnet-evaluator/src/analysis_tests/dollar_outside_object.jsonnet
 ---
@@ -21,8 +22,10 @@ Index {
     parts: [
         LIndexPart {
             span: virtual:<test>:2-3,
-            value: Str(
-                "a",
+            value: Trivial(
+                Str(
+                    "a",
+                ),
             ),
         },
     ],

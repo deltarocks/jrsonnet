@@ -144,6 +144,7 @@ pub enum MaybeUnbound {
 	Unbound(CcUnbound<Val>),
 	/// Value is object-independent
 	Bound(Thunk<Val>),
+	Const(Val),
 }
 
 impl Debug for MaybeUnbound {
@@ -157,6 +158,7 @@ impl MaybeUnbound {
 		match self {
 			Self::Unbound(v) => v.0.bind(sup_this),
 			Self::Bound(v) => Ok(v.evaluate()?),
+			Self::Const(v) => Ok(v.clone()),
 		}
 	}
 }

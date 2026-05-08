@@ -17,8 +17,8 @@ errored: false
 --- diagnostics ---
 --- lir ---
 Obj(
-    MemberList(
-        LObjMembers {
+    StaticMembers(
+        LObjStaticMembers {
             frame_shape: ClosureShape {
                 captures: [],
                 n_locals: 1,
@@ -28,103 +28,133 @@ Obj(
             uses_super: false,
             locals: [],
             asserts: None,
-            fields: [
-                LFieldMember {
-                    name: Fixed(
-                        "a",
-                    ),
-                    plus: false,
-                    visibility: Normal,
-                    value: (
-                        ClosureShape {
-                            captures: [],
-                            n_locals: 0,
+            shape: ObjShape {
+                fields: [
+                    ShapeField {
+                        name: "a",
+                        flags: ObjFieldFlags {
+                            add: false,
+                            visibility: Normal,
                         },
+                        location: None,
+                        index: FieldIndex(
+                            (),
+                        ),
+                    },
+                    ShapeField {
+                        name: "b",
+                        flags: ObjFieldFlags {
+                            add: false,
+                            visibility: Normal,
+                        },
+                        location: None,
+                        index: FieldIndex(
+                            (),
+                        ),
+                    },
+                ],
+            },
+            bindings: [
+                (
+                    ClosureShape {
+                        captures: [],
+                        n_locals: 0,
+                    },
+                    Trivial(
                         Num(
                             1.0,
                         ),
                     ),
-                },
-                LFieldMember {
-                    name: Fixed(
-                        "b",
-                    ),
-                    plus: false,
-                    visibility: Normal,
-                    value: (
-                        ClosureShape {
-                            captures: [],
-                            n_locals: 0,
-                        },
-                        Obj(
-                            MemberList(
-                                LObjMembers {
-                                    frame_shape: ClosureShape {
-                                        captures: [],
-                                        n_locals: 1,
-                                    },
-                                    this: Some(
-                                        LocalSlot(
-                                            0,
-                                        ),
+                ),
+                (
+                    ClosureShape {
+                        captures: [],
+                        n_locals: 0,
+                    },
+                    Obj(
+                        StaticMembers(
+                            LObjStaticMembers {
+                                frame_shape: ClosureShape {
+                                    captures: [],
+                                    n_locals: 1,
+                                },
+                                this: Some(
+                                    LocalSlot(
+                                        0,
                                     ),
-                                    set_dollar: false,
-                                    uses_super: false,
-                                    locals: [],
-                                    asserts: None,
+                                ),
+                                set_dollar: false,
+                                uses_super: false,
+                                locals: [],
+                                asserts: None,
+                                shape: ObjShape {
                                     fields: [
-                                        LFieldMember {
-                                            name: Fixed(
-                                                "c",
-                                            ),
-                                            plus: false,
-                                            visibility: Normal,
-                                            value: (
-                                                ClosureShape {
-                                                    captures: [],
-                                                    n_locals: 0,
-                                                },
-                                                Num(
-                                                    2.0,
-                                                ),
+                                        ShapeField {
+                                            name: "c",
+                                            flags: ObjFieldFlags {
+                                                add: false,
+                                                visibility: Normal,
+                                            },
+                                            location: None,
+                                            index: FieldIndex(
+                                                (),
                                             ),
                                         },
-                                        LFieldMember {
-                                            name: Fixed(
-                                                "d",
-                                            ),
-                                            plus: false,
-                                            visibility: Normal,
-                                            value: (
-                                                ClosureShape {
-                                                    captures: [],
-                                                    n_locals: 0,
-                                                },
-                                                Index {
-                                                    indexable: Slot(
-                                                        Local(
-                                                            LocalSlot(
-                                                                0,
-                                                            ),
-                                                        ),
-                                                    ),
-                                                    parts: [
-                                                        LIndexPart {
-                                                            span: virtual:<test>:35-36,
-                                                            value: Str(
-                                                                "c",
-                                                            ),
-                                                        },
-                                                    ],
-                                                },
+                                        ShapeField {
+                                            name: "d",
+                                            flags: ObjFieldFlags {
+                                                add: false,
+                                                visibility: Normal,
+                                            },
+                                            location: None,
+                                            index: FieldIndex(
+                                                (),
                                             ),
                                         },
                                     ],
                                 },
-                            ),
+                                bindings: [
+                                    (
+                                        ClosureShape {
+                                            captures: [],
+                                            n_locals: 0,
+                                        },
+                                        Trivial(
+                                            Num(
+                                                2.0,
+                                            ),
+                                        ),
+                                    ),
+                                    (
+                                        ClosureShape {
+                                            captures: [],
+                                            n_locals: 0,
+                                        },
+                                        Index {
+                                            indexable: Slot(
+                                                Local(
+                                                    LocalSlot(
+                                                        0,
+                                                    ),
+                                                ),
+                                            ),
+                                            parts: [
+                                                LIndexPart {
+                                                    span: virtual:<test>:35-36,
+                                                    value: Trivial(
+                                                        Str(
+                                                            "c",
+                                                        ),
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                    ),
+                                ],
+                            },
                         ),
                     ),
-                },
+                ),
             ],
         },
     ),

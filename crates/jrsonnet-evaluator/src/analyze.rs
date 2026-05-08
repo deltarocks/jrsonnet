@@ -21,16 +21,18 @@ use jrsonnet_gcmodule::Acyclic;
 use jrsonnet_interner::IStr;
 use jrsonnet_ir::{
 	ArgsDesc, AssertExpr, AssertStmt, BinaryOp, BinaryOpType, BindSpec, CompSpec, Destruct, Expr,
-	ExprParams, FieldName, ForSpecData, IfElse, IfSpecData, ImportKind, LiteralType, NumValue,
-	ObjBody, ObjComp, ObjMembers, Slice, SliceDesc, Span, Spanned, UnaryOpType, Visibility,
+	ExprParams, FieldName, ForSpecData, IdentityKind, IfElse, IfSpecData, ImportKind, ObjBody,
+	ObjComp, ObjMembers, Slice, SliceDesc, Span, Spanned, TrivialVal, UnaryOpType, Visibility,
 	function::FunctionSignature,
 };
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use smallvec::SmallVec;
 
 use crate::{
 	arr::arridx,
 	error::{format_found, suggest_names},
+	gc::WithCapacityExt as _,
+	obj::{ObjFieldFlags, ObjShape, ShapeField, ordering::FieldIndex},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -329,6 +331,7 @@ pub struct LIndexPart {
 #[derive(Debug, Acyclic)]
 pub enum LObjBody {
 	MemberList(LObjMembers),
+	StaticMembers(Box<LObjStaticMembers>),
 	ObjComp(Box<LObjComp>),
 }
 
@@ -346,6 +349,20 @@ pub struct LObjMembers {
 	pub locals: Rc<Vec<LBind>>,
 	pub asserts: Option<Rc<LObjAsserts>>,
 	pub fields: Vec<LFieldMember>,
+}
+
+#[derive(Debug, Acyclic)]
+pub struct LObjStaticMembers {
+	pub frame_shape: ClosureShape,
+	pub this: Option<LocalSlot>,
+	pub set_dollar: bool,
+	pub uses_super: bool,
+
+	pub locals: Rc<Vec<LBind>>,
+	pub asserts: Option<Rc<LObjAsserts>>,
+
+	pub shape: Rc<ObjShape>,
+	pub bindings: Vec<Rc<(ClosureShape, LExpr)>>,
 }
 
 #[derive(Debug, Acyclic)]
@@ -1336,7 +1353,7 @@ pub fn analyze_named(
 	taint: &mut AnalysisResult,
 ) -> LExpr {
 	if let Expr::Function(span, params, body) = expr {
-		return analyze_function(Some(name), &span, &params, body, stack, taint);
+		return analyze_function(Some(name), span, params, body, stack, taint);
 	}
 	analyze(expr, stack, taint)
 }
@@ -1552,7 +1569,7 @@ fn analyze_bind_value(
 		BindSpec::Field {
 			value: Expr::Function(span, params, value),
 			into: Destruct::Full(name),
-		} => analyze_function(Some(name.value.clone()), &span, params, value, stack, taint),
+		} => analyze_function(Some(name.value.clone()), span, params, value, stack, taint),
 		BindSpec::Field { value, .. } => analyze(value, stack, taint),
 		BindSpec::Function {
 			params,
@@ -1694,10 +1711,67 @@ fn analyze_obj_body(
 ) -> LObjBody {
 	match obj {
 		ObjBody::MemberList(members) => {
-			LObjBody::MemberList(analyze_obj_members(members, stack, taint))
+			let lowered = analyze_obj_members(members, stack, taint);
+			match try_lower_static(lowered) {
+				Ok(static_members) => LObjBody::StaticMembers(Box::new(static_members)),
+				Err(member_list) => LObjBody::MemberList(member_list),
+			}
 		}
 		ObjBody::ObjComp(comp) => LObjBody::ObjComp(Box::new(analyze_obj_comp(comp, stack, taint))),
 	}
+}
+
+fn try_lower_static(members: LObjMembers) -> Result<LObjStaticMembers, LObjMembers> {
+	let mut seen: FxHashSet<IStr> = FxHashSet::with_capacity(members.fields.len());
+	for f in &members.fields {
+		match &f.name {
+			LFieldName::Fixed(name) => {
+				if !seen.insert(name.clone()) {
+					return Err(members);
+				}
+			}
+			LFieldName::Dyn(_) => return Err(members),
+		}
+	}
+
+	let LObjMembers {
+		frame_shape,
+		this,
+		set_dollar,
+		uses_super,
+		locals,
+		asserts,
+		fields,
+	} = members;
+
+	let mut shape_fields = Vec::with_capacity(fields.len());
+	let mut bindings = Vec::with_capacity(fields.len());
+	let mut next_index = FieldIndex::default();
+	for f in fields {
+		let LFieldName::Fixed(name) = f.name else {
+			unreachable!("checked above");
+		};
+		let index = next_index;
+		next_index = next_index.next();
+		shape_fields.push(ShapeField {
+			name,
+			flags: ObjFieldFlags::new(f.plus, f.visibility),
+			location: None,
+			index,
+		});
+		bindings.push(f.value);
+	}
+
+	Ok(LObjStaticMembers {
+		frame_shape,
+		this,
+		set_dollar,
+		uses_super,
+		locals,
+		asserts,
+		shape: Rc::new(ObjShape::new(shape_fields)),
+		bindings,
+	})
 }
 
 fn analyze_obj_members(

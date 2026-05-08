@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-evaluator/src/analyze.rs
+assertion_line: 2175
 expression: rendered
 input_file: crates/jrsonnet-evaluator/src/analysis_tests/object_comp.jsonnet
 ---
@@ -71,12 +72,8 @@ Obj(
                             0,
                         ),
                     ),
-                    over: Arr {
-                        shape: ClosureShape {
-                            captures: [],
-                            n_locals: 0,
-                        },
-                        items: [
+                    over: ArrConst(
+                        [
                             Str(
                                 "a",
                             ),
@@ -84,7 +81,7 @@ Obj(
                                 "b",
                             ),
                         ],
-                    },
+                    ),
                     loop_invariant: true,
                 },
             ],

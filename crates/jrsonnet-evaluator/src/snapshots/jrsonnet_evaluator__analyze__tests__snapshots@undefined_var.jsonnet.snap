@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-evaluator/src/analyze.rs
+assertion_line: 2175
 expression: rendered
 input_file: crates/jrsonnet-evaluator/src/analysis_tests/undefined_var.jsonnet
 ---
@@ -19,7 +20,9 @@ BinaryOp {
         "ref",
     ),
     op: Add,
-    rhs: Num(
-        1.0,
+    rhs: Trivial(
+        Num(
+            1.0,
+        ),
     ),
 }

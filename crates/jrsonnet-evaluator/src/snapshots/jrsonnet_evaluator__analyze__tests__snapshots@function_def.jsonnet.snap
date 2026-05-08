@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-evaluator/src/analyze.rs
+assertion_line: 2175
 expression: rendered
 input_file: crates/jrsonnet-evaluator/src/analysis_tests/function_def.jsonnet
 ---
@@ -108,11 +109,15 @@ LocalExpr(
             ),
             args: LArgsDesc {
                 unnamed: [
-                    Num(
-                        1.0,
+                    Trivial(
+                        Num(
+                            1.0,
+                        ),
                     ),
-                    Num(
-                        2.0,
+                    Trivial(
+                        Num(
+                            2.0,
+                        ),
                     ),
                 ],
                 names: [],

@@ -1,7 +1,8 @@
 ---
 source: crates/jrsonnet-evaluator/src/analyze.rs
+assertion_line: 2175
 expression: rendered
-input_file: crates/jrsonnet-evaluator/src/analyze_tests/literal.jsonnet
+input_file: crates/jrsonnet-evaluator/src/analysis_tests/literal.jsonnet
 ---
 --- source ---
 42
@@ -11,6 +12,8 @@ local_dependent_depth: none
 errored: false
 --- diagnostics ---
 --- lir ---
-Num(
-    42.0,
+Trivial(
+    Num(
+        42.0,
+    ),
 )

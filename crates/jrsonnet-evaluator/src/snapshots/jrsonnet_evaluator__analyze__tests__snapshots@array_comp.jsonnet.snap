@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-evaluator/src/analyze.rs
+assertion_line: 2175
 expression: rendered
 input_file: crates/jrsonnet-evaluator/src/analysis_tests/array_comp.jsonnet
 ---
@@ -26,8 +27,10 @@ ArrComp(
                 ),
             ),
             op: Mul,
-            rhs: Num(
-                2.0,
+            rhs: Trivial(
+                Num(
+                    2.0,
+                ),
             ),
         },
         compspecs: [
@@ -41,12 +44,8 @@ ArrComp(
                         0,
                     ),
                 ),
-                over: Arr {
-                    shape: ClosureShape {
-                        captures: [],
-                        n_locals: 0,
-                    },
-                    items: [
+                over: ArrConst(
+                    [
                         Num(
                             1.0,
                         ),
@@ -57,7 +56,7 @@ ArrComp(
                             3.0,
                         ),
                     ],
-                },
+                ),
                 loop_invariant: true,
             },
             If(
@@ -70,8 +69,10 @@ ArrComp(
                         ),
                     ),
                     op: Gt,
-                    rhs: Num(
-                        1.0,
+                    rhs: Trivial(
+                        Num(
+                            1.0,
+                        ),
                     ),
                 },
             ),

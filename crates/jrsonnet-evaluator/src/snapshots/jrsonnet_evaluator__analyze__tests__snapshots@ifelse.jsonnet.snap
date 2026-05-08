@@ -1,7 +1,8 @@
 ---
 source: crates/jrsonnet-evaluator/src/analyze.rs
+assertion_line: 2175
 expression: rendered
-input_file: crates/jrsonnet-evaluator/src/analyze_tests/ifelse.jsonnet
+input_file: crates/jrsonnet-evaluator/src/analysis_tests/ifelse.jsonnet
 ---
 --- source ---
 if true then 1 else 2
@@ -12,15 +13,21 @@ errored: false
 --- diagnostics ---
 --- lir ---
 IfElse {
-    cond: Bool(
-        true,
+    cond: Trivial(
+        Bool(
+            true,
+        ),
     ),
-    cond_then: Num(
-        1.0,
+    cond_then: Trivial(
+        Num(
+            1.0,
+        ),
     ),
     cond_else: Some(
-        Num(
-            2.0,
+        Trivial(
+            Num(
+                2.0,
+            ),
         ),
     ),
 }

@@ -17,9 +17,11 @@ use jrsonnet_ir::Span;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 mod oop;
+mod static_shape;
 
 pub use jrsonnet_ir::Visibility;
 pub use oop::ObjValueBuilder;
+pub use static_shape::{ObjShape, ObjShapeBuilder, ShapeField, StaticShapeOopObject};
 
 use crate::{
 	CcUnbound, MaybeUnbound, Result, Thunk, Unbound, Val,
@@ -99,7 +101,7 @@ impl FieldSortKey {
 #[derive(Clone, Copy, Acyclic)]
 pub struct ObjFieldFlags(u8);
 impl ObjFieldFlags {
-	fn new(add: bool, visibility: Visibility) -> Self {
+	pub fn new(add: bool, visibility: Visibility) -> Self {
 		let mut v = 0;
 		if add {
 			v |= 1;
@@ -140,7 +142,7 @@ pub struct ObjMember {
 	pub location: Option<Span>,
 }
 
-cc_dyn!(CcObjectAssertion, ObjectAssertion);
+cc_dyn!(CcObjectAssertion, ObjectAssertion, pub fn new() {...});
 pub trait ObjectAssertion: Trace {
 	fn run(&self, sup_this: SupThis) -> Result<()>;
 }
@@ -203,6 +205,10 @@ pub trait ObjectCore: Trace + Any + Debug {
 	fn field_visibility_core(&self, field: IStr) -> FieldVisibility;
 
 	fn run_assertions_core(&self, sup_this: SupThis) -> Result<()>;
+
+	fn has_assertion(&self) -> bool {
+		false
+	}
 }
 
 #[derive(Clone, Trace)]
@@ -1117,7 +1123,7 @@ impl<Kind> ObjMemberBuilder<Kind> {
 pub struct ExtendBuilder<'v>(&'v mut ObjValue);
 impl ObjMemberBuilder<ExtendBuilder<'_>> {
 	pub fn value(self, value: impl Into<Val>) {
-		self.binding(MaybeUnbound::Bound(Thunk::evaluated(value.into())));
+		self.binding(MaybeUnbound::Const(value.into()));
 	}
 	pub fn bindable(self, bindable: impl Unbound<Bound = Val>) {
 		self.binding(MaybeUnbound::Unbound(CcUnbound::new(bindable)));

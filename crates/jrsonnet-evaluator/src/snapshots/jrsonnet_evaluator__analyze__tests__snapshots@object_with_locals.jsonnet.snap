@@ -16,8 +16,8 @@ errored: false
 --- diagnostics ---
 --- lir ---
 Obj(
-    MemberList(
-        LObjMembers {
+    StaticMembers(
+        LObjStaticMembers {
             frame_shape: ClosureShape {
                 captures: [],
                 n_locals: 2,
@@ -36,59 +36,75 @@ Obj(
                         captures: [],
                         n_locals: 0,
                     },
-                    value: Num(
-                        10.0,
+                    value: Trivial(
+                        Num(
+                            10.0,
+                        ),
                     ),
                 },
             ],
             asserts: None,
-            fields: [
-                LFieldMember {
-                    name: Fixed(
-                        "a",
-                    ),
-                    plus: false,
-                    visibility: Normal,
-                    value: (
-                        ClosureShape {
-                            captures: [],
-                            n_locals: 0,
+            shape: ObjShape {
+                fields: [
+                    ShapeField {
+                        name: "a",
+                        flags: ObjFieldFlags {
+                            add: false,
+                            visibility: Normal,
                         },
-                        Slot(
+                        location: None,
+                        index: FieldIndex(
+                            (),
+                        ),
+                    },
+                    ShapeField {
+                        name: "b",
+                        flags: ObjFieldFlags {
+                            add: false,
+                            visibility: Normal,
+                        },
+                        location: None,
+                        index: FieldIndex(
+                            (),
+                        ),
+                    },
+                ],
+            },
+            bindings: [
+                (
+                    ClosureShape {
+                        captures: [],
+                        n_locals: 0,
+                    },
+                    Slot(
+                        Local(
+                            LocalSlot(
+                                1,
+                            ),
+                        ),
+                    ),
+                ),
+                (
+                    ClosureShape {
+                        captures: [],
+                        n_locals: 0,
+                    },
+                    BinaryOp {
+                        lhs: Slot(
                             Local(
                                 LocalSlot(
                                     1,
                                 ),
                             ),
                         ),
-                    ),
-                },
-                LFieldMember {
-                    name: Fixed(
-                        "b",
-                    ),
-                    plus: false,
-                    visibility: Normal,
-                    value: (
-                        ClosureShape {
-                            captures: [],
-                            n_locals: 0,
-                        },
-                        BinaryOp {
-                            lhs: Slot(
-                                Local(
-                                    LocalSlot(
-                                        1,
-                                    ),
-                                ),
-                            ),
-                            op: Mul,
-                            rhs: Num(
+                        op: Mul,
+                        rhs: Trivial(
+                            Num(
                                 2.0,
                             ),
-                        },
-                    ),
-                },
+                        ),
+                    },
+                ),
             ],
         },
     ),

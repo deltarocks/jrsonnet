@@ -1,5 +1,6 @@
 ---
 source: crates/jrsonnet-evaluator/src/analyze.rs
+assertion_line: 2175
 expression: rendered
 input_file: crates/jrsonnet-evaluator/src/analysis_tests/loop_invariant.jsonnet
 ---
@@ -64,19 +65,25 @@ ArrComp(
                         parts: [
                             LIndexPart {
                                 span: virtual:<test>:21-26,
-                                value: Str(
-                                    "range",
+                                value: Trivial(
+                                    Str(
+                                        "range",
+                                    ),
                                 ),
                             },
                         ],
                     },
                     args: LArgsDesc {
                         unnamed: [
-                            Num(
-                                1.0,
+                            Trivial(
+                                Num(
+                                    1.0,
+                                ),
                             ),
-                            Num(
-                                1000.0,
+                            Trivial(
+                                Num(
+                                    1000.0,
+                                ),
                             ),
                         ],
                         names: [],
@@ -110,19 +117,25 @@ ArrComp(
                         parts: [
                             LIndexPart {
                                 span: virtual:<test>:49-54,
-                                value: Str(
-                                    "range",
+                                value: Trivial(
+                                    Str(
+                                        "range",
+                                    ),
                                 ),
                             },
                         ],
                     },
                     args: LArgsDesc {
                         unnamed: [
-                            Num(
-                                1.0,
+                            Trivial(
+                                Num(
+                                    1.0,
+                                ),
                             ),
-                            Num(
-                                1000.0,
+                            Trivial(
+                                Num(
+                                    1000.0,
+                                ),
                             ),
                         ],
                         names: [],

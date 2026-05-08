@@ -5,7 +5,7 @@ use jrsonnet_interner::IStr;
 use jrsonnet_ir::{SourceFifo, SourcePath};
 
 use crate::{
-	Result, Thunk, Val,
+	Result, Thunk, Val, ensure_sufficient_stack,
 	function::{CallLocation, PreparedFuncVal},
 	in_description_frame, with_state,
 };
@@ -21,7 +21,7 @@ pub enum TlaArg {
 }
 impl TlaArg {
 	pub fn evaluate_tailstrict(&self) -> Result<Val> {
-		match self {
+		ensure_sufficient_stack(|| match self {
 			Self::String(s) => Ok(Val::string(s.clone())),
 			Self::Val(val) => Ok(val.clone()),
 			Self::Lazy(lazy) => Ok(lazy.evaluate()?),
@@ -38,7 +38,7 @@ impl TlaArg {
 					SourcePath::new(SourceFifo("<inline code>".to_owned(), p.as_bytes().into()));
 				s.import_resolved(resolved)
 			}),
-		}
+		})
 	}
 	pub fn evaluate(&self) -> Result<Thunk<Val>> {
 		match self {

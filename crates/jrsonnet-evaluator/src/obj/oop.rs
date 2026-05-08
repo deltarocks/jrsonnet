@@ -113,6 +113,10 @@ impl ObjectCore for OopObject {
 		}
 		Ok(())
 	}
+
+	fn has_assertion(&self) -> bool {
+		self.assertion.is_some()
+	}
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -177,6 +181,7 @@ impl ObjValueBuilder {
 
 	pub fn extend_with_core(&mut self, core: impl ObjectCore) {
 		self.commit();
+		self.has_assertions |= core.has_assertion();
 		self.sup.push(CcObjectCore::new(core));
 	}
 
@@ -219,8 +224,7 @@ pub struct ValueBuilder<'v>(&'v mut ObjValueBuilder);
 impl ObjMemberBuilder<ValueBuilder<'_>> {
 	/// Inserts value, replacing if it is already defined
 	pub fn value(self, value: impl Into<Val>) {
-		let (receiver, name, idx, member) =
-			self.build_member(MaybeUnbound::Bound(Thunk::evaluated(value.into())));
+		let (receiver, name, idx, member) = self.build_member(MaybeUnbound::Const(value.into()));
 		let entry = receiver.0.new.this_entries.entry(name);
 		entry.insert_entry((member, idx));
 	}
@@ -233,7 +237,7 @@ impl ObjMemberBuilder<ValueBuilder<'_>> {
 
 	/// Tries to insert value, returns an error if it was already defined
 	pub fn try_value(self, value: impl Into<Val>) -> Result<()> {
-		self.try_thunk(Thunk::evaluated(value.into()))
+		self.binding(MaybeUnbound::Const(value.into()))
 	}
 	pub fn try_thunk(self, value: impl Into<Thunk<Val>>) -> Result<()> {
 		self.binding(MaybeUnbound::Bound(value.into()))

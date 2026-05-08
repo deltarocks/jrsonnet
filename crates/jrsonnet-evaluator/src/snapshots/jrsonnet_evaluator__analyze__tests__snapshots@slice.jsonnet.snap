@@ -1,6 +1,6 @@
 ---
 source: crates/jrsonnet-evaluator/src/analyze.rs
-assertion_line: 2017
+assertion_line: 2175
 expression: rendered
 input_file: crates/jrsonnet-evaluator/src/analysis_tests/slice.jsonnet
 ---
@@ -14,12 +14,8 @@ errored: false
 --- lir ---
 Slice(
     LSliceExpr {
-        value: Arr {
-            shape: ClosureShape {
-                captures: [],
-                n_locals: 0,
-            },
-            items: [
+        value: ArrConst(
+            [
                 Num(
                     1.0,
                 ),
@@ -36,15 +32,19 @@ Slice(
                     5.0,
                 ),
             ],
-        },
+        ),
         start: Some(
-            Num(
-                1.0,
+            Trivial(
+                Num(
+                    1.0,
+                ),
             ),
         ),
         end: Some(
-            Num(
-                3.0,
+            Trivial(
+                Num(
+                    3.0,
+                ),
             ),
         ),
         step: None,
