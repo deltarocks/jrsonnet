@@ -2392,6 +2392,7 @@ version = "0.5.0-pre98"
 dependencies = [
  "clap",
  "jrsonnet-pkg",
+ "rustls",
  "serde",
  "serde_json",
  "tracing",
@@ -2578,7 +2579,6 @@ dependencies = [
  "gix",
  "peg",
  "reqwest",
- "rustls",
  "serde",
  "serde_json",
  "thiserror",

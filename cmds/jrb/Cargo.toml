@@ -18,3 +18,8 @@ serde = { workspace = true }
 serde_json.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+
+# jrsonnet-pkg wants a rustls provider.
+# ring is not ideal and not recommended by rustls authors... But is easiest to build,
+# and there should be little risk for bundling use case
+rustls = { workspace = true, features = ["ring"] }

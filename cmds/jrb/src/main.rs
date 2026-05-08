@@ -108,6 +108,10 @@ fn do_install(
 fn main() {
 	tracing_subscriber::fmt().init();
 
+	rustls::crypto::ring::default_provider()
+		.install_default()
+		.expect("install rustls crypto provider");
+
 	let opts = Opts::parse();
 
 	match opts.command {

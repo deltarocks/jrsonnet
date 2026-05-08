@@ -26,9 +26,5 @@ zip.workspace = true
 url.workspace = true
 camino.workspace = true
 
-# ring is not ideal and not recommended by rustls authors... But is easiest to build,
-# and there should be little risk for bundling use case
-rustls = { workspace = true, features = ["ring"] }
-
 # Global cache dir
 directories.workspace = true
