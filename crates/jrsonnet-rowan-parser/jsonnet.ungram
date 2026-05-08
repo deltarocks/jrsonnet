@@ -131,7 +131,7 @@ BinaryOperator =
 |   'ERROR_NO_OPERATOR!'
 
 UnaryOperator =
-    '-' | '!' | '~'
+    '-' | '!' | '~' | '+'
 
 SliceDescEnd=Expr
 SliceDescStep=Expr

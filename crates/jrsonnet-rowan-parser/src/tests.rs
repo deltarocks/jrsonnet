@@ -85,7 +85,7 @@ mk_test!(
 		a +
 	"#
 	no_lhs => r#"
-		+ 2
+		* 2
 	"#
 	no_operator => "
 		2 2

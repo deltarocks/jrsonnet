@@ -1,12 +1,13 @@
 ---
 source: crates/jrsonnet-rowan-parser/src/tests.rs
-expression: "+ 2\n"
+assertion_line: 60
+expression: "* 2\n"
 ---
 SOURCE_FILE@0..4
   EXPR@0..0
     ERROR_MISSING_TOKEN@0..0
   ERROR_CUSTOM@0..3
-    PLUS@0..1 "+"
+    MUL@0..1 "*"
     WHITESPACE@1..2 " "
     FLOAT@2..3 "2"
   WHITESPACE@3..4 "\n"
@@ -15,5 +16,5 @@ LocatedSyntaxError { error: Missing { expected: Named("expression") }, range: 0.
 LocatedSyntaxError { error: Custom { error: "unexpected tokens after end" }, range: 0..3 }
 ===
    · ╭── missing expression
-1  │ + 2
+1  │ * 2
    · ╰───── unexpected tokens after end

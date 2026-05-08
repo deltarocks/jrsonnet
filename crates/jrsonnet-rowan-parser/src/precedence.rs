@@ -22,7 +22,7 @@ impl BinaryOperatorKind {
 impl UnaryOperatorKind {
 	pub fn binding_power(&self) -> ((), u8) {
 		match self {
-			Self::Minus | Self::Not | Self::BitNot => ((), 20),
+			Self::Minus | Self::Not | Self::BitNot | Self::Plus => ((), 20),
 		}
 	}
 }

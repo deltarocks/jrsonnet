@@ -977,6 +977,7 @@ pub enum UnaryOperatorKind {
 	Minus,
 	Not,
 	BitNot,
+	Plus,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -2494,7 +2495,7 @@ impl AstToken for UnaryOperator {
 impl UnaryOperatorKind {
 	fn can_cast(kind: SyntaxKind) -> bool {
 		match kind {
-			MINUS | NOT | BIT_NOT => true,
+			MINUS | NOT | BIT_NOT | PLUS => true,
 			_ => false,
 		}
 	}
@@ -2503,6 +2504,7 @@ impl UnaryOperatorKind {
 			MINUS => Self::Minus,
 			NOT => Self::Not,
 			BIT_NOT => Self::BitNot,
+			PLUS => Self::Plus,
 			_ => return None,
 		};
 		Some(res)
