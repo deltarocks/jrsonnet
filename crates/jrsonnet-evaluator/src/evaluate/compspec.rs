@@ -177,9 +177,7 @@ pub fn evaluate_arr_comp(ctx: Context, comp: &LArrComp) -> Result<Val> {
 	// specs, allocate one Iter A-frame per for-spec and re-set the slot
 	// per iteration as long as the frame's refcount stays at 1.
 	'eager: {
-		let mut out = Vec::new();
-
-		if comp.compspecs.iter().all(|c| {
+		if !comp.compspecs.iter().all(|c| {
 			matches!(
 				c,
 				LCompSpec::If(_)
@@ -188,7 +186,11 @@ pub fn evaluate_arr_comp(ctx: Context, comp: &LArrComp) -> Result<Val> {
 						..
 					}
 			)
-		}) && evaluate_compspecs_eager(
+		}) {
+			break 'eager;
+		}
+		let mut out = Vec::new();
+		if evaluate_compspecs_eager(
 			ctx.clone(),
 			&comp.compspecs,
 			&cached_overs,
