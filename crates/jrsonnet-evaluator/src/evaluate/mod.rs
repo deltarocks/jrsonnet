@@ -52,15 +52,11 @@ pub fn ensure_sufficient_stack<R>(f: impl FnOnce() -> R) -> R {
 }
 
 pub fn evaluate_trivial(expr: &LExpr) -> Option<Val> {
-	// TODO: Eager trivial array
-	Some(match expr {
-		LExpr::Str(s) => Val::string(s.clone()),
-		LExpr::Num(n) => Val::Num(*n),
-		LExpr::Bool(false) => Val::Bool(false),
-		LExpr::Bool(true) => Val::Bool(true),
-		LExpr::Null => Val::Null,
-		_ => return None,
-	})
+	if let LExpr::Trivial(tv) = expr {
+		Some(tv.clone().into())
+	} else {
+		None
+	}
 }
 
 pub fn evaluate_method(ctx: Context, name: IStr, func: &Rc<LFunction>) -> Val {
@@ -119,13 +115,24 @@ mod names {
 pub fn evaluate(mut ctx: Context, mut expr: &LExpr) -> Result<Val> {
 	loop {
 		return Ok(match expr {
-			LExpr::Null => Val::Null,
-			LExpr::Bool(b) => Val::Bool(*b),
-			LExpr::Str(s) => Val::string(s.clone()),
-			LExpr::Num(n) => Val::Num(*n),
+			LExpr::Trivial(tv) => tv.clone().into(),
 			LExpr::Slot(slot) => ctx.slot(*slot).evaluate()?,
 			LExpr::BadLocal(name) => panic!("unresolvable reference: {name}"),
-			LExpr::Arr { shape, items } => Val::Arr(ArrValue::expr(ctx, shape, items.clone())),
+			LExpr::ArrConst(rc) => Val::Arr(ArrValue::new(rc.clone())),
+			LExpr::Arr { shape, items } => {
+				let inner = Context::enter_using(&ctx, shape);
+				'eager: {
+					let mut out: Vec<Val> = Vec::with_capacity(items.len());
+					for item in items.iter() {
+						let Ok(r) = evaluate(inner.clone(), item) else {
+							break 'eager;
+						};
+						out.push(r);
+					}
+					return Ok(Val::Arr(ArrValue::new(out)));
+				}
+				Val::Arr(ArrValue::expr(inner, items.clone()))
+			}
 			LExpr::UnaryOp(op, value) => {
 				let value = evaluate(ctx, value)?;
 				evaluate_unary_op(*op, &value)?

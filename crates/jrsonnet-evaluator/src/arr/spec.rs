@@ -8,11 +8,12 @@ use std::{
 
 use jrsonnet_gcmodule::{Cc, Trace};
 use jrsonnet_interner::{IBytes, IStr};
+use jrsonnet_ir::TrivialVal;
 
 use super::{ArrValue, arridx};
 use crate::{
 	Context, Error, ObjValue, Result, Thunk, Val,
-	analyze::{ClosureShape, LExpr},
+	analyze::LExpr,
 	error::ErrorKind::InfiniteRecursionDetected,
 	evaluate::evaluate,
 	function::NativeFn,
@@ -108,6 +109,18 @@ impl ArrayCheap for IBytes {
 	}
 }
 
+impl ArrayCheap for Rc<Vec<TrivialVal>> {
+	fn get(&self, index: u32) -> Option<Val> {
+		self.as_slice()
+			.get(index as usize)
+			.map(|tv| tv.clone().into())
+	}
+
+	fn len(&self) -> u32 {
+		arridx(self.as_slice().len())
+	}
+}
+
 #[derive(Debug, Trace, Clone)]
 enum ArrayThunk {
 	Computed(Val),
@@ -123,9 +136,9 @@ pub struct ExprArray {
 	cached: Cc<RefCell<Vec<ArrayThunk>>>,
 }
 impl ExprArray {
-	pub fn new(outer: Context, shape: &ClosureShape, src: Rc<Vec<LExpr>>) -> Self {
+	pub fn new(ctx: Context, src: Rc<Vec<LExpr>>) -> Self {
 		Self {
-			ctx: Context::enter_using(&outer, shape),
+			ctx,
 			cached: Cc::new(RefCell::new(vec![ArrayThunk::Waiting; src.len()])),
 			src,
 		}
@@ -153,9 +166,17 @@ impl ArrayLike for ExprArray {
 			unreachable!()
 		};
 
-		let new_value: Val = evaluate(self.ctx.clone(), &self.src[index as usize])?;
-		self.cached.borrow_mut()[index as usize] = ArrayThunk::Computed(new_value.clone());
-		Ok(Some(new_value))
+		let result = evaluate(self.ctx.clone(), &self.src[index as usize]);
+		match result {
+			Ok(new_value) => {
+				self.cached.borrow_mut()[index as usize] = ArrayThunk::Computed(new_value.clone());
+				Ok(Some(new_value))
+			}
+			Err(e) => {
+				self.cached.borrow_mut()[index as usize] = ArrayThunk::Waiting;
+				Err(e)
+			}
+		}
 	}
 	fn get_lazy32(&self, index: u32) -> Option<Thunk<Val>> {
 		#[derive(Trace)]

@@ -138,14 +138,12 @@ impl LocalDefinition {
 #[derive(Debug, Acyclic)]
 pub enum LExpr {
 	Slot(LSlot),
-	Null,
-	Bool(bool),
-	Str(IStr),
-	Num(NumValue),
+	Trivial(TrivialVal),
 	Arr {
 		shape: ClosureShape,
 		items: Rc<Vec<LExpr>>,
 	},
+	ArrConst(Rc<Vec<TrivialVal>>),
 	ArrComp(Box<LArrComp>),
 	Obj(LObjBody),
 	ObjExtend(Box<LExpr>, LObjBody),
@@ -1345,15 +1343,15 @@ pub fn analyze_named(
 #[allow(clippy::too_many_lines)]
 pub fn analyze(expr: &Expr, stack: &mut AnalysisStack, taint: &mut AnalysisResult) -> LExpr {
 	match expr {
-		Expr::Literal(span, l) => match l {
-			LiteralType::This => stack.use_this(taint).map_or_else(
+		Expr::Identity(span, l) => match l {
+			IdentityKind::This => stack.use_this(taint).map_or_else(
 				|| {
 					stack.report_error("`self` used outside of object", Some(span.clone()));
 					LExpr::BadLocal("self")
 				},
 				LExpr::Slot,
 			),
-			LiteralType::Super => {
+			IdentityKind::Super => {
 				if stack.use_super(taint).is_some() {
 					LExpr::Super
 				} else {
@@ -1361,25 +1359,34 @@ pub fn analyze(expr: &Expr, stack: &mut AnalysisStack, taint: &mut AnalysisResul
 					LExpr::BadLocal("super")
 				}
 			}
-			LiteralType::Dollar => stack.use_dollar(taint).map_or_else(
+			IdentityKind::Dollar => stack.use_dollar(taint).map_or_else(
 				|| {
 					stack.report_error("`$` used outside of object", Some(span.clone()));
 					LExpr::BadLocal("$")
 				},
 				LExpr::Slot,
 			),
-			LiteralType::Null => LExpr::Null,
-			LiteralType::True => LExpr::Bool(true),
-			LiteralType::False => LExpr::Bool(false),
 		},
-		Expr::Str(s) => LExpr::Str(s.clone()),
-		Expr::Num(n) => LExpr::Num(*n),
+		Expr::Trivial(tv) => LExpr::Trivial(tv.clone()),
 		Expr::Var(v) => stack
 			.use_local(&v.value, v.span.clone(), taint)
 			.map_or_else(|| LExpr::BadLocal("ref"), LExpr::Slot),
 		Expr::Arr(a) => {
-			let (shape, items) = stack
-				.in_using_closure(|stack| a.iter().map(|v| analyze(v, stack, taint)).collect());
+			if a.iter().all(|i| matches!(i, Expr::Trivial(_))) {
+				let trivials: Vec<_> = a
+					.iter()
+					.map(|i| match i {
+						Expr::Trivial(tv) => tv.clone(),
+						_ => unreachable!("checked above"),
+					})
+					.collect();
+				return LExpr::ArrConst(Rc::new(trivials));
+			}
+			let (shape, items) = stack.in_using_closure(|stack| {
+				a.iter()
+					.map(|v| analyze(v, stack, taint))
+					.collect::<Vec<_>>()
+			});
 			LExpr::Arr {
 				shape,
 				items: Rc::new(items),
@@ -1412,7 +1419,7 @@ pub fn analyze(expr: &Expr, stack: &mut AnalysisStack, taint: &mut AnalysisResul
 		}
 		Expr::LocalExpr(binds, body) => analyze_local_expr(binds, body, stack, taint),
 		Expr::Import(kind, path_expr) => {
-			let Expr::Str(path) = &**path_expr else {
+			let Expr::Trivial(TrivialVal::Str(path)) = &**path_expr else {
 				stack.report_error(
 					"import path must be a string literal",
 					Some(kind.span.clone()),
