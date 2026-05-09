@@ -34,23 +34,23 @@ pub trait ArrayLike: Any + Trace + Debug {
 	}
 }
 trait ArrayCheap {
-	fn get(&self, index: u32) -> Option<Val>;
-	fn len(&self) -> u32;
+	fn get32(&self, index: u32) -> Option<Val>;
+	fn len32(&self) -> u32;
 }
 impl<T> ArrayLike for T
 where
 	T: Any + Trace + Debug + ArrayCheap,
 {
 	fn len32(&self) -> u32 {
-		<T as ArrayCheap>::len(self)
+		<T as ArrayCheap>::len32(self)
 	}
 
 	fn get32(&self, index: u32) -> Result<Option<Val>> {
-		Ok(<T as ArrayCheap>::get(self, index))
+		Ok(<T as ArrayCheap>::get32(self, index))
 	}
 
 	fn get_lazy32(&self, index: u32) -> Option<Thunk<Val>> {
-		<T as ArrayCheap>::get(self, index).map(Thunk::evaluated)
+		<T as ArrayCheap>::get32(self, index).map(Thunk::evaluated)
 	}
 
 	fn is_cheap(&self) -> bool {
@@ -59,10 +59,10 @@ where
 }
 
 impl ArrayCheap for () {
-	fn len(&self) -> u32 {
+	fn len32(&self) -> u32 {
 		0
 	}
-	fn get(&self, _index: u32) -> Option<Val> {
+	fn get32(&self, _index: u32) -> Option<Val> {
 		None
 	}
 }
@@ -99,10 +99,10 @@ impl ArrayLike for SliceArray {
 }
 
 impl ArrayCheap for IBytes {
-	fn len(&self) -> u32 {
+	fn len32(&self) -> u32 {
 		arridx(self.as_slice().len())
 	}
-	fn get(&self, index: u32) -> Option<Val> {
+	fn get32(&self, index: u32) -> Option<Val> {
 		self.as_slice()
 			.get(index as usize)
 			.map(|v| Val::Num((*v).into()))
@@ -110,13 +110,13 @@ impl ArrayCheap for IBytes {
 }
 
 impl ArrayCheap for Rc<Vec<TrivialVal>> {
-	fn get(&self, index: u32) -> Option<Val> {
+	fn get32(&self, index: u32) -> Option<Val> {
 		self.as_slice()
 			.get(index as usize)
 			.map(|tv| tv.clone().into())
 	}
 
-	fn len(&self) -> u32 {
+	fn len32(&self) -> u32 {
 		arridx(self.as_slice().len())
 	}
 }
@@ -353,10 +353,10 @@ impl RangeArray {
 	}
 }
 impl ArrayCheap for RangeArray {
-	fn get(&self, index: u32) -> Option<Val> {
+	fn get32(&self, index: u32) -> Option<Val> {
 		self.range().nth(index as usize).map(|i| Val::Num(i.into()))
 	}
-	fn len(&self) -> u32 {
+	fn len32(&self) -> u32 {
 		self.size()
 	}
 }
