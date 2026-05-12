@@ -64,8 +64,8 @@ impl YamlFormat<'_> {
 	}
 }
 impl ManifestFormat for YamlFormat<'_> {
-	fn manifest_buf(&self, val: Val, buf: &mut String) -> Result<()> {
-		manifest_yaml_ex_buf(&val, buf, &mut String::new(), self)
+	fn manifest_buf(&self, val: &Val, buf: &mut String) -> Result<()> {
+		manifest_yaml_ex_buf(val, buf, &mut String::new(), self)
 	}
 }
 

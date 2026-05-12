@@ -75,8 +75,9 @@ impl FromUntyped for JSONMLValue {
 }
 
 impl ManifestFormat for XmlJsonmlFormat {
-	fn manifest_buf(&self, val: Val, buf: &mut String) -> Result<()> {
-		let val = JSONMLValue::from_untyped(val).with_description(|| "parsing JSONML value")?;
+	fn manifest_buf(&self, val: &Val, buf: &mut String) -> Result<()> {
+		let val =
+			JSONMLValue::from_untyped(val.clone()).with_description(|| "parsing JSONML value")?;
 		manifest_jsonml(&val, buf, self)
 	}
 }
@@ -105,7 +106,7 @@ fn manifest_jsonml(v: &JSONMLValue, buf: &mut String, opts: &XmlJsonmlFormat) ->
 				let value = if let Val::Str(s) = value {
 					s.to_string()
 				} else {
-					ToStringFormat.manifest(value)?
+					ToStringFormat.manifest(&value)?
 				};
 				escape_string_xml_buf(&value, buf);
 				buf.push('"');

@@ -312,10 +312,10 @@ fn manifest_table_array(
 }
 
 impl ManifestFormat for TomlFormat<'_> {
-	fn manifest_buf(&self, val: Val, buf: &mut String) -> jrsonnet_evaluator::Result<()> {
+	fn manifest_buf(&self, val: &Val, buf: &mut String) -> jrsonnet_evaluator::Result<()> {
 		match val {
 			Val::Obj(obj) => {
-				manifest_table_internal(&obj, &mut Vec::new(), buf, &mut String::new(), self)
+				manifest_table_internal(obj, &mut Vec::new(), buf, &mut String::new(), self)
 			}
 			_ => bail!("toml body should be object"),
 		}

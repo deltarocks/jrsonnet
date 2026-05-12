@@ -132,7 +132,7 @@ stdenv.mkDerivation {
     in
     ''
       set -oux
-      ulimit -s unlimited
+      # ulimit -s unlimited
 
       temp=$(mktemp -d)
       cd $temp

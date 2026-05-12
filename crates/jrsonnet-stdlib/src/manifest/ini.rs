@@ -30,10 +30,10 @@ impl IniFormat {
 }
 
 impl ManifestFormat for IniFormat {
-	fn manifest_buf(&self, val: Val, buf: &mut String) -> Result<()> {
+	fn manifest_buf(&self, val: &Val, buf: &mut String) -> Result<()> {
 		manifest_ini_obj(
 			self,
-			IniObj::from_untyped(val).description("ini object structure")?,
+			IniObj::from_untyped(val.clone()).description("ini object structure")?,
 			buf,
 		)
 	}
@@ -67,14 +67,14 @@ fn manifest_ini_body(
 				out.push_str(&key);
 				out.push_str(" = ");
 				ToStringFormat
-					.manifest_buf(ele, out)
+					.manifest_buf(&ele, out)
 					.with_description(manifest_desc)?;
 			}
 		} else {
 			out.push_str(&key);
 			out.push_str(" = ");
 			ToStringFormat
-				.manifest_buf(value, out)
+				.manifest_buf(&value, out)
 				.with_description(manifest_desc)?;
 		}
 	}

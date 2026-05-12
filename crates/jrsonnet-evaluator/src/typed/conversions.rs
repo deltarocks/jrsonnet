@@ -533,11 +533,12 @@ where
 	fn into_untyped(typed: Self) -> Result<Val> {
 		let mut out = ObjValueBuilder::with_capacity(typed.len());
 		for (k, v) in typed {
-			let Some(key) = K::into_untyped(k)?.as_str() else {
+			let key = K::into_untyped(k)?;
+			let Some(key) = key.as_str() else {
 				bail!("map key should serialize to string");
 			};
 			let value = V::into_untyped(v)?;
-			out.field(key).value(value);
+			out.field(key.into_flat()).value(value);
 		}
 		Ok(Val::Obj(out.build()))
 	}

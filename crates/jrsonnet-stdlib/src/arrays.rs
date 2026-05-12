@@ -2,7 +2,8 @@
 
 use jrsonnet_evaluator::{
 	Either, IStr, ObjValue, ObjValueBuilder, Result, ResultExt, Thunk, Val, bail, error,
-	function::{NativeFn, builtin},
+	function::{FoldKind, NativeFn, builtin},
+	manifest::{ManifestFormat as _, ToStringFormat},
 	typed::{BoundedUsize, Either2, FromUntyped},
 	val::{ArrValue, IndexableVal, equals},
 };
@@ -146,6 +147,17 @@ pub fn builtin_foldl(
 	arr: Either![ArrValue, IStr],
 	init: Val,
 ) -> Result<Val> {
+	if let (Val::Str(init), Either2::A(arr)) = (&init, &arr)
+		&& let Some(folder) = func.func().as_folder(FoldKind::Left)
+	{
+		let mut buf = String::new();
+		init.into_flat_in(&mut buf);
+		for i in arr.iter_lazy() {
+			ToStringFormat.manifest_buf(&folder.eval(i)?, &mut buf)?;
+		}
+		return Ok(Val::string(buf));
+	}
+
 	let mut acc = init;
 	match arr {
 		Either2::A(arr) => {
@@ -168,6 +180,23 @@ pub fn builtin_foldr(
 	arr: Either![ArrValue, IStr],
 	init: Val,
 ) -> Result<Val> {
+	if let (Val::Str(init), Either2::A(arr)) = (&init, &arr)
+		&& let Some(folder) = func.func().as_folder(FoldKind::Right)
+	{
+		let len = arr.len();
+		let mut chunks: Vec<Val> = Vec::with_capacity(len);
+		for i in arr.iter_lazy().rev() {
+			let v = folder.eval(i)?;
+			chunks.push(v);
+		}
+		let mut buf = String::new();
+		for s in chunks.iter().rev() {
+			ToStringFormat.manifest_buf(s, &mut buf)?;
+		}
+		init.into_flat_in(&mut buf);
+		return Ok(Val::string(buf));
+	}
+
 	let mut acc = init;
 	match arr {
 		Either2::A(arr) => {

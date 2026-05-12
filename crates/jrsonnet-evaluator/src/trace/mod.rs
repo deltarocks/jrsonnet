@@ -85,8 +85,7 @@ fn span_label(resolver: &PathResolver, span: &Span) -> String {
 		let [loc] = span.0.map_source_locations(&[start]);
 		(loc, loc)
 	} else {
-		let [s, e] = span.0.map_source_locations(&[start, end]);
-		(s, e)
+		span.0.map_source_locations(&[start, end]).into()
 	};
 	write!(path, ":").unwrap();
 	print_code_location(&mut path, &start_loc, &end_loc).unwrap();

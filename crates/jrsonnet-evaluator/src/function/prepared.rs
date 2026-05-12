@@ -21,6 +21,9 @@ impl PreparedFuncVal {
 			prepared: Rc::new(prepared),
 		})
 	}
+	pub fn func(&self) -> &FuncVal {
+		&self.fun
+	}
 	pub fn call(
 		&self,
 		loc: CallLocation<'_>,

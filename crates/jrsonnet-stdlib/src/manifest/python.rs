@@ -18,7 +18,7 @@ impl PythonFormat {
 }
 
 impl ManifestFormat for PythonFormat {
-	fn manifest_buf(&self, val: Val, buf: &mut String) -> Result<()> {
+	fn manifest_buf(&self, val: &Val, buf: &mut String) -> Result<()> {
 		match val {
 			Val::Bool(true) => buf.push_str("True"),
 			Val::Bool(false) => buf.push_str("False"),
@@ -34,7 +34,7 @@ impl ManifestFormat for PythonFormat {
 					if i != 0 {
 						buf.push_str(", ");
 					}
-					self.manifest_buf(el, buf)?;
+					self.manifest_buf(&el, buf)?;
 				}
 				buf.push(']');
 			}
@@ -52,7 +52,7 @@ impl ManifestFormat for PythonFormat {
 					escape_string_json_buf(&field, buf);
 					buf.push_str(": ");
 					let value = obj.get(field)?.expect("field exists");
-					self.manifest_buf(value, buf)?;
+					self.manifest_buf(&value, buf)?;
 				}
 				buf.push('}');
 			}
@@ -77,7 +77,7 @@ impl PythonVarsFormat {
 }
 
 impl ManifestFormat for PythonVarsFormat {
-	fn manifest_buf(&self, val: Val, buf: &mut String) -> Result<()> {
+	fn manifest_buf(&self, val: &Val, buf: &mut String) -> Result<()> {
 		let inner = PythonFormat {
 			#[cfg(feature = "exp-preserve-order")]
 			preserve_order: self.preserve_order,
@@ -96,7 +96,7 @@ impl ManifestFormat for PythonVarsFormat {
 			// Yep, no escaping
 			buf.push_str(&field);
 			buf.push_str(" = ");
-			inner.manifest_buf(obj.get(field)?.expect("field exists"), buf)?;
+			inner.manifest_buf(&obj.get(field)?.expect("field exists"), buf)?;
 			buf.push('\n');
 		}
 		Ok(())

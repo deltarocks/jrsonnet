@@ -3,7 +3,7 @@ use std::{fmt::Debug, rc::Rc};
 use educe::Educe;
 use jrsonnet_gcmodule::{Cc, Trace};
 use jrsonnet_interner::IStr;
-use jrsonnet_ir::Span;
+use jrsonnet_ir::{BinaryOpType, Span};
 pub use jrsonnet_macros::builtin;
 
 use self::{
@@ -12,7 +12,7 @@ use self::{
 };
 use crate::{
 	Context, PackedContextSupThis, Result, Thunk, Val,
-	analyze::LFunction,
+	analyze::{LDestruct, LExpr, LFunction, LSlot, LVisitor, LocalSlot, visit_lexpr},
 	arr::arridx,
 	ensure_sufficient_stack,
 	evaluate::{destructure::destruct, evaluate, evaluate_trivial},
@@ -210,5 +210,113 @@ where
 {
 	fn from(value: T) -> Self {
 		Self::builtin(value)
+	}
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum FoldKind {
+	/// `function(acc, x) acc + <expr>`
+	Left,
+	/// `function(x, acc) <expr> + acc`
+	Right,
+}
+
+/// A folding lambda specialised to `acc + <expr>` (or `<expr> + acc`)
+///
+///  `<expr>` does not reference `acc`. Lets the caller skip building an
+/// intermediate accumulator value per step and instead append each
+/// per-element result directly to an output buffer.
+pub struct Folder<'f> {
+	func: &'f FuncDesc,
+	value_destruct: &'f LDestruct,
+	expr: &'f LExpr,
+}
+
+impl Folder<'_> {
+	/// Evaluate `<expr>` with the current element bound to the non-acc param.
+	pub fn eval(&self, x: Thunk<Val>) -> Result<Val> {
+		let body_ctx = self.func.body_captures.clone().enter(|fill, ctx| {
+			destruct(self.value_destruct, fill, x, ctx);
+		});
+		ensure_sufficient_stack(|| evaluate(body_ctx, self.expr))
+	}
+}
+
+struct ReferencesLocal {
+	slot: LocalSlot,
+	found: bool,
+}
+
+impl LVisitor for ReferencesLocal {
+	fn visit_lslot(&mut self, slot: LSlot) {
+		if let LSlot::Local(s) = slot
+			&& s.0 == self.slot.0
+		{
+			self.found = true;
+		}
+	}
+	fn visit_lexpr(&mut self, e: &LExpr) {
+		if self.found {
+			return;
+		}
+		visit_lexpr(self, e);
+	}
+}
+
+fn references_local(expr: &LExpr, slot: LocalSlot) -> bool {
+	let mut v = ReferencesLocal { slot, found: false };
+	v.visit_lexpr(expr);
+	v.found
+}
+
+impl FuncVal {
+	pub fn as_folder(&self, kind: FoldKind) -> Option<Folder<'_>> {
+		let Self::Normal(desc) = self else {
+			return None;
+		};
+		let func = &desc.func;
+		if func.params.len() != 2 {
+			return None;
+		}
+		if func.params.iter().any(|p| p.default.is_some()) {
+			return None;
+		}
+
+		let (acc_idx, value_idx) = match kind {
+			FoldKind::Left => (0, 1),
+			FoldKind::Right => (1, 0),
+		};
+
+		let acc_slot = match &func.params[acc_idx].destruct {
+			LDestruct::Full(s) => *s,
+			#[cfg(feature = "exp-destruct")]
+			_ => return None,
+		};
+
+		let LExpr::BinaryOp { lhs, op, rhs } = &*func.body else {
+			return None;
+		};
+		if *op != BinaryOpType::Add {
+			return None;
+		}
+		let (acc_side, expr_side) = match kind {
+			FoldKind::Left => (lhs, rhs),
+			FoldKind::Right => (rhs, lhs),
+		};
+		let LExpr::Slot(LSlot::Local(s)) = &**acc_side else {
+			return None;
+		};
+		if s.0 != acc_slot.0 {
+			return None;
+		}
+		if references_local(expr_side, acc_slot) {
+			return None;
+		}
+
+		Some(Folder {
+			func: desc,
+			value_destruct: &func.params[value_idx].destruct,
+			expr: expr_side,
+		})
 	}
 }

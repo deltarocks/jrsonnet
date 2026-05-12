@@ -367,7 +367,7 @@ impl StrValue {
 		}
 		write_buf(self, c);
 	}
-	pub fn into_flat(&self) -> IStr {
+	pub fn into_flat_in(&self, out: &mut String) {
 		fn write_buf(s: &StrValue, out: &mut String) {
 			match s {
 				StrValue::Flat(f) => out.push_str(f),
@@ -377,11 +377,15 @@ impl StrValue {
 				}
 			}
 		}
+		out.reserve(self.len());
+		write_buf(self, out);
+	}
+	pub fn into_flat(&self) -> IStr {
 		match self {
 			Self::Flat(f) => f.clone(),
 			Self::Tree(_) => {
 				let mut buf = String::with_capacity(self.len());
-				write_buf(self, &mut buf);
+				Self::into_flat_in(self, &mut buf);
 				buf.into()
 			}
 		}
@@ -492,9 +496,9 @@ impl Val {
 			_ => None,
 		}
 	}
-	pub fn as_str(&self) -> Option<IStr> {
+	pub fn as_str(&self) -> Option<&StrValue> {
 		match self {
-			Self::Str(s) => Some(s.clone().into_flat()),
+			Self::Str(s) => Some(s),
 			_ => None,
 		}
 	}
@@ -546,7 +550,7 @@ impl Val {
 
 	pub fn manifest(&self, format: impl ManifestFormat) -> Result<String> {
 		fn manifest_dyn(val: &Val, manifest: &dyn ManifestFormat) -> Result<String> {
-			manifest.manifest(val.clone())
+			manifest.manifest(val)
 		}
 		manifest_dyn(self, &format)
 	}

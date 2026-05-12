@@ -2075,6 +2075,112 @@ pub struct AnalysisReport {
 	pub errored: bool,
 }
 
+/// Only useful for slot reference analysis
+pub trait LVisitor: Sized {
+	fn visit_lexpr(&mut self, e: &LExpr) {
+		visit_lexpr(self, e);
+	}
+	fn visit_lslot(&mut self, _slot: LSlot) {}
+	fn visit_closure(&mut self, shape: &ClosureShape) {
+		for &s in &*shape.captures {
+			self.visit_lslot(s);
+		}
+	}
+}
+
+pub fn visit_lexpr<V: LVisitor>(v: &mut V, e: &LExpr) {
+	match e {
+		LExpr::Slot(s) => v.visit_lslot(*s),
+		LExpr::Trivial(_)
+		| LExpr::ArrConst(_)
+		| LExpr::BadLocal(_)
+		| LExpr::Import { .. }
+		| LExpr::IdentityFunction
+		| LExpr::Super => {}
+		LExpr::Arr { shape, items: _ } => v.visit_closure(shape),
+		LExpr::ArrComp(c) => {
+			v.visit_closure(&c.value_shape);
+			for s in &c.compspecs {
+				match s {
+					// Outer-scope references reach closure over frame_shape
+					LCompSpec::If(_e) => {}
+					LCompSpec::For { frame_shape, .. } => v.visit_closure(frame_shape),
+					#[cfg(feature = "exp-object-iteration")]
+					LCompSpec::ForObj { frame_shape, .. } => v.visit_closure(frame_shape),
+				}
+			}
+		}
+		LExpr::Obj(b) => visit_l_obj_body(v, b),
+		LExpr::ObjExtend(base, b) => {
+			v.visit_lexpr(base);
+			visit_l_obj_body(v, b);
+		}
+		LExpr::UnaryOp(_op, e) => v.visit_lexpr(e),
+		LExpr::BinaryOp { lhs, rhs, .. } => {
+			v.visit_lexpr(lhs);
+			v.visit_lexpr(rhs);
+		}
+		LExpr::AssertExpr { assert, rest } => {
+			v.visit_lexpr(&assert.cond.value);
+			if let Some(m) = &assert.message {
+				v.visit_lexpr(m);
+			}
+			v.visit_lexpr(rest);
+		}
+		LExpr::Error(_, e) => v.visit_lexpr(e),
+		LExpr::LocalExpr(l) => v.visit_closure(&l.frame_shape),
+		LExpr::Apply {
+			applicable, args, ..
+		} => {
+			v.visit_lexpr(applicable);
+			for u in &args.value.unnamed {
+				v.visit_lexpr(u);
+			}
+			for n in &args.value.values {
+				v.visit_lexpr(n);
+			}
+		}
+		LExpr::Index { indexable, parts } => {
+			v.visit_lexpr(indexable);
+			for p in parts {
+				v.visit_lexpr(&p.value);
+			}
+		}
+		LExpr::Function(f) => v.visit_closure(&f.body_shape),
+		LExpr::IfElse {
+			cond,
+			cond_then,
+			cond_else,
+		} => {
+			v.visit_lexpr(cond);
+			v.visit_lexpr(cond_then);
+			if let Some(e) = cond_else {
+				v.visit_lexpr(e);
+			}
+		}
+		LExpr::Slice(s) => {
+			v.visit_lexpr(&s.value);
+			if let Some(e) = &s.start {
+				v.visit_lexpr(e);
+			}
+			if let Some(e) = &s.end {
+				v.visit_lexpr(e);
+			}
+			if let Some(e) = &s.step {
+				v.visit_lexpr(e);
+			}
+		}
+	}
+}
+
+fn visit_l_obj_body<V: LVisitor>(v: &mut V, b: &LObjBody) {
+	match b {
+		LObjBody::MemberList(m) => v.visit_closure(&m.frame_shape),
+		LObjBody::StaticMembers(m) => v.visit_closure(&m.frame_shape),
+		LObjBody::ObjComp(c) => v.visit_closure(&c.frame_shape),
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	#[test]

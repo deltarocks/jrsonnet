@@ -12,6 +12,12 @@ use crate::{
 
 #[derive(Debug, Trace, Clone)]
 pub struct NativeFn<D: 'static>(pub(crate) PreparedFuncVal, PhantomData<D>);
+
+impl<D: 'static> NativeFn<D> {
+	pub fn func(&self) -> &FuncVal {
+		self.0.func()
+	}
+}
 macro_rules! impl_native_desc {
 	($i:expr; $($gen:ident)*) => {
 		impl<$($gen,)* O> NativeFn<($($gen,)* O,)>
