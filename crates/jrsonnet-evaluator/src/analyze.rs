@@ -1027,6 +1027,23 @@ impl AnalysisStack {
 		}
 	}
 
+	/// Temporarily detach closure frames above `keep_len` so an expression
+	/// can be re-analyzed as if it lived in the outer closure context.
+	fn reanalyze_in_outer_closure<T>(
+		&mut self,
+		keep_len: usize,
+		inner: impl FnOnce(&mut AnalysisStack) -> T,
+	) -> T {
+		let saved: Vec<ClosureFrame> = self.closure_stack.split_off(keep_len);
+		let diag_len = self.diagnostics.len();
+		let prev_errored = self.errored;
+		let v = inner(self);
+		self.diagnostics.truncate(diag_len);
+		self.errored = prev_errored;
+		self.closure_stack.extend(saved);
+		v
+	}
+
 	/// Resolve a `LocalId` reference to an `LSlot` against the innermost
 	/// closure frame. May insert capture entries up the closure stack as
 	/// needed.
@@ -1934,16 +1951,19 @@ fn analyze_arr_comp(
 	}))
 }
 
+#[allow(clippy::too_many_lines)]
 fn analyze_comp_specs<R>(
 	specs: &[CompSpec],
 	stack: &mut AnalysisStack,
 	taint: &mut AnalysisResult,
 	inside: impl FnOnce(&mut AnalysisStack, &mut AnalysisResult) -> R,
 ) -> CompSpecResult<R> {
+	#[allow(clippy::too_many_lines)]
 	fn go<R>(
 		idx: usize,
 		specs: &[CompSpec],
 		outer_depth: u32,
+		outer_closure_depth: usize,
 		stack: &mut AnalysisStack,
 		taint: &mut AnalysisResult,
 		inside: impl FnOnce(&mut AnalysisStack, &mut AnalysisResult) -> R,
@@ -1954,22 +1974,45 @@ fn analyze_comp_specs<R>(
 		match &specs[idx] {
 			CompSpec::IfSpec(IfSpecData { cond, .. }) => {
 				let cond_l = analyze(cond, stack, taint);
-				let (r, mut rest) = go(idx + 1, specs, outer_depth, stack, taint, inside);
+				let (r, mut rest) = go(
+					idx + 1,
+					specs,
+					outer_depth,
+					outer_closure_depth,
+					stack,
+					taint,
+					inside,
+				);
 				rest.insert(0, LCompSpec::If(cond_l));
 				(r, rest)
 			}
 			CompSpec::ForSpec(ForSpecData { destruct, over }) => {
 				let mut over_taint = AnalysisResult::default();
-				let over_l = analyze(over, stack, &mut over_taint);
+				let mut over_l = analyze(over, stack, &mut over_taint);
 				let loop_invariant = !over_taint.has_local_deps()
 					|| over_taint.local_dependent_depth_max < outer_depth;
 				taint.taint_by(over_taint);
+
+				if loop_invariant && stack.closure_stack.len() > outer_closure_depth {
+					over_l = stack.reanalyze_in_outer_closure(outer_closure_depth, |stack| {
+						let mut t = AnalysisResult::default();
+						analyze(over, stack, &mut t)
+					});
+				}
 
 				let mut alloc = FrameAlloc::new(stack);
 				let closure = alloc.push_locals_closure();
 				let Some(l_destruct) = alloc.alloc_destruct(destruct) else {
 					stack.pop_closure(closure);
-					return go(idx + 1, specs, outer_depth, stack, taint, inside);
+					return go(
+						idx + 1,
+						specs,
+						outer_depth,
+						outer_closure_depth,
+						stack,
+						taint,
+						inside,
+					);
 				};
 				let mut pending = alloc.finish();
 
@@ -1978,8 +2021,15 @@ fn analyze_comp_specs<R>(
 				pending.record_spec_init(&l_destruct, var_analysis);
 
 				let body_frame = pending.finish();
-				let (r, mut rest) =
-					go(idx + 1, specs, outer_depth, body_frame.stack, taint, inside);
+				let (r, mut rest) = go(
+					idx + 1,
+					specs,
+					outer_depth,
+					outer_closure_depth,
+					body_frame.stack,
+					taint,
+					inside,
+				);
 				body_frame.finish();
 				let frame_shape = stack.pop_closure(closure);
 
@@ -1997,20 +2047,43 @@ fn analyze_comp_specs<R>(
 			#[cfg(feature = "exp-object-iteration")]
 			CompSpec::ForObjSpec(data) => {
 				let mut over_taint = AnalysisResult::default();
-				let over_l = analyze(&data.over, stack, &mut over_taint);
+				let mut over_l = analyze(&data.over, stack, &mut over_taint);
 				let loop_invariant = !over_taint.has_local_deps()
 					|| over_taint.local_dependent_depth_max < outer_depth;
 				taint.taint_by(over_taint);
+
+				if loop_invariant && stack.closure_stack.len() > outer_closure_depth {
+					over_l = stack.reanalyze_in_outer_closure(outer_closure_depth, |stack| {
+						let mut t = AnalysisResult::default();
+						analyze(&data.over, stack, &mut t)
+					});
+				}
 
 				let mut alloc = FrameAlloc::new(stack);
 				let closure = alloc.push_locals_closure();
 				let Some((_, key_slot)) = alloc.define_local(data.key.clone(), None) else {
 					stack.pop_closure(closure);
-					return go(idx + 1, specs, outer_depth, stack, taint, inside);
+					return go(
+						idx + 1,
+						specs,
+						outer_depth,
+						outer_closure_depth,
+						stack,
+						taint,
+						inside,
+					);
 				};
 				let Some(l_value) = alloc.alloc_destruct(&data.value) else {
 					stack.pop_closure(closure);
-					return go(idx + 1, specs, outer_depth, stack, taint, inside);
+					return go(
+						idx + 1,
+						specs,
+						outer_depth,
+						outer_closure_depth,
+						stack,
+						taint,
+						inside,
+					);
 				};
 				let mut pending = alloc.finish();
 
@@ -2020,8 +2093,15 @@ fn analyze_comp_specs<R>(
 				pending.record_spec_init(&l_value, var_analysis);
 
 				let body_frame = pending.finish();
-				let (r, mut rest) =
-					go(idx + 1, specs, outer_depth, body_frame.stack, taint, inside);
+				let (r, mut rest) = go(
+					idx + 1,
+					specs,
+					outer_depth,
+					outer_closure_depth,
+					body_frame.stack,
+					taint,
+					inside,
+				);
 				body_frame.finish();
 				let frame_shape = stack.pop_closure(closure);
 
@@ -2041,7 +2121,16 @@ fn analyze_comp_specs<R>(
 		}
 	}
 	let outer_depth = stack.depth;
-	let (r, compspecs) = go(0, specs, outer_depth, stack, taint, inside);
+	let outer_closure_depth = stack.closure_stack.len();
+	let (r, compspecs) = go(
+		0,
+		specs,
+		outer_depth,
+		outer_closure_depth,
+		stack,
+		taint,
+		inside,
+	);
 	CompSpecResult {
 		inner: r,
 		compspecs,
