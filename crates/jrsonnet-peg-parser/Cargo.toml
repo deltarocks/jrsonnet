@@ -12,6 +12,7 @@ version.workspace = true
 [dependencies]
 jrsonnet-gcmodule.workspace = true
 jrsonnet-ir.workspace = true
+jrsonnet-lexer.workspace = true
 peg.workspace = true
 
 [lints]

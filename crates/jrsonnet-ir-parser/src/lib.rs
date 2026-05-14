@@ -3,9 +3,11 @@ use jrsonnet_ir::{
 	ArgsDesc, AssertExpr, AssertStmt, BinaryOp, BinaryOpType, BindSpec, CompSpec, Destruct, Expr,
 	ExprParam, ExprParams, FieldMember, FieldName, ForSpecData, IStr, IdentityKind, IfElse,
 	IfSpecData, ImportKind, IndexPart, Member, NumValue, ObjBody, ObjComp, ObjMembers, Slice,
-	SliceDesc, Source, Span, Spanned, TrivialVal, UnaryOpType, Visibility, unescape,
+	SliceDesc, Source, Span, Spanned, TrivialVal, UnaryOpType, Visibility,
 };
-use jrsonnet_lexer::{Lexeme, Lexer, Span as LexSpan, SyntaxKind, T, collect_lexed_str_block};
+use jrsonnet_lexer::{
+	Lexeme, Lexer, Span as LexSpan, SyntaxKind, T, collect_lexed_str_block, unescape,
+};
 
 pub struct ParserSettings {
 	pub source: Source,
@@ -174,11 +176,11 @@ fn parse_string_content(p: &mut Parser<'_>) -> Result<IStr> {
 	let s = match kind {
 		SyntaxKind::STRING_DOUBLE => {
 			let inner = &text[1..text.len() - 1];
-			unescape::unescape(inner).ok_or_else(|| p.error("invalid string escape".into()))?
+			unescape(inner).ok_or_else(|| p.error("invalid string escape".into()))?
 		}
 		SyntaxKind::STRING_SINGLE => {
 			let inner = &text[1..text.len() - 1];
-			unescape::unescape(inner).ok_or_else(|| p.error("invalid string escape".into()))?
+			unescape(inner).ok_or_else(|| p.error("invalid string escape".into()))?
 		}
 		SyntaxKind::STRING_DOUBLE_VERBATIM => {
 			let inner = &text[2..text.len() - 1];

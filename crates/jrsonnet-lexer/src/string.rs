@@ -1,11 +1,18 @@
+//! Jsonnet-specific non-verbatim string unescaping
+
 use std::str::Chars;
 
 fn decode_unicode(chars: &mut Chars) -> Option<u16> {
+	#[expect(
+		clippy::cast_possible_truncation,
+		reason = "truncated value is a single digit, thus it would never truncate anything"
+	)]
 	IntoIterator::into_iter([chars.next()?, chars.next()?, chars.next()?, chars.next()?])
 		.map(|c| c.to_digit(16).map(|f| f as u16))
 		.try_fold(0u16, |acc, v| Some((acc << 4) | (v?)))
 }
 
+/// Unescape escape characters in jsonnet string
 pub fn unescape(s: &str) -> Option<String> {
 	let mut chars = s.chars();
 	let mut out = String::with_capacity(s.len());
@@ -37,16 +44,16 @@ pub fn unescape(s: &str) -> Option<String> {
 					if !matches!(n2, 0xDC00..=0xDFFF) {
 						return None;
 					}
-					let n = (((n1 - 0xD800) as u32) << 10 | (n2 - 0xDC00) as u32) + 0x1_0000;
+					let n = (u32::from(n1 - 0xD800) << 10 | u32::from(n2 - 0xDC00)) + 0x1_0000;
 					out.push(char::from_u32(n)?);
 				}
-				n => out.push(char::from_u32(n as u32)?),
+				n => out.push(char::from_u32(u32::from(n))?),
 			},
 			'x' => {
 				let c = IntoIterator::into_iter([chars.next()?, chars.next()?])
 					.map(|c| c.to_digit(16))
 					.try_fold(0u32, |acc, v| Some((acc << 8) | (v?)))?;
-				out.push(char::from_u32(c)?)
+				out.push(char::from_u32(c)?);
 			}
 			_ => return None,
 		}

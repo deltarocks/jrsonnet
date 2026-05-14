@@ -3,8 +3,9 @@ use jrsonnet_ir::{
 	ArgsDesc, AssertExpr, AssertStmt, BinaryOp, BindSpec, CompSpec, Destruct, DestructRest, Expr,
 	ExprParam, ExprParams, FieldMember, FieldName, ForSpecData, IStr, IdentityKind, IfElse,
 	IfSpecData, ImportKind, IndexPart, Member, NumValue, ObjBody, ObjComp, ObjMembers, Slice,
-	SliceDesc, Source, Span, Spanned, TrivialVal, Visibility, unescape,
+	SliceDesc, Source, Span, Spanned, TrivialVal, Visibility,
 };
+use jrsonnet_lexer::unescape;
 use peg::parser;
 
 pub struct ParserSettings {
@@ -165,8 +166,8 @@ parser! {
 			/ "\\x" hex_char() hex_char()
 			/ ['\\'] (quiet! { ['b' | 'f' | 'n' | 'r' | 't' | '"' | '\''] } / expected!("<escape character>"))
 		pub rule string() -> String
-			= ['"'] str:$(string_char(<"\"">)*) ['"'] {? unescape::unescape(str).ok_or("<escaped string>")}
-			/ ['\''] str:$(string_char(<"\'">)*) ['\''] {? unescape::unescape(str).ok_or("<escaped string>")}
+			= ['"'] str:$(string_char(<"\"">)*) ['"'] {? unescape(str).ok_or("<escaped string>")}
+			/ ['\''] str:$(string_char(<"\'">)*) ['\''] {? unescape(str).ok_or("<escaped string>")}
 			/ quiet!{ "@'" str:$(("''" / (!['\''][_]))*) "'" {str.replace("''", "'")}
 			/ "@\"" str:$(("\"\"" / (!['"'][_]))*) "\"" {str.replace("\"\"", "\"")}
 			/ string_block() } / expected!("<string>")

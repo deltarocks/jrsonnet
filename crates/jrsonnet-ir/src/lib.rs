@@ -9,7 +9,6 @@ pub use jrsonnet_interner::IStr;
 pub mod function;
 mod location;
 mod source;
-pub mod unescape;
 pub mod visit;
 
 pub use location::CodeLocation;
