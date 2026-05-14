@@ -3,7 +3,6 @@ use std::{any::TypeId, collections::BTreeMap, marker::PhantomData, mem::transmut
 use jrsonnet_gcmodule::Trace;
 use jrsonnet_interner::{IBytes, IStr};
 use jrsonnet_ir::NumValue;
-pub use jrsonnet_ir::{MAX_SAFE_INTEGER, MIN_SAFE_INTEGER};
 use jrsonnet_types::{ComplexValType, ValType};
 
 use crate::{
@@ -377,7 +376,7 @@ impl FromUntyped for PositiveF64 {
 }
 impl Typed for usize {
 	const TYPE: &'static ComplexValType =
-		&ComplexValType::BoundedNumber(Some(0.0), Some(MAX_SAFE_INTEGER));
+		&ComplexValType::BoundedNumber(Some(0.0), Some(NumValue::MAX_SAFE_INTEGER));
 }
 impl IntoUntyped for usize {
 	fn into_untyped(value: Self) -> Result<Val> {

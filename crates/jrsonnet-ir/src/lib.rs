@@ -1,4 +1,5 @@
 #![allow(clippy::redundant_closure_call, clippy::derive_partial_eq_without_eq)]
+//! Jrsonnet AST definitions
 
 mod expr;
 use std::{cmp::Ordering, fmt, ops::Deref};
@@ -17,18 +18,18 @@ pub use source::{
 	SourcePathT, SourceUrl, SourceVirtual,
 };
 
-// It seels to be a wrong place for this kind of stuff, but as it would also be used for static analysis and
-// is already wanted for NumValue, I don't know a better place.
-#[expect(clippy::cast_precision_loss, reason = "checked to not overflow")]
-pub const MAX_SAFE_INTEGER: f64 = ((1u64 << (f64::MANTISSA_DIGITS)) - 1) as f64;
-#[expect(clippy::cast_precision_loss, reason = "checked to not overflow")]
-pub const MIN_SAFE_INTEGER: f64 = (-((1i64 << (f64::MANTISSA_DIGITS)) - 1)) as f64;
-
 /// Represents jsonnet number
 /// Jsonnet numbers are finite f64, with NaNs disallowed
 #[derive(Acyclic, Clone, Copy)]
 pub struct NumValue(f64);
 impl NumValue {
+	/// Maximum safe integer value (`2**53 - 1`), see [`NumValue::truncate_for_bitwise`]
+	#[expect(clippy::cast_precision_loss, reason = "checked to not overflow")]
+	pub const MAX_SAFE_INTEGER: f64 = ((1u64 << (f64::MANTISSA_DIGITS)) - 1) as f64;
+	/// Minimum safe integer value (`-(2**53 - 1)`), see [`NumValue::truncate_for_bitwise`]
+	#[expect(clippy::cast_precision_loss, reason = "checked to not overflow")]
+	pub const MIN_SAFE_INTEGER: f64 = (-((1i64 << (f64::MANTISSA_DIGITS)) - 1)) as f64;
+
 	/// Creates a [`NumValue`], if value is finite and not NaN
 	pub fn new(v: f64) -> Option<Self> {
 		if !v.is_finite() {
@@ -36,12 +37,22 @@ impl NumValue {
 		}
 		Some(Self(v))
 	}
+	/// Get the number value
 	#[inline]
 	pub const fn get(&self) -> f64 {
 		self.0
 	}
+
+	/// In Jsonnet bitwise operations operate on integers,
+	/// this method performs a safe conversion for such operation, where we use the same definition for safe as JS:
+	///
+	/// Double precision floating point format only has 52 bits to represent the mantissa,
+	/// so it can only safely represent integers between -(253 – 1) and 253 – 1.
+	/// "Safe" in this context refers to the ability to represent integers exactly and
+	/// to compare them correctly. For example, Number.MAX_SAFE_INTEGER + 1 === Number.MAX_SAFE_INTEGER + 2
+	/// will evaluate to true, which is mathematically incorrect. See Number.isSafeInteger() for more information.
 	pub fn truncate_for_bitwise(self) -> Result<i64, ConvertNumValueError> {
-		if self.0 < MIN_SAFE_INTEGER || self.0 > MAX_SAFE_INTEGER {
+		if self.0 < Self::MIN_SAFE_INTEGER || self.0 > Self::MAX_SAFE_INTEGER {
 			return Err(ConvertNumValueError::BitwiseSafeRange);
 		}
 		#[expect(clippy::cast_possible_truncation, reason = "intended")]
@@ -98,14 +109,20 @@ macro_rules! impl_num {
 }
 impl_num!(i8, u8, i16, u16, i32, u32);
 
+/// Jsonnet numbers are finite f64, with NaNs disallowed,
+/// this enum represents errors that might occur in conversion from/to the [`NumValue`]
 #[derive(Clone, Copy, Debug, thiserror::Error, Acyclic)]
 pub enum ConvertNumValueError {
+	/// The value is too large
 	#[error("overflow")]
 	Overflow,
+	/// The value is too small
 	#[error("underflow")]
 	Underflow,
+	/// Jsonnet numbers can only be finite
 	#[error("non-finite")]
 	NonFinite,
+	/// Number value is out of safe integer range
 	#[error("float out of safe int range")]
 	BitwiseSafeRange,
 }
@@ -118,9 +135,9 @@ macro_rules! impl_try_num {
 			fn try_from(value: $ty) -> Result<Self, ConvertNumValueError> {
 				#[expect(clippy::cast_precision_loss, reason = "precision loss is explicitly handled")]
 				let value = value as f64;
-				if value < MIN_SAFE_INTEGER {
+				if value < NumValue::MIN_SAFE_INTEGER {
 					return Err(ConvertNumValueError::Underflow)
-				} else if value > MAX_SAFE_INTEGER {
+				} else if value > NumValue::MAX_SAFE_INTEGER {
 					return Err(ConvertNumValueError::Overflow)
 				}
 				// Number is finite.
