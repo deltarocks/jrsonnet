@@ -1959,7 +1959,8 @@ fn analyze_comp_specs<R>(
 				};
 				let mut pending = alloc.finish();
 
-				let var_analysis = AnalysisResult::default();
+				let mut var_analysis = over_taint;
+				var_analysis.depend_on_local(pending.stack.depth);
 				pending.record_spec_init(&l_destruct, var_analysis);
 
 				let body_frame = pending.finish();
@@ -1998,7 +1999,8 @@ fn analyze_comp_specs<R>(
 				};
 				let mut pending = alloc.finish();
 
-				let var_analysis = AnalysisResult::default();
+				let mut var_analysis = over_taint;
+				var_analysis.depend_on_local(pending.stack.depth);
 				pending.record_spec_init(&LDestruct::Full(key_slot), var_analysis);
 				pending.record_spec_init(&l_value, var_analysis);
 

@@ -1,0 +1,89 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analysis_tests/issue224_hoisting.jsonnet
+---
+--- source ---
+[b for a in [[1,2],[3,4]] for b in a]
+--- root analysis ---
+object_dependent_depth: none
+local_dependent_depth: 0
+errored: false
+--- diagnostics ---
+--- lir ---
+ArrComp(
+    LArrComp {
+        value_shape: ClosureShape {
+            captures: [],
+            n_locals: 0,
+        },
+        value: Slot(
+            Local(
+                LocalSlot(
+                    0,
+                ),
+            ),
+        ),
+        compspecs: [
+            For {
+                frame_shape: ClosureShape {
+                    captures: [],
+                    n_locals: 1,
+                },
+                destruct: Full(
+                    LocalSlot(
+                        0,
+                    ),
+                ),
+                over: Arr {
+                    shape: ClosureShape {
+                        captures: [],
+                        n_locals: 0,
+                    },
+                    items: [
+                        ArrConst(
+                            [
+                                Num(
+                                    1.0,
+                                ),
+                                Num(
+                                    2.0,
+                                ),
+                            ],
+                        ),
+                        ArrConst(
+                            [
+                                Num(
+                                    3.0,
+                                ),
+                                Num(
+                                    4.0,
+                                ),
+                            ],
+                        ),
+                    ],
+                },
+                loop_invariant: true,
+            },
+            For {
+                frame_shape: ClosureShape {
+                    captures: [],
+                    n_locals: 1,
+                },
+                destruct: Full(
+                    LocalSlot(
+                        0,
+                    ),
+                ),
+                over: Slot(
+                    Local(
+                        LocalSlot(
+                            0,
+                        ),
+                    ),
+                ),
+                loop_invariant: false,
+            },
+        ],
+    },
+)

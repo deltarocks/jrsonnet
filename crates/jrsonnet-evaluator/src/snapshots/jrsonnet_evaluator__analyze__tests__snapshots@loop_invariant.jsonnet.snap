@@ -1,6 +1,5 @@
 ---
 source: crates/jrsonnet-evaluator/src/analyze.rs
-assertion_line: 2175
 expression: rendered
 input_file: crates/jrsonnet-evaluator/src/analysis_tests/loop_invariant.jsonnet
 ---
@@ -11,10 +10,9 @@ object_dependent_depth: none
 local_dependent_depth: 0
 errored: true
 --- diagnostics ---
-   ·                  ╭──────────────────────────────── undefined local: std
-   ·                  │                           ╭──── undefined local: std
+   ·                  ╭──── undefined local: std
 1  │ [ i < j for i in std.range(1, 1000) for j in std.range(1, 1000)] 
-   ·                                         ╰── local could be hoisted to an outer scope: j
+   ·                                              ╰──── undefined local: std
 2  │  
 --- lir ---
 ArrComp(

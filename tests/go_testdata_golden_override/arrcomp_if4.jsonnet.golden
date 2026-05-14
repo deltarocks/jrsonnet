@@ -1,3 +1,2 @@
 static analysis errors
     arrcomp_if4.jsonnet:1:33 error: undefined local: y
-    arrcomp_if4.jsonnet:1:44 warning: local could be hoisted to an outer scope: y

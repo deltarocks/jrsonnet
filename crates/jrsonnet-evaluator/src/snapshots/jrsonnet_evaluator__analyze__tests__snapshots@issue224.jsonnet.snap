@@ -1,0 +1,140 @@
+---
+source: crates/jrsonnet-evaluator/src/analyze.rs
+expression: rendered
+input_file: crates/jrsonnet-evaluator/src/analysis_tests/issue224.jsonnet
+---
+--- source ---
+// Panics with "local read before letrec init"
+{r: [1 for a in [1] for b in [[1,2]] for c in b]}
+--- root analysis ---
+object_dependent_depth: none
+local_dependent_depth: 2
+errored: false
+--- diagnostics ---
+1  │ // Panics with "local read before letrec init" 
+   ·                                          ╭── unused local: c
+2  │ {r: [1 for a in [1] for b in [[1,2]] for c in b]} 
+   ·            ╰── unused local: a
+3  │  
+--- lir ---
+Obj(
+    StaticMembers(
+        LObjStaticMembers {
+            frame_shape: ClosureShape {
+                captures: [],
+                n_locals: 1,
+            },
+            this: None,
+            set_dollar: false,
+            uses_super: false,
+            locals: [],
+            asserts: None,
+            shape: ObjShape {
+                fields: [
+                    ShapeField {
+                        name: "r",
+                        flags: ObjFieldFlags {
+                            add: false,
+                            visibility: Normal,
+                        },
+                        location: None,
+                        index: FieldIndex(
+                            (),
+                        ),
+                    },
+                ],
+            },
+            bindings: [
+                (
+                    ClosureShape {
+                        captures: [],
+                        n_locals: 0,
+                    },
+                    ArrComp(
+                        LArrComp {
+                            value_shape: ClosureShape {
+                                captures: [],
+                                n_locals: 0,
+                            },
+                            value: Trivial(
+                                Num(
+                                    1.0,
+                                ),
+                            ),
+                            compspecs: [
+                                For {
+                                    frame_shape: ClosureShape {
+                                        captures: [],
+                                        n_locals: 1,
+                                    },
+                                    destruct: Full(
+                                        LocalSlot(
+                                            0,
+                                        ),
+                                    ),
+                                    over: ArrConst(
+                                        [
+                                            Num(
+                                                1.0,
+                                            ),
+                                        ],
+                                    ),
+                                    loop_invariant: true,
+                                },
+                                For {
+                                    frame_shape: ClosureShape {
+                                        captures: [],
+                                        n_locals: 1,
+                                    },
+                                    destruct: Full(
+                                        LocalSlot(
+                                            0,
+                                        ),
+                                    ),
+                                    over: Arr {
+                                        shape: ClosureShape {
+                                            captures: [],
+                                            n_locals: 0,
+                                        },
+                                        items: [
+                                            ArrConst(
+                                                [
+                                                    Num(
+                                                        1.0,
+                                                    ),
+                                                    Num(
+                                                        2.0,
+                                                    ),
+                                                ],
+                                            ),
+                                        ],
+                                    },
+                                    loop_invariant: true,
+                                },
+                                For {
+                                    frame_shape: ClosureShape {
+                                        captures: [],
+                                        n_locals: 1,
+                                    },
+                                    destruct: Full(
+                                        LocalSlot(
+                                            0,
+                                        ),
+                                    ),
+                                    over: Slot(
+                                        Local(
+                                            LocalSlot(
+                                                0,
+                                            ),
+                                        ),
+                                    ),
+                                    loop_invariant: true,
+                                },
+                            ],
+                        },
+                    ),
+                ),
+            ],
+        },
+    ),
+)
