@@ -1,8 +1,16 @@
+//! String block literal `|||-\n\tText\n|||` lexing/parsing
+
+/// Syntax errors that might be encountered in string block expression
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StringBlockError {
+	/// Unexpected EOF after the string block start tokens
 	UnexpectedEnd,
+	/// There should be a newline after `|||` or `|||-` string token
 	MissingNewLine,
+	/// String block should end with `|||`
 	MissingTermination,
+	/// Whitespace mismatch in the string block - every new line should have the same start as the first one.
+	// TODO: Expand error definition so it is harder to make a mistake?
 	MissingIndent,
 }
 
@@ -141,6 +149,7 @@ impl<'d> StrBlockLexCtx<'d> for Lexer<'d, SyntaxKind> {
 	}
 }
 
+/// Collect string block line chunks into a [`Vec`]
 pub fn collect_lexed_str_block(input: &str) -> Result<CollectStrBlock<'_>, StringBlockError> {
 	let mut collect = CollectStrBlock {
 		truncate: false,
@@ -152,8 +161,12 @@ pub fn collect_lexed_str_block(input: &str) -> Result<CollectStrBlock<'_>, Strin
 	Ok(collect)
 }
 
+/// Collect string block line chunks into a [`Vec`]
 pub struct CollectStrBlock<'s> {
+	/// Is this a truncated string block? `|||-`
+	/// If not - assume [`lines`] contain an extra empty line
 	pub truncate: bool,
+	/// The lines of a string block
 	pub lines: Vec<&'s str>,
 	input: &'s str,
 	offset: usize,

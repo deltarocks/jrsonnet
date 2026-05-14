@@ -2,18 +2,20 @@ use core::ops::Range;
 
 use logos::Logos;
 
-// use rowan::{TextRange, TextSize};
 use crate::{
 	Span,
 	generated::syntax_kinds::SyntaxKind,
 	string_block::{StringBlockError, lex_str_block},
 };
 
+/// Jsonnet code lexer, use it instead of [`logos::Lexer`] to properly handle custom lexing errors
+/// for items such as [`SyntaxKind::STRING_BLOCK`]
 pub struct Lexer<'a> {
 	inner: logos::Lexer<'a, SyntaxKind>,
 }
 
 impl<'a> Lexer<'a> {
+	/// Create the lexer for the passed jsonnet code
 	pub fn new(input: &'a str) -> Self {
 		Self {
 			inner: SyntaxKind::lexer(input),
@@ -69,13 +71,18 @@ impl<'a> Iterator for Lexer<'a> {
 	}
 }
 
+/// Parsed lexeme
 #[derive(Clone, Copy, Debug)]
 pub struct Lexeme<'s> {
+	/// Token kind, e.g [`SyntaxKind::COLON`]
 	pub kind: SyntaxKind,
+	/// Token string value can be used to extract the actual jsonnet value
 	pub text: &'s str,
+	/// Token range
 	pub range: Span,
 }
 
+/// Lex jsonnet code
 pub fn lex(input: &str) -> Vec<Lexeme<'_>> {
 	Lexer::new(input).collect()
 }

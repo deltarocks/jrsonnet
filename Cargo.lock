@@ -2567,6 +2567,7 @@ dependencies = [
  "insta",
  "jrsonnet-gcmodule",
  "jrsonnet-ir",
+ "jrsonnet-lexer",
  "peg",
 ]
 

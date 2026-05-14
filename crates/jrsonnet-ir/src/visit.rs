@@ -8,10 +8,17 @@ use crate::{
 	ObjBody, ObjComp, ObjMembers, Slice, SliceDesc, TrivialVal,
 };
 
+/// Expr visitor
 pub trait Visitor: Sized {
+	/// The input contains an `Expr`.
+	///
+	/// The default implementation forwards to [`visit_expr`]
 	fn visit_expr(&mut self, e: &Expr) {
 		visit_expr(self, e)
 	}
+	/// Called for every encountered `import`/`importbin`/`importstr` expression
+	///
+	/// `as_expression` is `true` for non-str/bin `imports`
 	fn visit_import(&mut self, _as_expression: bool, _value: IStr) {}
 }
 
@@ -23,6 +30,7 @@ pub fn visit_destruct_rest<V: Visitor>(_v: &mut V, destruct: &crate::DestructRes
 	}
 }
 
+/// Use [`Visitor`] to recursively visit [`Destruct`]
 #[allow(unused_variables, reason = "used with exp-destruct")]
 pub fn visit_destruct<V: Visitor>(v: &mut V, destruct: &Destruct) {
 	match destruct {
@@ -58,11 +66,13 @@ pub fn visit_destruct<V: Visitor>(v: &mut V, destruct: &Destruct) {
 	}
 }
 
+/// Use [`Visitor`] to recursively visit [`IfSpecData`]
 pub fn visit_if_spec<V: Visitor>(v: &mut V, cond: &IfSpecData) {
 	let IfSpecData { span: _, cond } = cond;
 	v.visit_expr(cond);
 }
 
+/// Use [`Visitor`] to recursively visit [`CompSpec`]
 pub fn visit_comp_spec<V: Visitor>(v: &mut V, c: &CompSpec) {
 	match c {
 		CompSpec::IfSpec(cond) => visit_if_spec(v, cond),
@@ -84,6 +94,8 @@ pub fn visit_comp_spec<V: Visitor>(v: &mut V, c: &CompSpec) {
 		}
 	}
 }
+
+/// Use [`Visitor`] to recursively visit [`ExprParams`]
 pub fn visit_params<V: Visitor>(v: &mut V, par: &ExprParams) {
 	let ExprParams {
 		exprs,
@@ -99,6 +111,7 @@ pub fn visit_params<V: Visitor>(v: &mut V, par: &ExprParams) {
 	}
 }
 
+/// Use [`Visitor`] to recursively visit [`BindSpec`]
 pub fn visit_bind_spec<V: Visitor>(v: &mut V, bind: &BindSpec) {
 	match bind {
 		BindSpec::Field { into, value } => {
@@ -116,6 +129,7 @@ pub fn visit_bind_spec<V: Visitor>(v: &mut V, bind: &BindSpec) {
 	}
 }
 
+/// Use [`Visitor`] to recursively visit [`FieldMember`]
 pub fn visit_field_member<V: Visitor>(v: &mut V, mem: &FieldMember) {
 	let FieldMember {
 		name,
@@ -134,6 +148,7 @@ pub fn visit_field_member<V: Visitor>(v: &mut V, mem: &FieldMember) {
 	v.visit_expr(value);
 }
 
+/// Use [`Visitor`] to recursively visit [`ObjBody`]
 pub fn visit_obj_body<V: Visitor>(v: &mut V, obj_body: &ObjBody) {
 	match obj_body {
 		ObjBody::MemberList(obj_members) => {
@@ -169,6 +184,7 @@ pub fn visit_obj_body<V: Visitor>(v: &mut V, obj_body: &ObjBody) {
 	}
 }
 
+/// Use [`Visitor`] to recursively visit [`AssertStmt`]
 pub fn visit_assert_stmt<V: Visitor>(v: &mut V, ass: &AssertStmt) {
 	let AssertStmt { assertion, message } = ass;
 	v.visit_expr(assertion);
@@ -176,6 +192,8 @@ pub fn visit_assert_stmt<V: Visitor>(v: &mut V, ass: &AssertStmt) {
 		v.visit_expr(message);
 	}
 }
+
+/// Use [`Visitor`] to recursively visit [`Expr`]
 pub fn visit_expr<V: Visitor>(v: &mut V, e: &Expr) {
 	match e {
 		Expr::Identity(_span, _identity_kind) => {}
