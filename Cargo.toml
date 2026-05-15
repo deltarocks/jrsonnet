@@ -53,7 +53,7 @@ clap_complete = "4.5"
 # Parsing, manifestification is implemented manually everywhere
 serde = "1.0.228"
 serde_json = "1.0.149"
-serde-saphyr = { version = "0.0.26", default-features = false, features = [
+serde-saphyr = { version = "0.0.27", default-features = false, features = [
   "deserialize",
 ] }
 

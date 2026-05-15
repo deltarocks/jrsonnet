@@ -1,0 +1,10 @@
+---
+source: tests/tests/golden.rs
+expression: result
+input_file: tests/golden/issue225.jsonnet
+---
+{
+    "a": 511,
+    "b": 511,
+    "c": 0
+}
