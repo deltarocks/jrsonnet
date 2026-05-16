@@ -262,9 +262,9 @@ checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
 
 [[package]]
 name = "cc"
-version = "1.2.61"
+version = "1.2.62"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d16d90359e986641506914ba71350897565610e87ce0ad9e6f28569db3dd5c6d"
+checksum = "a1dce859f0832a7d088c4f1119888ab94ef4b5d6795d1ce05afb7fe159d79f98"
 dependencies = [
  "find-msvc-tools",
  "shlex",
@@ -333,9 +333,9 @@ dependencies = [
 
 [[package]]
 name = "clap_complete"
-version = "4.6.3"
+version = "4.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "660c0520455b1013b9bcb0393d5f643d7e4454fb69c915b8d6d2aa0e9a45acc3"
+checksum = "e0a7a9bfdb35811f9e59832f0f05975114d2251b415fb534108e6f34060fd772"
 dependencies = [
  "clap",
 ]
@@ -754,13 +754,12 @@ checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
 name = "filetime"
-version = "0.2.27"
+version = "0.2.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f98844151eee8917efc50bd9e8318cb963ae8b297431495d3f758616ea5c57db"
+checksum = "5c287a33c7f0a620c38e641e7f60827713987b3c0f26e8ddc9462cc69cf75759"
 dependencies = [
  "cfg-if",
  "libc",
- "libredox",
 ]
 
 [[package]]
@@ -1929,9 +1928,9 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.17.0"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f467dd6dccf739c208452f8014c75c18bb8301b050ad1cfb27153803edb0f51"
+checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
 dependencies = [
  "allocator-api2",
  "equivalent",
@@ -2040,9 +2039,9 @@ checksum = "eaec953f16e5bcf6b8a3cb3aa959b17e5577dbd2693e94554c462c08be22624b"
 
 [[package]]
 name = "hybrid-array"
-version = "0.4.11"
+version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08d46837a0ed51fe95bd3b05de33cd64a1ee88fc797477ca48446872504507c5"
+checksum = "9155a582abd142abc056962c29e3ce5ff2ad5469f4246b537ed42c5deba857da"
 dependencies = [
  "typenum",
 ]
@@ -2222,7 +2221,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d466e9454f08e4a911e14806c24e16fba1b4c121d1ea474396f396069cf949d9"
 dependencies = [
  "equivalent",
- "hashbrown 0.17.0",
+ "hashbrown 0.17.1",
  "serde",
  "serde_core",
 ]
@@ -2388,7 +2387,7 @@ dependencies = [
 
 [[package]]
 name = "jrb"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "clap",
  "jrsonnet-pkg",
@@ -2401,7 +2400,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2417,7 +2416,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-cli"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "clap",
  "jrsonnet-evaluator",
@@ -2428,7 +2427,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-deps"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "clap",
  "jrsonnet-cli",
@@ -2439,7 +2438,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-evaluator"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "anyhow",
  "drop_bomb",
@@ -2469,7 +2468,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-fmt"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "clap",
  "hi-doc",
@@ -2481,7 +2480,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-formatter"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "dprint-core",
  "hi-doc",
@@ -2513,16 +2512,16 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-interner"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
- "hashbrown 0.17.0",
+ "hashbrown 0.17.1",
  "jrsonnet-gcmodule",
  "rustc-hash 2.1.2",
 ]
 
 [[package]]
 name = "jrsonnet-ir"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "insta",
  "jrsonnet-gcmodule",
@@ -2535,7 +2534,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-ir-parser"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "insta",
  "jrsonnet-gcmodule",
@@ -2545,14 +2544,14 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-lexer"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "logos",
 ]
 
 [[package]]
 name = "jrsonnet-macros"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2562,7 +2561,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-peg-parser"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "insta",
  "jrsonnet-gcmodule",
@@ -2573,7 +2572,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-pkg"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "camino",
  "directories",
@@ -2590,7 +2589,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-rowan-parser"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "anyhow",
  "drop_bomb",
@@ -2605,7 +2604,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-stdlib"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "base64",
  "hex",
@@ -2627,7 +2626,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-types"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "jrsonnet-gcmodule",
  "peg",
@@ -2635,7 +2634,7 @@ dependencies = [
 
 [[package]]
 name = "jrsonnet-web"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.3.4",
@@ -2702,7 +2701,7 @@ checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 
 [[package]]
 name = "libjsonnet"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 dependencies = [
  "jrsonnet-evaluator",
  "jrsonnet-gcmodule",
@@ -2717,10 +2716,7 @@ version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e02f3bb43d335493c96bf3fd3a321600bf6bd07ed34bc64118e9293bdffea46c"
 dependencies = [
- "bitflags",
  "libc",
- "plain",
- "redox_syscall 0.7.5",
 ]
 
 [[package]]
@@ -2788,7 +2784,7 @@ version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a860605968fce16869fd239cf4237a82f3ac470723415db603b0e8b6c8d4fb9"
 dependencies = [
- "hashbrown 0.17.0",
+ "hashbrown 0.17.1",
 ]
 
 [[package]]
@@ -2802,9 +2798,9 @@ dependencies = [
 
 [[package]]
 name = "maybe-async"
-version = "0.2.10"
+version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cf92c10c7e361d6b99666ec1c6f9805b0bea2c3bd8c78dc6fe98ac5bd78db11"
+checksum = "746873a384ad60adc5db74471dfaba74bd278afbdcfd81db93fafcdfc8b5ca0c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2880,9 +2876,9 @@ dependencies = [
 
 [[package]]
 name = "nix"
-version = "0.31.2"
+version = "0.31.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d6d0705320c1e6ba1d912b5e37cf18071b6c2e9b7fa8215a1e8a7651966f5d3"
+checksum = "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -3025,7 +3021,7 @@ checksum = "2621685985a2ebf1c516881c026032ac7deafcda1a2c9b7850dc81e3dfcb64c1"
 dependencies = [
  "cfg-if",
  "libc",
- "redox_syscall 0.5.18",
+ "redox_syscall",
  "smallvec",
  "windows-link",
 ]
@@ -3074,12 +3070,6 @@ name = "pin-project-lite"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
-
-[[package]]
-name = "plain"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
 
 [[package]]
 name = "plotters"
@@ -3288,15 +3278,6 @@ name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d"
-dependencies = [
- "bitflags",
-]
-
-[[package]]
-name = "redox_syscall"
-version = "0.7.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4666a1a60d8412eab19d94f6d13dcc9cea0a5ef4fdf6a5db306537413c661b1b"
 dependencies = [
  "bitflags",
 ]
@@ -3677,12 +3658,13 @@ dependencies = [
 
 [[package]]
 name = "sha3"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be176f1a57ce4e3d31c1a166222d9768de5954f811601fb7ca06fc8203905ce1"
+checksum = "bc9bad02c26382724b2d2692c6f179285e4b54eeecd7968f52a50059c3c11759"
 dependencies = [
  "digest 0.11.3",
  "keccak",
+ "sponge-cursor",
 ]
 
 [[package]]
@@ -3775,6 +3757,12 @@ dependencies = [
  "libc",
  "windows-sys 0.61.2",
 ]
+
+[[package]]
+name = "sponge-cursor"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a0219bd7d979d58245a4f41f695e1ac9f8befdffadd7f61f1bae9e39abc6620"
 
 [[package]]
 name = "stable_deref_trait"
@@ -3969,9 +3957,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.52.2"
+version = "1.52.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "110a78583f19d5cdb2c5ccf321d1290344e71313c6c37d43520d386027d18386"
+checksum = "8fc7f01b389ac15039e4dc9531aa973a135d7a4135281b12d7c1bc79fd57fffe"
 dependencies = [
  "bytes",
  "libc",
@@ -4687,9 +4675,9 @@ dependencies = [
 
 [[package]]
 name = "zerofrom"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69faa1f2a1ea75661980b013019ed6687ed0e83d069bc1114e2cc74c6c04c4df"
+checksum = "0ec05a11813ea801ff6d75110ad09cd0824ddba17dfe17128ea0d5f68e6c5272"
 dependencies = [
  "zerofrom-derive",
 ]
