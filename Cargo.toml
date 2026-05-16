@@ -20,22 +20,22 @@ authors = ["Yaroslav Bolyukin <iam@lach.pw>"]
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/CertainLach/jrsonnet"
-version = "0.5.0-pre98"
+version = "0.5.0-pre99"
 
 [workspace.dependencies]
-jrsonnet-evaluator = { path = "./crates/jrsonnet-evaluator", version = "0.5.0-pre98" }
-jrsonnet-macros = { path = "./crates/jrsonnet-macros", version = "0.5.0-pre98" }
-jrsonnet-ir = { path = "./crates/jrsonnet-ir", version = "0.5.0-pre98" }
-jrsonnet-ir-parser = { path = "./crates/jrsonnet-ir-parser", version = "0.5.0-pre98" }
-jrsonnet-peg-parser = { path = "./crates/jrsonnet-peg-parser", version = "0.5.0-pre98" }
-jrsonnet-rowan-parser = { path = "./crates/jrsonnet-rowan-parser", version = "0.5.0-pre98" }
-jrsonnet-interner = { path = "./crates/jrsonnet-interner", version = "0.5.0-pre98" }
-jrsonnet-stdlib = { path = "./crates/jrsonnet-stdlib", version = "0.5.0-pre98" }
-jrsonnet-cli = { path = "./crates/jrsonnet-cli", version = "0.5.0-pre98" }
-jrsonnet-types = { path = "./crates/jrsonnet-types", version = "0.5.0-pre98" }
-jrsonnet-formatter = { path = "./crates/jrsonnet-formatter", version = "0.5.0-pre98" }
-jrsonnet-lexer = { path = "./crates/jrsonnet-lexer", version = "0.5.0-pre98" }
-jrsonnet-pkg = { path = "./crates/jrsonnet-pkg", version = "0.5.0-pre98" }
+jrsonnet-evaluator = { path = "./crates/jrsonnet-evaluator", version = "0.5.0-pre99" }
+jrsonnet-macros = { path = "./crates/jrsonnet-macros", version = "0.5.0-pre99" }
+jrsonnet-ir = { path = "./crates/jrsonnet-ir", version = "0.5.0-pre99" }
+jrsonnet-ir-parser = { path = "./crates/jrsonnet-ir-parser", version = "0.5.0-pre99" }
+jrsonnet-peg-parser = { path = "./crates/jrsonnet-peg-parser", version = "0.5.0-pre99" }
+jrsonnet-rowan-parser = { path = "./crates/jrsonnet-rowan-parser", version = "0.5.0-pre99" }
+jrsonnet-interner = { path = "./crates/jrsonnet-interner", version = "0.5.0-pre99" }
+jrsonnet-stdlib = { path = "./crates/jrsonnet-stdlib", version = "0.5.0-pre99" }
+jrsonnet-cli = { path = "./crates/jrsonnet-cli", version = "0.5.0-pre99" }
+jrsonnet-types = { path = "./crates/jrsonnet-types", version = "0.5.0-pre99" }
+jrsonnet-formatter = { path = "./crates/jrsonnet-formatter", version = "0.5.0-pre99" }
+jrsonnet-lexer = { path = "./crates/jrsonnet-lexer", version = "0.5.0-pre99" }
+jrsonnet-pkg = { path = "./crates/jrsonnet-pkg", version = "0.5.0-pre99" }
 jrsonnet-gcmodule = { version = "0.5.0" }
 # Diagnostics.
 # hi-doc is my library, which handles text formatting very well, but isn't polished enough yet
@@ -75,7 +75,7 @@ rustversion = "1.0.22"
 md5 = "0.8.0"
 sha1 = "0.11.0"
 sha2 = "0.11.0"
-sha3 = "0.11.0"
+sha3 = "0.12.0"
 hex = "0.4.3"
 
 # Source code parsing.
