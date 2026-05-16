@@ -18,10 +18,11 @@
     },
     "crane": {
       "locked": {
-        "lastModified": 1777830388,
+        "lastModified": 1778106249,
+        "narHash": "sha256-cM/AuKy5tMhwOOQIbha8ZRRMHVfNf7cv2aljIw+qoCg=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "d459c1350e96ce1a7e3859c513ef5e9869d67d6f",
+        "rev": "6d015ea29630b7ad2402841386da2cb617a470a7",
         "type": "github"
       },
       "original": {
@@ -39,6 +40,7 @@
       },
       "locked": {
         "lastModified": 1775272531,
+        "narHash": "sha256-9CEV5QjP2kkuMxlpbO8sULWEcMtCfTWM6qtYqZ5lKNQ=",
         "owner": "CertainLach",
         "repo": "fenix",
         "rev": "831116e5887552af53f2998dcb46e1d55dc0850e",
@@ -58,10 +60,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1777988971,
+        "lastModified": 1778716662,
+        "narHash": "sha256-m1Yf0wZ8j1OHjTc2UwHwyQRSnNeSgLJOd7q5Y45hzi4=",
         "owner": "hercules-ci",
         "repo": "flake-parts",
-        "rev": "0678d8986be1661af6bb555f3489f2fdfc31f6ff",
+        "rev": "f7c1a2d347e4c52d5fb8d10cb4d94b5884e546fb",
         "type": "github"
       },
       "original": {
@@ -97,6 +100,7 @@
       },
       "locked": {
         "lastModified": 1776603440,
+        "narHash": "sha256-wA+ONiwbvQIy7ERJx/ruhV7y5xku6XKstXCII5bIbdI=",
         "owner": "hercules-ci",
         "repo": "hercules-ci-effects",
         "rev": "e2456ee419f9d75f8382e3d6c5af4690b316a5a8",
@@ -110,10 +114,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1778255217,
+        "lastModified": 1778888747,
+        "narHash": "sha256-uHgY7rFL1MR4HGW/HTe5/rqKCNdTTYOu2yKAAXe7hDM=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "aa279bba121eac3e966b6dcea9891b5e96330944",
+        "rev": "b4d20dee06f1218054051023f383f8ebf663e1fa",
         "type": "github"
       },
       "original": {
@@ -156,6 +161,7 @@
     "shelly": {
       "locked": {
         "lastModified": 1756323923,
+        "narHash": "sha256-sKUaQrgnYVBmG5cGmGoFYXc61g74ufWpPYGPoJia58k=",
         "owner": "CertainLach",
         "repo": "shelly",
         "rev": "b5dd29a500db04f54a9f1c2bf81cdd84df8b0cd7",
@@ -175,6 +181,7 @@
       },
       "locked": {
         "lastModified": 1775636079,
+        "narHash": "sha256-pc20NRoMdiar8oPQceQT47UUZMBTiMdUuWrYu2obUP0=",
         "owner": "numtide",
         "repo": "treefmt-nix",
         "rev": "790751ff7fd3801feeaf96d7dc416a8d581265ba",
