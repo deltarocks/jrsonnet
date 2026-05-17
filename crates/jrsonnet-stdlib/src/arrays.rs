@@ -183,15 +183,9 @@ pub fn builtin_foldr(
 	if let (Val::Str(init), Either2::A(arr)) = (&init, &arr)
 		&& let Some(folder) = func.func().as_folder(FoldKind::Right)
 	{
-		let len = arr.len();
-		let mut chunks: Vec<Val> = Vec::with_capacity(len);
-		for i in arr.iter_lazy().rev() {
-			let v = folder.eval(i)?;
-			chunks.push(v);
-		}
 		let mut buf = String::new();
-		for s in chunks.iter().rev() {
-			ToStringFormat.manifest_buf(s, &mut buf)?;
+		for i in arr.iter_lazy() {
+			ToStringFormat.manifest_buf(&folder.eval(i)?, &mut buf)?;
 		}
 		init.into_flat_in(&mut buf);
 		return Ok(Val::string(buf));
