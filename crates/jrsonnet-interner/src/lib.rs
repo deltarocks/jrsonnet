@@ -179,9 +179,9 @@ fn maybe_unpool(inner: &Inner) {
 				// On some platforms (i.e i686-windows), try_with will not fail after TLS
 				// destructor is called, but instead re-initialize the TLS with the empty pool.
 				// Allow non-pooled Drop in this case.
-				// https://github.com/CertainLach/jrsonnet/issues/98#issuecomment-1591624016
+				// https://github.com/deltarocks/jrsonnet/issues/98#issuecomment-1591624016
 				// Another cause might be that you have improperly used jrsonnet in multi-threaded environment:
-				// https://github.com/CertainLach/jrsonnet/issues/113
+				// https://github.com/deltarocks/jrsonnet/issues/113
 				debug_assert!(pool.is_empty(), "if you have landed here - you most likely did something naughty with multi-threading. jrsonnet string pooling uses thread_local pool");
 			}
 		});

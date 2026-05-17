@@ -11,7 +11,7 @@ rustPlatform.buildRustPackage rec {
   version = "release";
 
   src = fetchFromGitHub {
-    owner = "CertainLach";
+    owner = "deltarocks";
     repo = pname;
     rev = "ad68a2495da324ce7a893992a6b32851849c64eb";
     hash = "sha256-N2z0JcJG6iQ+eAE1GGF+c1+T7Pti8oCgx+QWdhT+33M=";
