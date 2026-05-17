@@ -19,7 +19,7 @@ resolver = "2"
 authors = ["Yaroslav Bolyukin <iam@lach.pw>"]
 edition = "2024"
 license = "MIT"
-repository = "https://github.com/CertainLach/jrsonnet"
+repository = "https://github.com/deltarocks/jrsonnet"
 version = "0.5.0-pre99"
 
 [workspace.dependencies]

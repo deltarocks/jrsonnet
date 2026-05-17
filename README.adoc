@@ -3,22 +3,11 @@
 ++++
 <p align="center"><a href="https://delta.rocks/jrsonnet"><img alt="jrsonnet logo" src="https://delta.rocks/og/page.svg?title=jrsonnet&sig=cecb5a7de6500c39b0d284e4d14a3bef6d083ce19b8f6e77c82d70c57bf6960e&brand=jrsonnet&subtitle=fast+jsonnet+interpreter" height="300"></img></a></p>
 <p align="center">
-  <a href="https://github.com/CertainLach/jrsonnet/releases"><img alt="release" src="https://img.shields.io/github/v/tag/CertainLach/jrsonnet?color=%23fb4934&label=latest%20release&style=for-the-badge"></img></a>
+  <a href="https://github.com/deltarocks/jrsonnet/releases"><img alt="release" src="https://img.shields.io/github/v/tag/deltarocks/jrsonnet?color=%23fb4934&label=latest%20release&style=for-the-badge"></img></a>
   <a href="https://delta.rocks/donate"><img alt="donate" src="https://delta.rocks/badge/backers.svg"></img></a>
   <a href="./LICENSE"><img alt="license" src="https://delta.rocks/badge/License · MIT.svg"></img></a>
 </p>
 ++++
-
-// Github sucks: I can't center those images the normal way: https://github.com/github/markup/issues/984 
-// [.text-center]
-// image:./docs/logowide.svg[Interactive,470, alt=jrsonnet logo]
-//
-// [.text-center]
-// --
-// image:https://img.shields.io/github/v/tag/CertainLach/jrsonnet?color=%23fb4934&label=latest%20release&style=for-the-badge[alt=release, link=https://github.com/CertainLach/jrsonnet/releases]
-// image:https://img.shields.io/github/license/CertainLach/jrsonnet?color=%2383a598&label=license&style=for-the-badge[alt=license, ./LICENSE]
-// image:https://img.shields.io/opencollective/all/jrsonnet?color=%238ec07c&style=for-the-badge[alt=opencollective, link=https://opencollective.com/jrsonnet]
-// --
 
 == What is it
 
@@ -49,7 +38,7 @@ brew install jrsonnet
 
 === Windows/other linux distributions
 
-You can get latest build of jrsonnet in https://github.com/CertainLach/jrsonnet/releases[releases].
+You can get latest build of jrsonnet in https://github.com/deltarocks/jrsonnet/releases[releases].
 
 === Build from sources
 

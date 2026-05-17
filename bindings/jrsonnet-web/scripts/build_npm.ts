@@ -17,10 +17,10 @@ await build({
 		license: "MIT",
 		repository: {
 			type: "git",
-			url: "git+https://github.com/CertainLach/jrsonnet.git",
+			url: "git+https://github.com/deltarocks/jrsonnet.git",
 		},
 		bugs: {
-			url: "https://github.com/CertainLach/jrsonnet/issues",
+			url: "https://github.com/deltarocks/jrsonnet/issues",
 		},
 	},
 	postBuild() {
