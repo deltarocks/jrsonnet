@@ -437,6 +437,8 @@ pub enum LCompSpec {
 		destruct: LDestruct,
 		over: LExpr,
 		/// Is `over` does not depend on any variable introduced by an earlier for-spec in this comprehension chain
+		/// Note: If true, then the `over` expression should be evaluated OUTSIDE of the compspec closure, using the
+		/// outer arraycomp/objcomp context.
 		loop_invariant: bool,
 	},
 	#[cfg(feature = "exp-object-iteration")]
@@ -446,6 +448,8 @@ pub enum LCompSpec {
 		visibility: jrsonnet_ir::Visibility,
 		value: LDestruct,
 		over: LExpr,
+		/// Note: If true, then the `over` expression should be evaluated OUTSIDE of the compspec closure, using the
+		/// outer arraycomp/objcomp context.
 		loop_invariant: bool,
 	},
 }
