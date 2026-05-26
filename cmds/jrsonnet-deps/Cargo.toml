@@ -17,5 +17,8 @@ jrsonnet-evaluator.workspace = true
 jrsonnet-ir.workspace = true
 jrsonnet-ir-parser.workspace = true
 jrsonnet-cli.workspace = true
+jrsonnet-pack.workspace = true
 
 clap = { workspace = true, features = ["derive"] }
+base64.workspace = true
+serde_json.workspace = true

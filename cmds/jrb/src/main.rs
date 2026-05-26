@@ -8,7 +8,9 @@ use jrsonnet_pkg::{
 	install,
 	jsonnet_bundler::{GitSource, JsonnetFile},
 };
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
+
+mod rewrite;
 
 #[derive(Parser)]
 #[clap(about = "A jsonnet package manager")]
@@ -45,6 +47,14 @@ enum Command {
 		/// Dependency names (matched against both canonical and legacy names)
 		names: Vec<String>,
 		/// Show what would be removed without making changes
+		#[clap(long)]
+		dry_run: bool,
+	},
+	/// Rewrite `legacyImports`-style import paths to their canonical equivalents
+	Rewrite {
+		/// Paths to scan (defaults to current directory)
+		paths: Vec<PathBuf>,
+		/// Show what would be rewritten without making changes
 		#[clap(long)]
 		dry_run: bool,
 	},
@@ -222,6 +232,30 @@ fn main() {
 				save_json(Path::new(MANIFEST), &manifest);
 				save_json(Path::new(LOCKFILE), &manifest);
 			}
+		}
+		Command::Rewrite { paths, dry_run } => {
+			let rules = rewrite::rules_from_vendor(&opts.jsonnetpkg_home);
+			if rules.is_empty() {
+				warn!(
+					"no legacy symlinks found under {} — nothing to rewrite",
+					opts.jsonnetpkg_home.display(),
+				);
+				return;
+			}
+			for r in &rules {
+				debug!("rule: {} -> {}", r.legacy, r.canonical);
+			}
+			let scan_paths = if paths.is_empty() {
+				vec![PathBuf::from(".")]
+			} else {
+				paths
+			};
+			let stats = rewrite::rewrite(&scan_paths, &opts.jsonnetpkg_home, &rules, dry_run);
+			let verb = if dry_run { "would rewrite" } else { "rewrote" };
+			info!(
+				"scanned {} file(s); {verb} {} import(s) across {} file(s)",
+				stats.files_scanned, stats.imports_rewritten, stats.files_modified,
+			);
 		}
 	}
 }

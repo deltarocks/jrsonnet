@@ -2389,8 +2389,12 @@ dependencies = [
 name = "jrb"
 version = "0.5.0-pre99"
 dependencies = [
+ "base64",
  "clap",
+ "jrsonnet-lexer",
+ "jrsonnet-pack",
  "jrsonnet-pkg",
+ "jrsonnet-rowan-parser",
  "rustls",
  "serde",
  "serde_json",
@@ -2429,11 +2433,14 @@ dependencies = [
 name = "jrsonnet-deps"
 version = "0.5.0-pre99"
 dependencies = [
+ "base64",
  "clap",
  "jrsonnet-cli",
  "jrsonnet-evaluator",
  "jrsonnet-ir",
  "jrsonnet-ir-parser",
+ "jrsonnet-pack",
+ "serde_json",
 ]
 
 [[package]]
@@ -2556,6 +2563,21 @@ dependencies = [
  "quote",
  "syn",
  "syn-dissect-closure",
+]
+
+[[package]]
+name = "jrsonnet-pack"
+version = "0.5.0-pre99"
+dependencies = [
+ "base64",
+ "jrsonnet-evaluator",
+ "jrsonnet-ir",
+ "jrsonnet-ir-parser",
+ "jrsonnet-lexer",
+ "jrsonnet-rowan-parser",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

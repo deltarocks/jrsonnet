@@ -1,4 +1,4 @@
-local tempo = import 'microservices/tempo.libsonnet';
+local tempo = import 'github.com/grafana/tempo/operations/jsonnet/microservices/tempo.libsonnet';
 
 tempo {
   _images+:: {

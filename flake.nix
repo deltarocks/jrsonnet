@@ -387,6 +387,7 @@
                 lld
                 hyperfine
                 graphviz
+                vega-lite
               ]
               ++ optionals (!stdenv.isDarwin) [
                 valgrind
