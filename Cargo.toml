@@ -36,6 +36,7 @@ jrsonnet-types = { path = "./crates/jrsonnet-types", version = "0.5.0-pre99" }
 jrsonnet-formatter = { path = "./crates/jrsonnet-formatter", version = "0.5.0-pre99" }
 jrsonnet-lexer = { path = "./crates/jrsonnet-lexer", version = "0.5.0-pre99" }
 jrsonnet-pkg = { path = "./crates/jrsonnet-pkg", version = "0.5.0-pre99" }
+jrsonnet-pack = { path = "./crates/jrsonnet-pack", version = "0.5.0-pre99" }
 jrsonnet-gcmodule = { version = "0.5.0" }
 # Diagnostics.
 # hi-doc is my library, which handles text formatting very well, but isn't polished enough yet

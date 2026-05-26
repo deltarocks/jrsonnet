@@ -12,7 +12,11 @@ workspace = true
 
 [dependencies]
 jrsonnet-pkg.workspace = true
+jrsonnet-rowan-parser.workspace = true
+jrsonnet-lexer.workspace = true
+jrsonnet-pack.workspace = true
 
+base64.workspace = true
 clap = { workspace = true, features = ["derive"] }
 serde = { workspace = true }
 serde_json.workspace = true

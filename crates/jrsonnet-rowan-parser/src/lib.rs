@@ -2,7 +2,7 @@
 
 use event::Sink;
 use generated::nodes::{SourceFile, Trivia};
-use parser::{LocatedSyntaxError, Parser};
+use parser::Parser;
 pub use rowan;
 
 mod ast;
@@ -19,6 +19,7 @@ mod token_set;
 pub use ast::{AstChildren, AstNode, AstToken};
 pub use generated::{nodes, syntax_kinds::SyntaxKind};
 pub use language::*;
+pub use parser::LocatedSyntaxError;
 pub use token_set::SyntaxKindSet;
 
 pub fn parse(input: &str) -> (SourceFile, Vec<LocatedSyntaxError>) {

@@ -1,4 +1,4 @@
-local loki = import 'loki/loki.libsonnet';
+local loki = import 'github.com/grafana/loki/production/ksonnet/loki/loki.libsonnet';
 
 loki {
   _config+:: {

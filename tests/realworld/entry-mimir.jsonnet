@@ -1,4 +1,4 @@
-local mimir = import 'mimir/mimir.libsonnet';
+local mimir = import 'github.com/grafana/mimir/operations/mimir/mimir.libsonnet';
 
 mimir {
   _config+:: {
