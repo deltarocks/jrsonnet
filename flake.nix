@@ -431,7 +431,7 @@
       };
       hercules-ci.post-comment = {
         enable = true;
-        caches = [ "jrsonnet.cachix.org" ];
+        caches = [ "cache.delta.rocks/hercules" ];
         script =
           let
             benchmarks = inputs.self.legacyPackages.x86_64-linux.benchmarks.default;
