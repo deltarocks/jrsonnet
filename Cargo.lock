@@ -2463,7 +2463,6 @@ dependencies = [
  "strip-ansi-escapes",
  "strsim",
  "thiserror",
- "wasm-bindgen",
 ]
 
 [[package]]

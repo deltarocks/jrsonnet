@@ -16,7 +16,7 @@ build = "build.rs"
 workspace = true
 
 [features]
-default = ["explaining-traces", "ir-parser", "wasm-bindgen"]
+default = ["explaining-traces", "ir-parser"]
 # Rustc-like trace visualization
 explaining-traces = ["hi-doc"]
 # Allows library authors to throw custom errors
@@ -53,7 +53,6 @@ exp-null-coaelse = [
   "jrsonnet-peg-parser?/exp-null-coaelse",
   "jrsonnet-ir-parser?/exp-null-coaelse",
 ]
-wasm-bindgen = ["dep:wasm-bindgen"]
 
 [dependencies]
 jrsonnet-interner.workspace = true
@@ -91,7 +90,6 @@ educe = { workspace = true, features = [
 ] }
 smallvec.workspace = true
 drop_bomb.workspace = true
-wasm-bindgen = { workspace = true, optional = true }
 
 [build-dependencies]
 rustversion.workspace = true
