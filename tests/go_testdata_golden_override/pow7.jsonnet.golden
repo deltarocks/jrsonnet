@@ -1,2 +1,2 @@
-convert num value: non-finite
+failed to convert num value: numeric value overflow (got infinity)
     pow7.jsonnet:2:8-22: function <builtin_pow> call

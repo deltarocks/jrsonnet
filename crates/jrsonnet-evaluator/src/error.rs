@@ -104,9 +104,9 @@ pub enum ErrorKind {
 	#[error("intrinsic not found: {0}")]
 	IntrinsicNotFound(IStr),
 
-	#[error("operator {0} does not operate on type {1}")]
+	#[error("unary operator {0} does not operate on type {1}")]
 	UnaryOperatorDoesNotOperateOnType(UnaryOpType, ValType),
-	#[error("binary operation {1} {0} {2} is not implemented")]
+	#[error("binary operator {0} does not operate on types {1} {0} {2}")]
 	BinaryOperatorDoesNotOperateOnValues(BinaryOpType, ValType, ValType),
 
 	#[error("self/super/$ are only usable inside objects")]
@@ -211,10 +211,10 @@ pub enum ErrorKind {
 
 	#[error("{}", format_empty_str(.0))]
 	ImportCallbackError(String),
-	#[error("invalid unicode codepoint: {0}")]
+	#[error("invalid unicode scalar value: {0} (U+{0:04X})")]
 	InvalidUnicodeCodepointGot(u32),
 
-	#[error("convert num value: {0}")]
+	#[error("failed to convert num value: {0}")]
 	ConvertNumValue(#[from] ConvertNumValueError),
 
 	#[error("format error: {0}")]

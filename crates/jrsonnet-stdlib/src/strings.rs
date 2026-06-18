@@ -2,9 +2,9 @@ use std::collections::BTreeSet;
 
 use jrsonnet_evaluator::{
 	Either, IStr, Val, bail,
-	error::{ErrorKind::*, Result},
+	error::Result,
 	function::builtin,
-	typed::{Either2, FromUntyped, M1},
+	typed::{Codepoint, Either2, FromUntyped, M1},
 	val::{ArrValue, IndexableVal},
 };
 
@@ -19,8 +19,8 @@ pub fn builtin_substr(str: IStr, from: usize, len: usize) -> String {
 }
 
 #[builtin]
-pub fn builtin_char(n: u32) -> Result<char> {
-	Ok(std::char::from_u32(n).ok_or_else(|| InvalidUnicodeCodepointGot(n))?)
+pub fn builtin_char(n: Codepoint) -> Result<char> {
+	n.try_char()
 }
 
 #[builtin]

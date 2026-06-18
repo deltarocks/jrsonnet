@@ -1,2 +1,2 @@
-invalid unicode codepoint: 1114112
+invalid unicode scalar value: 1114112 (U+110000)
     builtinChar5.jsonnet:2:9-17: function <builtin_char> call

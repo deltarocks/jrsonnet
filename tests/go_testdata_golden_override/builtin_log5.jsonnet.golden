@@ -1,2 +1,2 @@
-convert num value: non-finite
+failed to convert num value: numeric value underflow (got negative infinity)
     builtin_log5.jsonnet:1:8-10: function <builtin_log> call

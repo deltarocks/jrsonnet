@@ -1,3 +1,4 @@
 type error: number out of bounds: -1 not in 0..4294967295
+    invalid codepoint value
     argument <n> evaluation
     builtinChar3.jsonnet:1:9-12: function <builtin_char> call

@@ -1,2 +1,2 @@
-binary operation null + object is not implemented
+binary operator + does not operate on types null + object
     field <a> evaluation

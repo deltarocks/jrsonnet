@@ -1,2 +1,2 @@
-convert num value: non-finite
+failed to convert num value: numeric value overflow (got infinity)
     builtin_exp5.jsonnet:1:8-30: function <builtin_exp> call
