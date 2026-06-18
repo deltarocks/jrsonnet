@@ -47,7 +47,7 @@ exp-object-iteration = [
   "jrsonnet-ir-parser?/exp-object-iteration",
 ]
 # Bigint type
-exp-bigint = ["num-bigint", "jrsonnet-types/exp-bigint"]
+exp-bigint = ["jrsonnet-types/exp-bigint"]
 # obj?.field, obj?.['field']
 exp-null-coaelse = [
   "jrsonnet-peg-parser?/exp-null-coaelse",
@@ -78,7 +78,7 @@ anyhow = { workspace = true, optional = true }
 # Better explaining traces
 hi-doc = { workspace = true, optional = true }
 # Bigint
-num-bigint = { workspace = true, features = ["serde"], optional = true }
+num-bigint = { workspace = true, features = ["serde"] }
 
 stacker.workspace = true
 educe = { workspace = true, features = [
