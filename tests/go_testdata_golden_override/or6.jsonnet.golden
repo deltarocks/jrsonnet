@@ -1,1 +1,1 @@
-binary operation boolean || string is not implemented
+binary operator || does not operate on types boolean || string

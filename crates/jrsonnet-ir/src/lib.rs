@@ -115,14 +115,20 @@ impl_num!(i8, u8, i16, u16, i32, u32);
 #[derive(Clone, Copy, Debug, thiserror::Error, Acyclic)]
 pub enum ConvertNumValueError {
 	/// The value is too large
-	#[error("overflow")]
+	#[error("numeric value overflow")]
 	Overflow,
+	/// The value is too large (infinity)
+	#[error("numeric value overflow (got infinity)")]
+	OverflowInfinity,
 	/// The value is too small
-	#[error("underflow")]
+	#[error("numeric value underflow")]
 	Underflow,
+	/// The value is too small (negative infinity)
+	#[error("numeric value underflow (got negative infinity)")]
+	UnderflowInfinity,
 	/// Jsonnet numbers can only be finite
-	#[error("non-finite")]
-	NonFinite,
+	#[error("numeric value is not finite (got NaN)")]
+	NotANumber,
 	/// Number value is out of safe integer range
 	#[error("float out of safe int range")]
 	BitwiseSafeRange,
@@ -154,7 +160,15 @@ impl TryFrom<f64> for NumValue {
 
 	#[inline]
 	fn try_from(value: f64) -> Result<Self, Self::Error> {
-		Self::new(value).ok_or(ConvertNumValueError::NonFinite)
+		Self::new(value).ok_or_else(|| {
+			if value == f64::INFINITY {
+				return ConvertNumValueError::OverflowInfinity;
+			}
+			if value == f64::NEG_INFINITY {
+				return ConvertNumValueError::UnderflowInfinity;
+			}
+			ConvertNumValueError::NotANumber
+		})
 	}
 }
 impl TryFrom<f32> for NumValue {
@@ -162,6 +176,6 @@ impl TryFrom<f32> for NumValue {
 
 	#[inline]
 	fn try_from(value: f32) -> Result<Self, Self::Error> {
-		Self::new(f64::from(value)).ok_or(ConvertNumValueError::NonFinite)
+		Self::try_from(f64::from(value))
 	}
 }

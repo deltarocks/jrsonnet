@@ -1,2 +1,2 @@
-binary operation array < number is not implemented
+binary operator < does not operate on types array < number
     std.sort4.jsonnet:1:9-28: function <builtin_sort> call

@@ -1,3 +1,4 @@
 type error: expected BoundedNumber<0, 4294967295>, got string
+    invalid codepoint value
     argument <n> evaluation
     builtinChar7.jsonnet:1:9-15: function <builtin_char> call

@@ -1,1 +1,1 @@
-operator ~ does not operate on type string
+unary operator ~ does not operate on type string

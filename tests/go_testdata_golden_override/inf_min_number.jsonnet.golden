@@ -1,1 +1,1 @@
-convert num value: non-finite
+failed to convert num value: numeric value underflow (got negative infinity)

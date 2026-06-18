@@ -14,7 +14,7 @@ use thiserror::Error;
 use crate::{
 	Error, ObjValue, Result, Val, bail,
 	error::{ErrorKind::*, format_found, suggest_object_fields},
-	typed::FromUntyped,
+	typed::{Codepoint, FromUntyped},
 };
 
 #[derive(Debug, Clone, Error, Trace)]
@@ -644,12 +644,9 @@ pub fn format_code(
 			}
 		}
 		ConvTypeV::Char => match value.clone() {
-			Val::Num(n) => {
-				let n = n.get();
-				tmp_out.push(
-					std::char::from_u32(n as u32)
-						.ok_or_else(|| InvalidUnicodeCodepointGot(n as u32))?,
-				);
+			v @ Val::Num(_) => {
+				let codepoint = Codepoint::from_untyped(v)?;
+				tmp_out.push(codepoint.try_char()?);
 			}
 			Val::Str(s) => {
 				let s = s.into_flat();
