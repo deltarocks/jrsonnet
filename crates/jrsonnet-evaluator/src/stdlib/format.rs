@@ -338,7 +338,7 @@ pub fn render_integer(
 		nums
 	} else {
 		let (mantissa, exp) = decompose_f64(iv);
-		let mut v = BigUint::from(mantissa) << u32::try_from(exp).expect("huge f64 exp fits u32");
+		let mut v = BigUint::from(mantissa) << exp.unsigned_abs();
 		let radix = BigUint::from(radix as u64);
 		let mut nums = Vec::new();
 		while v != BigUint::ZERO {
@@ -526,14 +526,13 @@ impl Frac {
 
 /// bool signifies carry, e.g 0.999 at precision 2 results in 1.000, thus carry.
 // floor((2 * low_bits * 10**prec + 2**k) / 2**(k+1))
-fn round_frac(abs: f64, precision: u16) -> (Frac, bool) {
-	let prec = usize::from(precision);
+fn round_frac(abs: f64, prec: u16) -> (Frac, bool) {
 	let (mantissa, exp) = decompose_f64(abs);
 	if exp >= 0 {
 		// abs is integral: no fractional bits.
 		return (Frac::Small(0), false);
 	}
-	let k = u32::try_from(-exp).expect("exp fits u32");
+	let k = exp.unsigned_abs();
 	// Fractional part is exactly `low_bits / 2**k` (mantissa is 53 bits).
 	let low_bits = if k >= 64 {
 		mantissa
@@ -546,14 +545,11 @@ fn round_frac(abs: f64, precision: u16) -> (Frac, bool) {
 	round_frac_u128(low_bits, k, prec).unwrap_or_else(|| round_frac_big(low_bits, k, prec))
 }
 
-fn round_frac_u128(low_bits: u64, k: u32, prec: usize) -> Option<(Frac, bool)> {
+fn round_frac_u128(low_bits: u64, k: u32, prec: u16) -> Option<(Frac, bool)> {
 	if k > 126 {
 		return None;
 	}
-	let mut ten_pow = 1u128;
-	for _ in 0..prec {
-		ten_pow = ten_pow.checked_mul(10)?;
-	}
+	let ten_pow = 10u128.checked_pow(u32::from(prec))?;
 	let numerator = u128::from(low_bits)
 		.checked_mul(ten_pow)?
 		.checked_mul(2)?
@@ -566,19 +562,55 @@ fn round_frac_u128(low_bits: u64, k: u32, prec: usize) -> Option<(Frac, bool)> {
 	})
 }
 
-fn round_frac_big(low_bits: u64, k: u32, prec: usize) -> (Frac, bool) {
-	let mut ten_pow = BigUint::from(1u32);
-	let ten = BigUint::from(10u32);
-	for _ in 0..prec {
-		ten_pow *= &ten;
-	}
-	let numerator = ((BigUint::from(low_bits) * &ten_pow) << 1u32) + (BigUint::from(1u32) << k);
-	let frac = numerator >> (k + 1);
+fn round_frac_big(low_bits: u64, k: u32, prec: u16) -> (Frac, bool) {
+	let ten_pow = BigUint::from(10u32).pow(u32::from(prec));
+	let frac = round_ratio(
+		&(BigUint::from(low_bits) * &ten_pow),
+		&(BigUint::from(1u32) << k),
+	);
 	if frac == ten_pow {
 		(Frac::Small(0), true)
 	} else {
 		(Frac::Big(frac), false)
 	}
+}
+
+fn round_ratio(num: &BigUint, den: &BigUint) -> BigUint {
+	((num << 1u32) + den) / (den << 1u32)
+}
+
+fn shorter_exponent(value: f64, sig: u16) -> i32 {
+	if value == 0.0 {
+		return 0;
+	}
+	let abs = value.abs();
+	let e0 = abs.log10().floor() as i32;
+	if rounds_up_to_next_pow10(abs, sig, e0) {
+		e0 + 1
+	} else {
+		e0
+	}
+}
+
+fn rounds_up_to_next_pow10(abs: f64, sig: u16, e0: i32) -> bool {
+	let (mantissa, exp) = decompose_f64(abs);
+	// abs * 10**(sig-1-e0) == num / den
+	let t = i32::from(sig) - 1 - e0;
+	let mut num = BigUint::from(mantissa);
+	let mut den = BigUint::from(1u32);
+	let exp_abs = exp.unsigned_abs();
+	if exp >= 0 {
+		num <<= exp_abs;
+	} else {
+		den <<= exp_abs;
+	}
+	let pow10_t_abs = BigUint::from(10u32).pow(t.unsigned_abs());
+	if t >= 0 {
+		num *= pow10_t_abs;
+	} else {
+		den *= pow10_t_abs;
+	}
+	round_ratio(&num, &den) >= BigUint::from(10u32).pow(u32::from(sig))
 }
 
 #[allow(clippy::fn_params_excessive_bools)]
@@ -594,21 +626,21 @@ pub fn render_float_sci(
 	caps: bool,
 ) {
 	let exponent = if n == 0.0 {
-		0.0
+		0
 	} else {
-		n.abs().log10().floor()
+		shorter_exponent(n, precision.saturating_add(1))
 	};
 
-	let mantissa = if exponent as i16 == -324 {
-		n * 10.0 / 10.0_f64.powf(exponent + 1.0)
+	let mantissa = if exponent == -324 {
+		n * 10.0 / 10.0_f64.powi(exponent + 1)
 	} else {
-		n / 10.0_f64.powf(exponent)
+		n / 10.0_f64.powi(exponent)
 	};
 	let mut exponent_str = String::new();
 	render_decimal(
 		&mut exponent_str,
-		exponent < 0.0,
-		exponent.abs(),
+		exponent < 0,
+		f64::from(exponent.abs()),
 		3,
 		0,
 		false,
@@ -713,12 +745,9 @@ pub fn format_code(
 		}
 		ConvTypeV::Shorter => {
 			let value = f64::from_untyped(value.clone())?;
-			let exponent = if value == 0.0 {
-				0.0
-			} else {
-				value.abs().log10().floor()
-			};
-			if exponent < -4.0 || exponent >= f64::from(fpprec) {
+			let fpprec = fpprec.max(1);
+			let exponent = shorter_exponent(value, fpprec);
+			if exponent < -4 || exponent >= i32::from(fpprec) {
 				render_float_sci(
 					&mut tmp_out,
 					value,
@@ -731,12 +760,12 @@ pub fn format_code(
 					code.caps,
 				);
 			} else {
-				let digits_before_pt = 1.max(exponent as u16 + 1);
+				let frac_prec = (i32::from(fpprec) - 1 - exponent).max(0) as u16;
 				render_float(
 					&mut tmp_out,
 					value,
 					padding,
-					fpprec - digits_before_pt,
+					frac_prec,
 					clfags.blank,
 					clfags.sign,
 					clfags.alt,
