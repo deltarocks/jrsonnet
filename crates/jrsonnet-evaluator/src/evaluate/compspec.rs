@@ -174,7 +174,7 @@ pub fn evaluate_arr_comp(ctx: Context, comp: &LArrComp) -> Result<Val> {
 	let cached_overs = cache_overs(&ctx, &comp.compspecs)?;
 
 	// Eager fast-path: when the comp has only `if` and `for { destruct: Full(_) }`
-	// specs, allocate one Iter A-frame per for-spec and re-set the slot
+	// specs, allocate one iter frame per for-spec and re-set the slot
 	// per iteration as long as the frame's refcount stays at 1.
 	'eager: {
 		if !comp.compspecs.iter().all(|c| {
@@ -381,10 +381,9 @@ fn evaluate_compspecs(
 				arr
 			};
 			let inner_reserve = guaranteed_reserve.max(1) * arr.len() as usize;
-			for (i, item) in arr.iter().enumerate() {
-				let item = item?;
+			for (i, item) in arr.iter_lazy().enumerate() {
 				let inner_ctx = ctx.pack_captures_sup_this(frame_shape).enter(|fill, ctx| {
-					destruct(dst, fill, Thunk::evaluated(item), ctx);
+					destruct(dst, fill, item, ctx);
 				});
 				evaluate_compspecs(
 					inner_ctx,
