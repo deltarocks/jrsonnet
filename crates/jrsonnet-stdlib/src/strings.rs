@@ -128,19 +128,16 @@ pub fn builtin_find_substr(pat: IStr, str: IStr) -> ArrValue {
 
 #[builtin]
 pub fn builtin_parse_int(str: IStr) -> Result<f64> {
-	if let Some(raw) = str.strip_prefix('-') {
-		if raw.is_empty() {
-			bail!("integer only consists of a minus")
-		}
+	let (raw, sign) = str.strip_prefix('-').map_or_else(
+		|| (str.strip_prefix('+').unwrap_or(&str), 1.0),
+		|neg| (neg, -1.0),
+	);
 
-		parse_nat::<10>(raw).map(|value| -value)
-	} else {
-		if str.is_empty() {
-			bail!("empty integer")
-		}
-
-		parse_nat::<10>(str.as_str())
+	if raw.is_empty() {
+		bail!("empty integer string: {str:?}")
 	}
+
+	Ok(parse_nat::<10>(raw)? * sign)
 }
 
 #[builtin]
