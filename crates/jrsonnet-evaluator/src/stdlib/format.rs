@@ -15,7 +15,7 @@ use num_bigint::BigUint;
 use thiserror::Error;
 
 use crate::{
-	Error, ObjValue, Result, Val, bail,
+	Error, NumValue, ObjValue, Result, Val, bail,
 	error::{ErrorKind::*, format_found, suggest_object_fields},
 	typed::{Codepoint, FromUntyped},
 };
@@ -657,6 +657,17 @@ pub fn render_float_sci(
 	out.push_str(&exponent_str);
 }
 
+/// Coerce a boolean to its numeric equivalent (true -> 1.0, false -> 0.0).
+/// Python's `bool` is a subclass of `int`, so `"%d" % True` returns `"1"`.
+/// The Jsonnet spec says formatting follows Python's rules, so we match that.
+fn coerce_bool_to_num(value: &Val) -> Val {
+	match value {
+		Val::Bool(true) => Val::Num(NumValue::new(1.0).expect("finite")),
+		Val::Bool(false) => Val::Num(NumValue::new(0.0).expect("finite")),
+		other => other.clone(),
+	}
+}
+
 #[allow(clippy::too_many_lines)]
 pub fn format_code(
 	out: &mut String,
@@ -679,7 +690,7 @@ pub fn format_code(
 	match code.convtype {
 		ConvTypeV::String => tmp_out.push_str(&value.clone().to_string()?),
 		ConvTypeV::Decimal => {
-			let value = f64::from_untyped(value.clone())?;
+			let value = f64::from_untyped(coerce_bool_to_num(value))?;
 			render_decimal(
 				&mut tmp_out,
 				value <= -1.0,
@@ -691,7 +702,7 @@ pub fn format_code(
 			);
 		}
 		ConvTypeV::Octal => {
-			let value = f64::from_untyped(value.clone())?;
+			let value = f64::from_untyped(coerce_bool_to_num(value))?;
 			render_octal(
 				&mut tmp_out,
 				value <= -1.0,
@@ -704,7 +715,7 @@ pub fn format_code(
 			);
 		}
 		ConvTypeV::Hexadecimal => {
-			let value = f64::from_untyped(value.clone())?;
+			let value = f64::from_untyped(coerce_bool_to_num(value))?;
 			render_hexadecimal(
 				&mut tmp_out,
 				value,
@@ -717,7 +728,7 @@ pub fn format_code(
 			);
 		}
 		ConvTypeV::Scientific => {
-			let value = f64::from_untyped(value.clone())?;
+			let value = f64::from_untyped(coerce_bool_to_num(value))?;
 			render_float_sci(
 				&mut tmp_out,
 				value,
@@ -731,7 +742,7 @@ pub fn format_code(
 			);
 		}
 		ConvTypeV::Float => {
-			let value = f64::from_untyped(value.clone())?;
+			let value = f64::from_untyped(coerce_bool_to_num(value))?;
 			render_float(
 				&mut tmp_out,
 				value,
@@ -744,7 +755,7 @@ pub fn format_code(
 			);
 		}
 		ConvTypeV::Shorter => {
-			let value = f64::from_untyped(value.clone())?;
+			let value = f64::from_untyped(coerce_bool_to_num(value))?;
 			let fpprec = fpprec.max(1);
 			let exponent = shorter_exponent(value, fpprec);
 			if exponent < -4 || exponent >= i32::from(fpprec) {
@@ -773,7 +784,7 @@ pub fn format_code(
 				);
 			}
 		}
-		ConvTypeV::Char => match value.clone() {
+		ConvTypeV::Char => match coerce_bool_to_num(value) {
 			v @ Val::Num(_) => {
 				let codepoint = Codepoint::from_untyped(v)?;
 				tmp_out.push(codepoint.try_char()?);
