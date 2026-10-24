@@ -1,0 +1,46 @@
+---
+source: crates/jrsonnet-rowan-parser/src/tests.rs
+expression: "local { a, ..., b } = x; a\n"
+---
+SOURCE_FILE@0..27
+  EXPR@0..26
+    STMT_LOCAL@0..24
+      LOCAL_KW@0..5 "local"
+      WHITESPACE@5..6 " "
+      BIND_DESTRUCT@6..23
+        DESTRUCT_OBJECT@6..19
+          L_BRACE@6..7 "{"
+          WHITESPACE@7..8 " "
+          DESTRUCT_OBJECT_FIELD@8..9
+            NAME@8..9
+              IDENT@8..9 "a"
+          COMMA@9..10 ","
+          WHITESPACE@10..11 " "
+          DESTRUCT_REST@11..14
+            DOTDOTDOT@11..14 "..."
+          COMMA@14..15 ","
+          WHITESPACE@15..16 " "
+          ERROR_MISSING_TOKEN@16..16
+          DESTRUCT_OBJECT_FIELD@16..17
+            NAME@16..17
+              IDENT@16..17 "b"
+          WHITESPACE@17..18 " "
+          R_BRACE@18..19 "}"
+        WHITESPACE@19..20 " "
+        ASSIGN@20..21 "="
+        WHITESPACE@21..22 " "
+        EXPR@22..23
+          EXPR_VAR@22..23
+            NAME@22..23
+              IDENT@22..23 "x"
+      SEMI@23..24 ";"
+    WHITESPACE@24..25 " "
+    EXPR_VAR@25..26
+      NAME@25..26
+        IDENT@25..26 "a"
+  WHITESPACE@26..27 "\n"
+===
+LocatedSyntaxError { error: Missing { expected: Unnamed(SyntaxKindSet([R_BRACE, DOTDOTDOT])) }, range: 16..16 }
+===
+   ·                 ╭── missing R_BRACE or DOTDOTDOT
+1  │ local { a, ..., b } = x; a
