@@ -1,0 +1,20 @@
+---
+source: crates/jrsonnet-rowan-parser/src/tests.rs
+expression: "function\n"
+---
+SOURCE_FILE@0..9
+  EXPR@0..9
+    EXPR_FUNCTION@0..9
+      FUNCTION_KW@0..8 "function"
+      WHITESPACE@8..9 "\n"
+      PARAMS_DESC@9..9
+        ERROR_MISSING_TOKEN@9..9
+      EXPR@9..9
+        ERROR_MISSING_TOKEN@9..9
+===
+LocatedSyntaxError { error: Missing { expected: Unnamed(SyntaxKindSet([L_PAREN])) }, range: 9..9 }
+LocatedSyntaxError { error: Missing { expected: Named("expression") }, range: 9..9 }
+===
+   ·          ╭── missing L_PAREN
+1  │ function
+   ·          ╰── missing expression

@@ -260,6 +260,19 @@ mk_test!(
 	multi_line_comment_unterminated => r#"
 		/** unterminated
 	"#
+
+	recover_field_without_visibility => r#"
+		{ a
+	"#
+	recover_function_without_params => r#"
+		function
+	"#
+	recover_destruct_field_after_rest => r#"
+		local { a, ..., b } = x; a
+	"#
+	recover_import_without_path => r#"
+		import
+	"#
 );
 
 #[test]

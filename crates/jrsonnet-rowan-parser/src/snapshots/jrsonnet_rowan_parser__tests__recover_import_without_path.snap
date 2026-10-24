@@ -1,0 +1,15 @@
+---
+source: crates/jrsonnet-rowan-parser/src/tests.rs
+expression: "import\n"
+---
+SOURCE_FILE@0..7
+  EXPR@0..7
+    EXPR_IMPORT@0..7
+      IMPORT_KW@0..6 "import"
+      WHITESPACE@6..7 "\n"
+      ERROR_MISSING_TOKEN@7..7
+===
+LocatedSyntaxError { error: Missing { expected: Unnamed(SyntaxKindSet([])) }, range: 7..7 }
+===
+   ·        ╭── missing
+1  │ import

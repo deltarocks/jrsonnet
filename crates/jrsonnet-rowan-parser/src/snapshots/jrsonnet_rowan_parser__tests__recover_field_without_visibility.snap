@@ -1,0 +1,29 @@
+---
+source: crates/jrsonnet-rowan-parser/src/tests.rs
+expression: "{ a\n"
+---
+SOURCE_FILE@0..4
+  EXPR@0..4
+    EXPR_OBJECT@0..4
+      OBJ_BODY_MEMBER_LIST@0..4
+        L_BRACE@0..1 "{"
+        WHITESPACE@1..2 " "
+        MEMBER_FIELD_NORMAL@2..4
+          FIELD_NAME_FIXED@2..3
+            NAME@2..3
+              IDENT@2..3 "a"
+          WHITESPACE@3..4 "\n"
+          VISIBILITY@4..4
+            ERROR_MISSING_TOKEN@4..4
+          EXPR@4..4
+            ERROR_MISSING_TOKEN@4..4
+        ERROR_MISSING_TOKEN@4..4
+===
+LocatedSyntaxError { error: Missing { expected: Unnamed(SyntaxKindSet([PLUS, L_PAREN, COLON])) }, range: 4..4 }
+LocatedSyntaxError { error: Missing { expected: Named("expression") }, range: 4..4 }
+LocatedSyntaxError { error: Missing { expected: Unnamed(SyntaxKindSet([R_BRACE, SEMI, COMMA, IF_KW, FOR_KW])) }, range: 4..4 }
+===
+   ·     ╭── missing expression
+   ·     ┟── missing PLUS, L_PAREN or COLON
+1  │ { a
+   ·     ╰── missing R_BRACE, SEMI, COMMA, IF_KW or FOR_KW

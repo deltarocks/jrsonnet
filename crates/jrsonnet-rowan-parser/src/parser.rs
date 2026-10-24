@@ -432,7 +432,10 @@ fn field_name(p: &mut Parser) {
 fn visibility(p: &mut Parser) {
 	let m = p.start();
 	if !p.at_ts(TS![:]) {
+		// Bumping after the error would run past the end of the input.
 		p.error_with_recovery_set(TS![=]);
+		m.complete(p, VISIBILITY);
+		return;
 	}
 	p.bump();
 	'colons: {
@@ -561,6 +564,11 @@ fn param(p: &mut Parser) {
 }
 fn params_desc(p: &mut Parser) -> CompletedMarker {
 	let m = p.start();
+	// `function` without a parameter list is what the user has typed so far.
+	if !p.at(T!['(']) {
+		p.error_with_no_skip();
+		return m.complete(p, PARAMS_DESC);
+	}
 	p.bump_assert(T!['(']);
 
 	loop {
@@ -828,7 +836,7 @@ fn destruct(p: &mut Parser) -> CompletedMarker {
 				had_rest = true;
 			} else {
 				if had_rest {
-					p.error_with_recovery_set(TS![]);
+					p.error_with_no_skip();
 				}
 				destruct_object_field(p);
 			}
@@ -929,7 +937,11 @@ fn lhs_basic(p: &mut Parser) -> Result<CompletedMarker, CompletedMarker> {
 	} else if p.at(T![import]) || p.at(T![importstr]) || p.at(T![importbin]) {
 		let m = p.start();
 		p.bump();
-		text(p);
+		if Text::can_cast(p.current()) {
+			text(p);
+		} else {
+			p.error_with_no_skip();
+		}
 		m.complete(p, EXPR_IMPORT)
 	} else if let Some(op) = UnaryOperatorKind::cast(p.current()) {
 		let ((), right_binding_power) = op.binding_power();
