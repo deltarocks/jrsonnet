@@ -5,6 +5,7 @@ import {
 } from "./base.ts";
 import {
 	ArrValue,
+	collectGarbage,
 	type ImportResolver,
 	ObjValue,
 	setErrorFactory,
@@ -20,6 +21,7 @@ setErrorFactory(
 
 export {
 	ArrValue,
+	collectGarbage,
 	FetchImportResolver,
 	type ImportResolver,
 	ObjValue,

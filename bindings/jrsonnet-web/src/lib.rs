@@ -41,6 +41,19 @@ thread_local! {
 pub fn set_error_factory(f: js_sys::Function) {
 	ERR_FACTORY.with(|c| *c.borrow_mut() = Some(f));
 }
+
+/// Frees the values that only reference cycles keep alive, and returns how
+/// many objects were freed.
+///
+/// jrsonnet values can reference each other in cycles, and the cycle collector
+/// does not run by itself. A program that evaluates more than once should call
+/// this between evaluations, after `free()` on the states and values it no
+/// longer uses. Otherwise the unreachable cycles stay in memory.
+#[wasm_bindgen(js_name = collectGarbage)]
+pub fn collect_garbage() -> usize {
+	jrsonnet_gcmodule::collect_thread_cycles()
+}
+
 fn make_jrsonnet_error(message: &str, frames: js_sys::Array, cause: &JsValue) -> JsValue {
 	ERR_FACTORY.with(|c| {
 		c.borrow().as_ref().map_or_else(

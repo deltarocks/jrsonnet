@@ -1,5 +1,11 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
-import { type ImportResolver, JrsonnetError, State, ValKind } from "./mod.ts";
+import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
+import {
+	collectGarbage,
+	type ImportResolver,
+	JrsonnetError,
+	State,
+	ValKind,
+} from "./mod.ts";
 
 Deno.test("evaluateSnippet returns numbers", () => {
 	const state = new State();
@@ -136,4 +142,27 @@ Deno.test("evaluateFileFrom resolves relative paths", async () => {
 		"./lib.jsonnet",
 	);
 	assertEquals(v.asObj()?.get("answer")?.asNum(), 42);
+});
+
+Deno.test("collectGarbage frees the reference cycles of freed states", () => {
+	collectGarbage();
+	const state = new State();
+	const obj = state.evaluateSnippet("test.jsonnet", "{ a: self.b, b: 1 }");
+	// Manifesting caches the fields, which closes the cycles.
+	assertEquals(obj.manifestJson(0), '{"a":1,"b":1}');
+	obj.free();
+	state.free();
+	assert(collectGarbage() > 0);
+	assertEquals(collectGarbage(), 0);
+});
+
+Deno.test("collectGarbage keeps live states usable", () => {
+	const state = new State();
+	const obj = state.evaluateSnippet("test.jsonnet", "{ a: self.b, b: 1 }");
+	collectGarbage();
+	assertEquals(obj.asObj()?.get("a")?.asNum(), 1);
+	assertEquals(
+		state.evaluateSnippet("test.jsonnet", "std.length([1, 2])").asNum(),
+		2,
+	);
 });
