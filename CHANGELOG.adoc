@@ -1,0 +1,189 @@
+= Changelog
+:toc:
+:toclevels: 2
+
+This changelog is organized by release, newest first.
+Add new releases as new `==` sections at the top, and add release dates when a version is tagged.
+
+== Unreleased
+
+No unreleased changes are recorded yet.
+
+== 0.5.0
+
+`0.5.0` is the first major release since `0.4.2`.
+
+=== Highlights
+
+* Complete evaluator and parser overhaul, with a new intermediate representation,
+  a hand-written recursive-descent parser, static analysis, and improved diagnostics.
+* The standard library is now fully implemented in native Rust instead of embedded Jsonnet,
+  with many new functions and significant performance improvements.
+* New command-line tools:
+  `jrsonnet-fmt` (formatter), `jrb` (jsonnet-bundler-compatible package manager),
+  and `jrsonnet-deps` (import listing and bundling).
+* Updated C and WebAssembly bindings.
+  The JavaScript/WASM package is published as `@deltarocks/jrsonnet` on npm and JSR.
+* Experimental syntax features are available through build features:
+  destructuring, object iteration, field-order preservation, null-coalescing, bigint, regex,
+  and `--exp-apply`.
+
+=== Breaking changes
+
+* The Rust API is not source-compatible with `0.4.x`.
+  `EvaluationState` was replaced by `State` and `StateBuilder`,
+  and evaluation state must be entered before using values.
+* `jrsonnet-parser` was replaced by the `jrsonnet-ir` intermediate representation,
+  the new `jrsonnet-ir-parser`, and the legacy `jrsonnet-peg-parser`.
+* The standard library was moved out of the evaluator into the `jrsonnet-stdlib` crate.
+  It is no longer embedded in the evaluator and must be supplied through a context initializer.
+* The old JavaScript bindings under `bindings/js` were replaced by `bindings/jrsonnet-web`,
+  with a new JavaScript API and package name.
+* `jrsonnet --generate <shell>` was replaced by the `jrsonnet generate <shell>` subcommand.
+* `-S` and `--format` are now mutually exclusive.
+  Use `-S` or `--format=string` for string output.
+* The project now uses Rust edition 2024 and a recent stable toolchain.
+
+=== Added
+
+==== Language and evaluation
+
+* New intermediate representation (`jrsonnet-ir`) with a hand-written lexer
+  and recursive-descent parser (`jrsonnet-lexer`, `jrsonnet-ir-parser`).
+* The legacy PEG parser remains available.
+  Build either parser or both, and select the legacy parser at runtime via `JRSONNET_LEGACY_PARSER`.
+* Static analysis with explicit captures/locals, loop-invariant hoisting,
+  and better evaluation diagnostics.
+* Async import resolution with a custom `AsyncImportResolver`.
+* Custom source paths and source URLs.
+* On-demand OS stack growth, a configurable stack depth limit, minimal tail-call optimization,
+  and detection of infinite recursion in object evaluation and assertions.
+* Chomped string blocks (`|||-`).
+* Function signature descriptions and default-parameter descriptions in error messages.
+
+==== Command-line tools
+
+* `jrsonnet`:
+** `--version`.
+** `--no-trailing-newline`.
+** `--format` support for JSON, YAML, TOML, XML/JsonML, INI, and string output.
+** `--preserve-order` when built with `exp-preserve-order`.
+** `--exp-apply` when built with `exp-apply`.
+** `generate` subcommand for shell completion.
+* `jrsonnet-fmt`:
+** Standalone Jsonnet formatter with `--exec`, `--in-place`, `--test`,
+   `--indent`, `--no-use-tabs`, `--max-width`, and `--conv-limit`.
+* `jrb`:
+** Jsonnet package manager compatible with jsonnet-bundler manifests and lockfiles.
+** `init`, `install`, `update`, `remove`, and `rewrite` subcommands.
+** Git and local dependencies, checksums, symlinked vendor directories, and `--dry-run`.
+* `jrsonnet-deps`:
+** Lists transitive imports of an entry file.
+** Produces playground bundles, shareable playground URLs, or a single self-contained Jsonnet file.
+
+==== Standard library
+
+New standard-library functions were added:
+
+* Array, set, and general functions:
+  `std.all`, `std.any`, `std.contains`, `std.avg`, `std.remove`, `std.removeAt`,
+  `std.flattenDeepArray`, `std.sum`, `std.minArray`, `std.maxArray`, and `std.get`.
+* Math functions:
+  `std.log2`, `std.log10`, `std.atan2`, `std.round`, `std.isEven`, `std.isOdd`,
+  `std.isInteger`, `std.isDecimal`, `std.deg2rad`, `std.rad2deg`, and `std.hypot`.
+* String functions:
+  `std.equalsIgnoreCase`, `std.isEmpty`, `std.splitLimitR`, `std.escapeStringXML`, and `std.trim`.
+* Object functions:
+  `std.objectKeysValues`, `std.objectKeysValuesAll`, and `std.objectRemoveKey`.
+* Hashing functions:
+  `std.sha1`, `std.sha256`, `std.sha512`, and `std.sha3`.
+* Parsing and manifest functions:
+  `std.parseYaml` and `std.manifestJsonMinified`.
+
+All standard-library functions that were still implemented in Jsonnet
+were ported to native Rust builtins.
+Those are covered under Performance.
+
+Other standard-library changes:
+
+* `std.thisFile` is enabled by default.
+* `std.native` now accepts arbitrary values and plain functions.
+* Additional builtin argument handling: unnamed arguments, lazy values, and default parameters.
+
+==== Bindings and integrations
+
+* Updated `libjsonnet` C ABI bindings, including C++ compatibility methods,
+  thread state dump/restore hooks, and `importbin` support.
+* New JavaScript/WASM bindings with `State`, `Val`, `ObjValue`, `ArrValue`, `FetchImportResolver`,
+  async imports, formatter access, and experimental features.
+* Published the JavaScript/WASM bindings as `@deltarocks/jrsonnet` on npm and JSR.
+* Composable Rust context initializers, serde integration, and typed `#[derive(Typed)]` helpers.
+
+==== Experimental features
+
+* Destructuring for objects, arrays, function arguments, local declarations, and comprehensions,
+  including rest patterns and defaults.
+* Object iteration in comprehensions.
+* Object field-order preservation during manifestification.
+* Null-coalescing operator (`??`) and null-safe indexing (`?.`, `?.[...]`).
+* Arbitrary-precision integers (`std.bigint`).
+* Regular expressions:
+  `std.regexFullMatch`, `std.regexPartialMatch`, `std.regexReplace`,
+  `std.regexGlobalReplace`, and `std.regexQuoteMeta`.
+
+Build the `jrsonnet` CLI with `--features=experimental` to enable all of them.
+
+=== Changed
+
+* The default maximum stack depth is now 512 frames, up from 200.
+* Stack traces now use relative paths by default.
+* `std.decodeUTF8` is now lossy by default.
+* `std.parseInt` now accepts a leading `+`.
+* `std.slice` and slicing syntax now accept negative indexes and `null`.
+* `std.map` and `std.foldr` now work on strings.
+* `std.sort`, `std.set`, and `std.uniq` now support arrays as elements.
+* `std.join` and `std.flatMap` now accept `null` in arrays.
+* `std.manifestJsonEx` now respects a custom newline value in empty objects and arrays.
+* YAML manifestification is now selected automatically when `-y` is used.
+* `--jpath` may now be specified multiple times,
+  and `JSONNET_PATH` is now read as an additional search path.
+* Diagnostics now show full source ranges and include function/description frames.
+* Standard library behavior was synchronized with upstream Jsonnet changes,
+  including `std.format`, `std.parseInt`, UTF-8/base64 handling, YAML, TOML, INI, and XML output.
+
+=== Fixed
+
+* Parser and lexer fixes for trailing commas, comments at end of file, string escapes,
+  non-BMP characters, slices, reserved identifiers, import arguments,
+  object comprehension assertions, duplicate fields, and `super` field resolution.
+* Evaluator fixes for lazy array and object comprehensions, lazy `for` specifications,
+  object extension with non-object left-hand sides, field visibility,
+  infinite-recursion detection, deep manifest recursion, and stack trace underflows.
+* Standard library fixes for `std.range`, `std.format` (`%g`, integer/float rendering, `%c`),
+  `std.parseInt`, `std.slice`, `std.manifestJsonEx`, `std.trace` laziness, `std.native` fallback,
+  and OOP-aware `std.objectRemoveKey`.
+* CLI fixes for `--multi` path traversal, `--tla-str-path`, `--version`,
+  `-S` output with `--multi`, and the `experimental` feature set.
+* Fixes for the C ABI bindings, including argument layout, optionality, and memory safety.
+* Formatter fixes for width counting by characters rather than UTF-16 code units,
+  comment handling, object comprehensions, and unary plus.
+
+=== Performance
+
+* Moved all remaining standard-library functions from Jsonnet to native Rust builtins.
+* Added static object shapes, prepared calls, weak object cache keys, and cheaper error formatting.
+* Added lazy arrays, slices, and comprehensions, plus _O(1)_ `std.reverse` and `std.range`.
+* Reduced allocations with string interning, byte-array specialization,
+  specialized string escaping, and `memchr`-based string block parsing.
+* Added allocator and stack-size tuning, including optional mimalloc support.
+
+=== Development
+
+* Split the project into focused workspace crates for the lexer, IR, parsers, evaluator,
+  standard library, formatter, package management, and bundling.
+* Added formatter/tooling support through the rowan-based `jrsonnet-rowan-parser`.
+* Added upstream C++ and Go Jsonnet test suites, golden `insta` snapshots,
+  and `rstest`-based tests.
+* Reworked the Nix flake and CI with flake-parts, crane-based builds,
+  cross-compilation targets, and a pre-commit hook.
+* Converted documentation to AsciiDoc and added feature and benchmark documentation.
