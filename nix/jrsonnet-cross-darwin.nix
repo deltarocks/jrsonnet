@@ -4,6 +4,7 @@
   cargo-zigbuild,
   zig,
   darwin,
+  rcodesign,
   targetTriple,
   withExperimentalFeatures ? false,
 }:
@@ -26,6 +27,7 @@ craneLib.buildPackage {
 
   nativeBuildInputs = [
     darwin.xcode_12_2
+    rcodesign
   ];
 
   cargoExtraArgs = "-p jrsonnet";
@@ -46,5 +48,16 @@ craneLib.buildPackage {
     mkdir -p $out/{bin,lib}
     cp target/${targetTriple}/release/{jrsonnet,jrsonnet-fmt,jrb} $out/bin/
     cp target/${targetTriple}/release/{libjsonnet.dylib,libjsonnet.a} $out/lib/
+  '';
+
+  # The linker ad-hoc signs Mach-O files, but crane's postInstall hooks then
+  # rewrite /nix/store references inside them, invalidating the signature, and
+  # crane only re-signs when the Nix target platform is Darwin (here we cross
+  # compile with zigbuild on Linux). macOS on arm64 kills binaries with an
+  # invalid signature, so re-sign after all hooks have run.
+  postFixup = ''
+    for f in $out/bin/* $out/lib/*.dylib; do
+      rcodesign sign "$f"
+    done
   '';
 }
